@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aulala | 澳洲货运接单中心 (测试版)</title>
+    <style>
+        /* --- 基础样式 --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: #f0f2f5; color: #1a1b1e; }
+        
+        /* --- 导航栏 --- */
+        .header { 
+            background: #002b7f; color: white; padding: 18px; 
+            text-align: center; font-size: 20px; font-weight: bold;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky; top: 0; z-index: 100;
+        }
+
+        .container { padding: 15px; max-width: 600px; margin: 0 auto; }
+
+        /* --- 订单卡片 --- */
+        .order-card { 
+            background: white; border-radius: 16px; padding: 20px; 
+            margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid #eee; transition: transform 0.2s;
+        }
+        .order-card:active { transform: scale(0.98); }
+
+        .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .vehicle-tag { background: #ffcd00; color: #002b7f; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; }
+        .price-tag { color: #e63946; font-size: 20px; font-weight: bold; }
+
+        .route-box { position: relative; padding-left: 25px; margin-bottom: 15px; }
+        .route-line { position: absolute; left: 4px; top: 10px; bottom: 10px; width: 2px; background: #ddd; border-style: dashed; }
+        
+        .point { position: relative; margin-bottom: 15px; }
+        .point::before { content: ''; position: absolute; left: -25px; top: 4px; width: 10px; height: 10px; border-radius: 50%; }
+        .pickup::before { background: #28a745; box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.1); }
+        .dropoff::before { background: #d62828; box-shadow: 0 0 0 4px rgba(214, 40, 40, 0.1); }
+
+        .address-title { font-size: 12px; color: #888; margin-bottom: 2px; }
+        .address-detail { font-size: 15px; font-weight: 600; color: #333; }
+        .contact-info { font-size: 13px; color: #002b7f; margin-top: 4px; }
+
+        .goods-bar { 
+            background: #f8f9fa; padding: 12px; border-radius: 8px; 
+            display: flex; justify-content: space-around; font-size: 13px; color: #666;
+            border-left: 4px solid #002b7f;
+        }
+
+        .btn-accept { 
+            width: 100%; background: #002b7f; color: white; border: none; 
+            padding: 15px; border-radius: 30px; font-size: 16px; font-weight: bold; 
+            margin-top: 20px; cursor: pointer; transition: background 0.3s;
+        }
+        .btn-accept:hover { background: #001a4d; }
+
+        footer { text-align: center; padding: 30px; color: #999; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">Aulala 司机接单助手</div>
+
+    <div class="container" id="orderContainer">
+        <div class="order-card">
+            <div class="order-header">
+                <span class="vehicle-tag">SUV / 面包车</span>
+                <span class="price-tag">$45.00</span>
+            </div>
+            
+            <div class="route-box">
+                <div class="route-line"></div>
+                <div class="point pickup">
+                    <div class="address-title">提货地址 (Pickup)</div>
+                    <div class="address-detail">123 Warehouse St, Sydney NSW 2000</div>
+                    <div class="contact-info">联系人: Alex (0412 888 999)</div>
+                </div>
+                <div class="point dropoff">
+                    <div class="address-title">送货地址 (Drop-off)</div>
+                    <div class="address-detail">456 Queen St, Brisbane QLD 4000</div>
+                </div>
+            </div>
+
+            <div class="goods-bar">
+                <span>📦 5件托盘</span>
+                <span>⚖️ 200 kg</span>
+                <span>📏 2.4 m³</span>
+            </div>
+
+            <button class="btn-accept" onclick="acceptOrder('ORD-TEST-001')">立即抢单</button>
+        </div>
+
+        <div class="order-card">
+            <div class="order-header">
+                <span class="vehicle-tag">小型货车 (Van)</span>
+                <span class="price-tag">$120.00</span>
+            </div>
+            
+            <div class="route-box">
+                <div class="route-line"></div>
+                <div class="point pickup">
+                    <div class="address-title">提货地址 (Pickup)</div>
+                    <div class="address-detail">78 Industry Rd, Melbourne VIC 3000</div>
+                    <div class="contact-info">联系人: Logistics Manager</div>
+                </div>
+                <div class="point dropoff">
+                    <div class="address-title">送货地址 (Drop-off)</div>
+                    <div class="address-detail">Airport Terminal 1, Sydney NSW</div>
+                </div>
+            </div>
+
+            <div class="goods-bar">
+                <span>📦 12件纸箱</span>
+                <span>⚖️ 500 kg</span>
+                <span>📏 4.0 m³</span>
+            </div>
+
+            <button class="btn-accept" onclick="acceptOrder('ORD-TEST-002')">立即抢单</button>
+        </div>
+    </div>
+
+    <footer>
+        © 2024 Aulala Logistics | Powered by AI-Express
+    </footer>
+
+    <script>
+        /**
+         * 模拟接单逻辑
+         * 后期可以接入您的 ERP API: https://api.ai-express.cn/api/lala/accept
+         */
+        function acceptOrder(orderId) {
+            const confirmMsg = "确定接下订单 " + orderId + " 吗？\n接单后请在30分钟内到达提货地点。";
+            
+            if (confirm(confirmMsg)) {
+                // 这里未来将通过 fetch 发送 POST 请求给 ERP
+                alert("🎉 抢单成功！\n请前往 ERP 系统查看详细提货单。");
+                
+                // 模拟订单被抢走后的界面变化
+                event.target.innerText = "已接单";
+                event.target.style.background = "#ccc";
+                event.target.disabled = true;
+            }
+        }
+
+        // 可以在此处添加定时刷新逻辑，自动从服务器获取新订单
+        function refreshOrders() {
+            console.log("正在同步 ERP 实时订单数据...");
+        }
+        
+        // window.onload = refreshOrders;
+    </script>
+</body>
+</html>
