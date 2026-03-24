@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Aulala | 澳洲货运中心</title>
     <style>
-        :root { --primary: #002b7f; --accent: #e63946; --bg: #f4f7f9; --border: #e0e0e0; }
+        :root { --primary: #002b7f; --accent: #e63946; --bg: #f4f7f9; --border: #e0e0e0; --success: #28a745; }
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: #1a1b1e; line-height: 1.5; }
         
@@ -15,59 +15,60 @@
             display: flex; justify-content: space-between; align-items: center;
             position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        .logo { font-weight: 800; font-size: 18px; letter-spacing: 0.5px; }
-        .nav-btns a { color: white; text-decoration: none; font-size: 12px; margin-left: 5px; border: 1px solid rgba(255,255,255,0.3); padding: 4px 10px; border-radius: 15px; }
+        .logo { font-weight: 800; font-size: 18px; letter-spacing: 0.5px; cursor: pointer; }
+        .nav-btns a { color: white; text-decoration: none; font-size: 12px; margin-left: 5px; border: 1px solid rgba(255,255,255,0.3); padding: 5px 10px; border-radius: 15px; }
 
-        /* 优化后的搜索条：时间 > 州 > 区 */
+        /* 搜索条 */
         .filter-section {
             background: white; padding: 10px; display: flex; align-items: center; gap: 8px;
             position: sticky; top: 49px; z-index: 999; border-bottom: 1px solid #eee;
         }
-        .filter-item {
-            height: 38px; border: 1px solid var(--border); border-radius: 6px; 
-            font-size: 13px; outline: none; background: white; color: #333;
-            display: flex; align-items: center;
-        }
-        /* 比例分配 */
-        #date-filter { width: 28%; padding: 0 5px; } /* 提货时间 */
-        #state-filter { width: 20%; padding: 0 5px; background-color: #f9f9f9; } /* 州 */
-        #suburb-input { flex-grow: 1; padding: 0 12px; width: 45%; } /* 区域 - 稍微放大且更显眼 */
+        .filter-item { height: 38px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; outline: none; background: white; }
+        #date-filter { width: 30%; padding: 0 5px; } 
+        #state-filter { width: 22%; padding: 0 5px; } 
+        #suburb-input { flex-grow: 1; padding: 0 12px; width: 43%; } 
         
-        input::placeholder { color: #aaa; }
-
         .container { padding: 12px; max-width: 600px; margin: 0 auto; }
 
-        /* 订单卡片 */
-        .order-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); border: 1px solid #f0f0f0; }
-        .order-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
-        .tag { background: #fff9db; color: #f08c00; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid #ffe066; }
-        .price { color: var(--accent); font-size: 22px; font-weight: 800; }
-        .specs { display: flex; background: #f8f9fa; padding: 8px; border-radius: 6px; margin-bottom: 12px; font-size: 12px; justify-content: space-between; }
-        .addr-box { position: relative; padding-left: 20px; font-size: 14px; border-left: 2px dotted #ddd; margin-left: 8px; }
-        .addr { margin-bottom: 8px; position: relative; }
+        /* 卡片基础 */
+        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); border: 1px solid #f0f0f0; }
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center; }
+        .price { color: var(--accent); font-size: 20px; font-weight: 800; }
+        .status-tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
+        .status-ongoing { background: #e7f5ff; color: #1971c2; }
+        .status-done { background: #ebfbee; color: #2b8a3e; }
+
+        /* 地址导航 */
+        .addr-box { position: relative; padding-left: 20px; font-size: 14px; border-left: 2px dotted #ddd; margin: 10px 0 10px 8px; }
+        .addr { margin-bottom: 12px; position: relative; display: block; text-decoration: none; color: inherit; }
         .dot { position: absolute; left: -26px; top: 5px; width: 10px; height: 10px; border-radius: 50%; }
-        .btn-main { width: 100%; background: var(--primary); color: white; border: none; padding: 13px; border-radius: 25px; font-weight: bold; cursor: pointer; margin-top: 5px; font-size: 15px; }
+        .nav-icon { float: right; font-size: 11px; color: var(--primary); border: 1px solid var(--primary); padding: 1px 6px; border-radius: 4px; }
 
-        /* 后台中心 */
-        #user-profile { display: none; }
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .stat-card { background: white; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid #eee; }
-        .stat-val { display: block; font-size: 22px; font-weight: 800; color: var(--primary); }
-        .stat-label { font-size: 12px; color: #888; }
-        .info-list { background: white; border-radius: 12px; padding: 5px 15px; border: 1px solid #eee; }
-        .info-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f4f4f4; font-size: 14px; }
-        .info-item:last-child { border: none; }
-        .info-label { color: #888; }
+        /* 进行中订单专用：图片上传区 */
+        .upload-area { display: flex; gap: 10px; margin: 15px 0; }
+        .upload-btn { 
+            width: 70px; height: 70px; border: 2px dashed #ccc; border-radius: 8px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 10px; color: #999; cursor: pointer; background: #fafafa;
+        }
+        .preview-img { width: 70px; height: 70px; border-radius: 8px; object-fit: cover; display: none; border: 1px solid #eee; }
 
-        /* 登录注册 */
-        #auth-section { display: none; background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-top: 10px; }
-        .tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #eee; }
-        .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #888; font-weight: bold; }
-        .tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
-        .auth-field { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
-        .group-title { font-size: 11px; color: var(--primary); margin: 5px 0 8px; font-weight: bold; opacity: 0.8; }
+        /* 详情弹窗 (Modal) */
+        #detail-modal { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.8); z-index: 2000; display: none; 
+            overflow-y: auto; padding: 20px;
+        }
+        .modal-content { background: white; border-radius: 16px; padding: 20px; max-width: 500px; margin: 40px auto; position: relative; }
+        .close-btn { position: absolute; right: 15px; top: 15px; font-size: 24px; color: #999; cursor: pointer; }
+        .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
+        .proof-img { width: 100%; border-radius: 8px; margin-top: 10px; border: 1px solid #ddd; }
 
+        .btn-main { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 25px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .btn-outline { width: 100%; background: white; color: var(--primary); border: 1px solid var(--primary); padding: 10px; border-radius: 25px; font-weight: bold; cursor: pointer; font-size: 13px; margin-top: 5px; }
         .hidden { display: none !important; }
+        .section-title { font-size: 15px; font-weight: bold; margin: 15px 0 10px; color: var(--primary); display: flex; align-items: center; }
+        .section-title::before { content: ""; width: 4px; height: 15px; background: var(--primary); margin-right: 8px; border-radius: 2px; }
     </style>
 </head>
 <body>
@@ -76,26 +77,21 @@
         <div class="logo" onclick="showSection('orders')">AULALA</div>
         <div class="nav-btns">
             <span id="guest-nav">
-                <a href="javascript:void(0)" onclick="showSection('auth', 'reg')">注册</a>
-                <a href="javascript:void(0)" onclick="showSection('auth', 'login')">登录</a>
+                <a href="javascript:void(0)" onclick="showSection('auth')">登录/注册</a>
             </span>
             <span id="user-nav" class="hidden">
-                <a href="javascript:void(0)" onclick="showSection('profile')">我的后台</a>
+                <a href="javascript:void(0)" onclick="showSection('profile')" style="background:rgba(255,255,255,0.2)">个人中心</a>
                 <a href="javascript:void(0)" onclick="logout()">退出</a>
             </span>
         </div>
     </header>
 
     <section id="filter-bar" class="filter-section">
-        <input type="date" id="date-filter" class="filter-item" onchange="applyFilters()" title="提货时间">
+        <input type="date" id="date-filter" class="filter-item" onchange="applyFilters()">
         <select id="state-filter" class="filter-item" onchange="applyFilters()">
-            <option value="">所有州</option>
-            <option value="NSW">NSW</option>
-            <option value="VIC">VIC</option>
-            <option value="QLD">QLD</option>
-            <option value="WA">WA</option>
+            <option value="">州</option><option value="NSW">NSW</option><option value="VIC">VIC</option>
         </select>
-        <input type="text" id="suburb-input" class="filter-item" placeholder="搜索区域 (Suburb)..." oninput="applyFilters()">
+        <input type="text" id="suburb-input" class="filter-item" placeholder="区域 (Suburb)..." oninput="applyFilters()">
     </section>
 
     <div class="container">
@@ -103,125 +99,131 @@
             <div id="order-list"></div>
         </section>
 
-        <section id="auth-section">
-            <div class="tabs">
-                <div id="tab-login" class="tab active" onclick="switchAuthMode('login')">司机登录</div>
-                <div id="tab-reg" class="tab" onclick="switchAuthMode('reg')">申请加入</div>
+        <section id="auth-section" class="hidden">
+            <div class="card" style="margin-top: 20px; padding: 30px;">
+                <input type="tel" id="login-phone" class="filter-item" style="width:100%; margin-bottom:15px; padding:0 15px;" placeholder="手机号 (13888888888)">
+                <input type="password" id="login-pass" class="filter-item" style="width:100%; margin-bottom:15px; padding:0 15px;" placeholder="密码 (123456)">
+                <button class="btn-main" onclick="handleLogin()">进入后台</button>
             </div>
-            <input type="tel" class="auth-field" placeholder="手机号 (Mobile)">
-            <div id="reg-fields" class="hidden">
-                <input type="text" class="auth-field" placeholder="姓名">
-                <div class="group-title">车辆信息</div>
-                <input type="text" class="auth-field" placeholder="车牌号 (License Plate)">
-                <select class="auth-field">
-                    <option>SUV / Car</option>
-                    <option>Van (面包车)</option>
-                    <option>Truck (货车)</option>
-                </select>
-                <div class="group-title">结算银行卡 (用于运费发放)</div>
-                <input type="text" class="auth-field" placeholder="BSB (6位)">
-                <input type="text" class="auth-field" placeholder="Account Number">
-            </div>
-            <input type="password" class="auth-field" placeholder="登录密码">
-            <button class="btn-main" onclick="handleLogin()">确认进入</button>
         </section>
 
-        <section id="user-profile">
-            <div class="stat-grid">
-                <div class="stat-card"><span class="stat-val">$0.00</span><span class="stat-label">待结算运费</span></div>
-                <div class="stat-card"><span class="stat-val">0</span><span class="stat-label">今日接单</span></div>
+        <section id="user-profile" class="hidden">
+            <div class="section-title">进行中的订单 (需拍照)</div>
+            <div class="card">
+                <div class="card-header"><span class="status-tag status-ongoing">运输中</span><span class="price">$85.00</span></div>
+                <div class="addr-box">
+                    <a href="https://www.google.com/maps" class="addr"><span class="dot" style="background:var(--success)"></span><b>提:</b> Regents Park <span class="nav-icon">导航</span></a>
+                    <a href="https://www.google.com/maps" class="addr"><span class="dot" style="background:var(--accent)"></span><b>送:</b> Sydney CBD <span class="nav-icon">导航</span></a>
+                </div>
+                <div style="font-size:12px; color:#666; margin-bottom:5px;">请上传货物送达照片：</div>
+                <div class="upload-area">
+                    <div class="upload-btn" onclick="simulateUpload('p1')"><span>📷</span><span>货物拍照</span></div>
+                    <img id="p1" class="preview-img" src="">
+                    <div class="upload-btn" onclick="simulateUpload('p2')"><span>✍️</span><span>签单拍照</span></div>
+                    <img id="p2" class="preview-img" src="">
+                </div>
+                <button class="btn-main" onclick="completeOrder()">提交回单并完结</button>
             </div>
-            <div class="info-list">
-                <div class="group-title" style="padding-top:10px">我的基本资料</div>
-                <div class="info-item"><span class="info-label">认证状态</span><span style="color:#28a745;font-weight:bold">已认证司机</span></div>
-                <div class="info-item"><span class="info-label">注册电话</span><span>未登录</span></div>
-                <div class="info-item"><span class="info-label">我的车型</span><span>SUV / Car</span></div>
-                <div class="info-item"><span class="info-label">账户余额</span><span>$0.00</span></div>
+
+            <div class="section-title">已完成的订单</div>
+            <div id="history-list">
+                <div class="card" style="padding-bottom:10px;">
+                    <div class="card-header"><span class="status-tag status-done">已完结</span><span style="font-weight:bold">$125.00</span></div>
+                    <div style="font-size:13px; color:#666;">
+                        路线：Clayton → Melbourne CBD<br>
+                        时间：2024-03-22 14:30
+                    </div>
+                    <button class="btn-outline" onclick="openDetail()">查看回单及详情</button>
+                </div>
             </div>
-            <button class="btn-main" style="background:#666" onclick="showSection('orders')">返回抢单厅</button>
+            <button class="btn-main" style="background:#666; margin-top:15px;" onclick="showSection('orders')">返回大厅抢单</button>
         </section>
     </div>
 
+    <div id="detail-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeDetail()">&times;</span>
+            <h3 style="color:var(--primary); margin-bottom:15px;">订单完结详情</h3>
+            <div class="detail-row"><span>订单编号</span><span>AU-882910</span></div>
+            <div class="detail-row"><span>结算费用</span><span style="color:var(--accent); font-weight:bold;">$125.00</span></div>
+            <div class="detail-row"><span>提货时间</span><span>03-22 09:15</span></div>
+            <div class="detail-row"><span>送达时间</span><span>03-22 14:30</span></div>
+            <div class="detail-row"><span>车型</span><span>VAN (澳洲面包车)</span></div>
+            
+            <div style="margin-top:15px;">
+                <p style="font-size:13px; font-weight:bold; margin-bottom:5px;">送达存证照片：</p>
+                <img class="proof-img" src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=500&q=80" alt="货物照片">
+                <p style="font-size:13px; font-weight:bold; margin:15px 0 5px;">客户电子签名：</p>
+                <img class="proof-img" style="height:100px; object-fit:contain; background:#f9f9f9;" src="https://upload.wikimedia.org/wikipedia/commons/7/7d/John_Hancock_signature.svg" alt="签名">
+            </div>
+            <button class="btn-main" style="margin-top:20px;" onclick="closeDetail()">关闭详情</button>
+        </div>
+    </div>
+
     <script>
-        // 模拟数据
-        const mockData = [
-            { id: 101, price: 68.0, state: 'NSW', pickup: 'Regents Park', dropoff: 'Sydney CBD', type: 'VAN', time: '2026-03-24 14:00' },
-            { id: 102, price: 115.0, state: 'VIC', pickup: 'Clayton', dropoff: 'Melbourne CBD', type: 'Truck', time: '2026-03-24 16:30' },
-            { id: 103, price: 45.0, state: 'NSW', pickup: 'Hurstville', dropoff: 'Burwood', type: 'SUV', time: '2026-03-25 09:00' },
-            { id: 104, price: 95.0, state: 'QLD', pickup: 'Sunnybank', dropoff: 'Brisbane City', type: 'VAN', time: '2026-03-24 10:00' }
-        ];
-
-        // 格式化显示时间: DD-MM HH:mm
-        function formatTime(str) {
-            const parts = str.split(' ');
-            const dateParts = parts[0].split('-');
-            return `${dateParts[2]}-${dateParts[1]} ${parts[1]}`;
+        // 模拟上传图片逻辑
+        function simulateUpload(id) {
+            alert("正在调用手机摄像头...");
+            const el = document.getElementById(id);
+            // 这里使用一张演示图模拟拍照结果
+            el.src = id === 'p1' ? 
+                "https://images.unsplash.com/photo-1566576721346-d4a3b4eaad5b?auto=format&fit=crop&w=200&q=80" : 
+                "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80";
+            el.style.display = "block";
+            el.previousElementSibling.style.display = "none";
         }
 
-        function renderOrders(data) {
-            const list = document.getElementById('order-list');
-            // 按时间升序排序
-            const sorted = data.sort((a,b) => new Date(a.time) - new Date(b.time));
-            
-            list.innerHTML = sorted.length ? sorted.map(o => `
-                <div class="order-card">
-                    <div class="order-header"><span class="tag">${o.type}</span><span class="price">$${o.price.toFixed(2)}</span></div>
-                    <div class="specs">
-                        <span>提货时间: <b style="color:var(--accent)">${formatTime(o.time)}</b></span>
-                        <span>联盟直派货源</span>
-                    </div>
-                    <div class="addr-box">
-                        <div class="addr"><span class="dot" style="background:#28a745"></span><b>提:</b> ${o.pickup}, ${o.state}</div>
-                        <div class="addr"><span class="dot" style="background:var(--accent)"></span><b>送:</b> ${o.dropoff}, ${o.state}</div>
-                    </div>
-                    <button class="btn-main" onclick="tryAccept()">立即抢单</button>
-                </div>
-            `).join('') : '<div style="text-align:center;padding:50px;color:#999;font-size:14px;">没有找到符合条件的货源</div>';
+        function completeOrder() {
+            if(document.getElementById('p1').style.display !== 'block') {
+                alert("请先拍摄货物照片！"); return;
+            }
+            alert("上传成功！运费已汇入您的待结算账户。");
+            location.reload(); 
         }
 
-        function applyFilters() {
-            const d = document.getElementById('date-filter').value;
-            const s = document.getElementById('state-filter').value;
-            const sub = document.getElementById('suburb-input').value.toLowerCase();
-            
-            const filtered = mockData.filter(o => 
-                (!d || o.time.includes(d)) && (!s || o.state === s) && (!sub || o.pickup.toLowerCase().includes(sub))
-            );
-            renderOrders(filtered);
+        function openDetail() { document.getElementById('detail-modal').style.display = "block"; }
+        function closeDetail() { document.getElementById('detail-modal').style.display = "none"; }
+
+        function handleLogin() {
+            const p = document.getElementById('login-phone').value;
+            const pass = document.getElementById('login-pass').value;
+            if(p === '13888888888' && pass === '123456') {
+                document.getElementById('guest-nav').classList.add('hidden');
+                document.getElementById('user-nav').classList.remove('hidden');
+                showSection('profile');
+            } else { alert("账号密码错误"); }
         }
 
-        function showSection(sec, mode) {
-            document.getElementById('order-section').style.display = (sec === 'orders') ? 'block' : 'none';
-            document.getElementById('filter-bar').style.display = (sec === 'orders') ? 'flex' : 'none';
-            document.getElementById('auth-section').style.display = (sec === 'auth') ? 'block' : 'none';
-            document.getElementById('user-profile').style.display = (sec === 'profile') ? 'block' : 'none';
-            if(mode) switchAuthMode(mode);
+        function showSection(sec) {
+            document.getElementById('order-section').style.display = (sec === 'orders' ? 'block' : 'none');
+            document.getElementById('filter-bar').style.display = (sec === 'orders' ? 'flex' : 'none');
+            document.getElementById('auth-section').classList.toggle('hidden', sec !== 'auth');
+            document.getElementById('user-profile').classList.toggle('hidden', sec !== 'profile');
             window.scrollTo(0,0);
         }
 
-        function switchAuthMode(m) {
-            const isReg = m === 'reg';
-            document.getElementById('reg-fields').className = isReg ? '' : 'hidden';
-            document.getElementById('tab-login').className = isReg ? 'tab' : 'tab active';
-            document.getElementById('tab-reg').className = isReg ? 'tab active' : 'tab';
-        }
+        function logout() { location.reload(); }
 
-        function handleLogin() {
-            // 对接 ERP 121.196.233.99 的逻辑预留
-            document.getElementById('guest-nav').className = 'hidden';
-            document.getElementById('user-nav').className = '';
-            showSection('orders');
-        }
-
-        function logout() {
-            document.getElementById('guest-nav').className = '';
-            document.getElementById('user-nav').className = 'hidden';
-            showSection('orders');
-        }
-
-        function tryAccept() { alert("账户待审核中，请联系客服加速审核！"); }
-
-        window.onload = () => renderOrders(mockData);
+        // 初始化渲染大厅
+        window.onload = () => {
+            const list = document.getElementById('order-list');
+            const data = [
+                { id: 1, price: 65, type: 'VAN', time: '2026-03-24 15:00', pickup: 'Regents Park', dropoff: 'Sydney' },
+                { id: 2, price: 110, type: 'Truck', time: '2026-03-24 10:00', pickup: 'Clayton', dropoff: 'Melbourne' }
+            ].sort((a,b) => new Date(a.time) - new Date(b.time));
+            
+            list.innerHTML = data.map(o => `
+                <div class="card">
+                    <div class="card-header"><span class="tag">${o.type}</span><span class="price">$${o.price}</span></div>
+                    <div style="font-size:12px; margin-bottom:10px;">提货时间: <b style="color:var(--accent)">${o.time.split(' ')[1]}</b></div>
+                    <div class="addr-box">
+                        <div class="addr"><span class="dot" style="background:var(--success)"></span><b>提:</b> ${o.pickup}</div>
+                        <div class="addr"><span class="dot" style="background:var(--accent)"></span><b>送:</b> ${o.dropoff}</div>
+                    </div>
+                    <button class="btn-main" onclick="alert('抢单成功！请去个人中心查看')">立即抢单</button>
+                </div>
+            `).join('');
+        };
     </script>
 </body>
 </html>
