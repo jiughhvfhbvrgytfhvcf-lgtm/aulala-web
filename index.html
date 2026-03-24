@@ -1,279 +1,1493 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aulala | 澳洲货运中心</title>
-    <style>
-        :root { --primary: #002b7f; --accent: #e63946; --bg: #f4f7f9; --border: #e0e0e0; --success: #28a745; }
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: #1a1b1e; line-height: 1.5; }
-        
-        /* 导航栏 */
-        header { 
-            background: var(--primary); color: white; padding: 12px 15px; 
-            display: flex; justify-content: space-between; align-items: center;
-            position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        .logo { font-weight: 800; font-size: 18px; letter-spacing: 0.5px; cursor: pointer; }
-        .nav-btns a { color: white; text-decoration: none; font-size: 12px; margin-left: 5px; border: 1px solid rgba(255,255,255,0.3); padding: 5px 10px; border-radius: 15px; }
-
-        /* 搜索条：时间(28%) > 州(20%) > 区(45%) */
-        .filter-section {
-            background: white; padding: 10px; display: flex; align-items: center; gap: 8px;
-            position: sticky; top: 49px; z-index: 999; border-bottom: 1px solid #eee;
-        }
-        .filter-item { height: 38px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; outline: none; background: white; }
-        #date-filter { width: 30%; padding: 0 5px; } 
-        #state-filter { width: 22%; padding: 0 5px; background: #f9f9f9; } 
-        #suburb-input { flex-grow: 1; padding: 0 12px; width: 43%; } 
-        
-        .container { padding: 12px; max-width: 600px; margin: 0 auto; }
-
-        /* 卡片 */
-        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); border: 1px solid #f0f0f0; }
-        .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center; }
-        .price { color: var(--accent); font-size: 20px; font-weight: 800; }
-        .tag { background: #fff9db; color: #f08c00; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-        
-        /* 货物规格 */
-        .specs-grid { display: flex; background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 12px; justify-content: space-between; border: 1px solid #f0f0f0; }
-        .spec-item { text-align: center; flex: 1; border-right: 1px solid #eee; }
-        .spec-item:last-child { border: none; }
-        .spec-label { display: block; font-size: 10px; color: #888; margin-bottom: 2px; }
-        .spec-val { font-size: 13px; font-weight: bold; color: #333; }
-
-        /* 地址 */
-        .addr-box { position: relative; padding-left: 20px; font-size: 14px; border-left: 2px dotted #ddd; margin: 5px 0 10px 8px; }
-        .addr { margin-bottom: 12px; position: relative; display: block; text-decoration: none; color: inherit; }
-        .dot { position: absolute; left: -26px; top: 5px; width: 10px; height: 10px; border-radius: 50%; }
-        .nav-icon { float: right; font-size: 11px; color: var(--primary); border: 1px solid var(--primary); padding: 1px 6px; border-radius: 4px; }
-
-        /* 拍照上传 */
-        .upload-area { display: flex; gap: 10px; margin: 10px 0; }
-        .upload-btn { 
-            width: 75px; height: 75px; border: 2px dashed #ccc; border-radius: 8px; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-size: 10px; color: #999; cursor: pointer; background: #fafafa;
-        }
-        .preview-img { width: 75px; height: 75px; border-radius: 8px; object-fit: cover; display: none; border: 1px solid #eee; }
-
-        /* 详情弹窗 */
-        #detail-modal { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.85); z-index: 2000; display: none; overflow-y: auto; padding: 20px;
-        }
-        .modal-content { background: white; border-radius: 16px; padding: 20px; max-width: 500px; margin: 20px auto; position: relative; }
-        .close-btn { position: absolute; right: 15px; top: 15px; font-size: 24px; color: #999; cursor: pointer; }
-        .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
-        .proof-img { width: 100%; border-radius: 8px; margin-top: 10px; border: 1px solid #ddd; }
-
-        .btn-main { width: 100%; background: var(--primary); color: white; border: none; padding: 13px; border-radius: 25px; font-weight: bold; cursor: pointer; font-size: 14px; }
-        .btn-outline { width: 100%; background: white; color: var(--primary); border: 1px solid var(--primary); padding: 10px; border-radius: 25px; font-weight: bold; cursor: pointer; font-size: 13px; margin-top: 8px; }
-        .hidden { display: none !important; }
-        .section-title { font-size: 15px; font-weight: bold; margin: 15px 0 10px; color: var(--primary); display: flex; align-items: center; }
-        .section-title::before { content: ""; width: 4px; height: 15px; background: var(--primary); margin-right: 8px; border-radius: 2px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>澳洲专线联盟 | AI-Express 智能物流</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      color: #182033;
+      background:
+        radial-gradient(circle at top right, rgba(255, 205, 0, 0.18), transparent 28%),
+        linear-gradient(180deg, #fbfcff 0%, #f4f7fb 100%);
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      padding: 24px 24px 0;
+      gap: 14px;
+    }
+    header a {
+      color: #6a7283;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .nav-login-btn {
+      background: #002b7f;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 999px;
+      box-shadow: 0 12px 30px rgba(0, 43, 127, 0.16);
+    }
+    main {
+      width: min(1120px, calc(100vw - 32px));
+      margin: 0 auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8vh 0 56px;
+    }
+    .logo-container {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .logo-main {
+      font-size: clamp(42px, 8vw, 66px);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+    .logo-main .blue { color: #002b7f; }
+    .logo-main .gold { color: #ffb800; }
+    .logo-sub {
+      margin-top: 8px;
+      color: #7b8397;
+      font-size: 13px;
+      letter-spacing: 0.42em;
+      text-transform: uppercase;
+    }
+    .search-card {
+      width: 100%;
+      padding: 24px;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(0, 43, 127, 0.08);
+      box-shadow: 0 30px 60px rgba(21, 33, 68, 0.08);
+      backdrop-filter: blur(12px);
+    }
+    .search-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .search-input {
+      width: 100%;
+      height: 62px;
+      border-radius: 999px;
+      border: 1px solid #d7dfef;
+      padding: 0 132px 0 24px;
+      font-size: 17px;
+      outline: none;
+      background: #fff;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .search-input:focus {
+      border-color: #002b7f;
+      box-shadow: 0 0 0 5px rgba(0, 43, 127, 0.08);
+    }
+    .flag-search-btn {
+      position: absolute;
+      right: 6px;
+      top: 6px;
+      height: 50px;
+      padding: 0 16px;
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      background: linear-gradient(135deg, #fff7d3 0%, #ffeaa3 100%);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #002b7f;
+      font-weight: 700;
+    }
+    .flag-search-btn:disabled {
+      opacity: 0.7;
+      cursor: progress;
+    }
+    .flag-image {
+      width: 24px;
+      height: 16px;
+      border-radius: 3px;
+      background-image: url('https://flagcdn.com/w80/au.png');
+      background-size: cover;
+      background-position: center;
+    }
+    .hint {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #7b8397;
+    }
+    #loading {
+      display: none;
+      margin-top: 18px;
+      color: #002b7f;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    #result-container {
+      width: 100%;
+      margin-top: 24px;
+      display: none;
+      gap: 18px;
+    }
+    .result-card {
+      border-radius: 24px;
+      background: #fff;
+      border: 1px solid rgba(0, 43, 127, 0.08);
+      box-shadow: 0 20px 40px rgba(19, 29, 58, 0.06);
+      padding: 24px;
+    }
+    .track-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #eef2f8;
+      margin-bottom: 18px;
+    }
+    .track-header h4 {
+      color: #002b7f;
+      font-size: 18px;
+    }
+    .track-summary {
+      font-size: 12px;
+      color: #7b8397;
+    }
+    .schedule-panel {
+      overflow: hidden;
+    }
+    .schedule-board-wrap {
+      margin-top: 6px;
+    }
+    .schedule-board {
+      position: relative;
+      display: grid;
+      grid-template-columns: 96px repeat(7, minmax(0, 1fr));
+      column-gap: 10px;
+      row-gap: 12px;
+      align-items: start;
+      width: 100%;
+    }
+    .schedule-segment {
+      position: relative;
+      z-index: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 118px;
+      pointer-events: none;
+    }
+    .schedule-segment-top,
+    .schedule-segment-bottom {
+      min-height: 18px;
+      padding: 0 4px;
+      color: #7b8397;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.3;
+      white-space: nowrap;
+      text-align: center;
+    }
+    .schedule-segment-top {
+      margin-bottom: 10px;
+    }
+    .schedule-segment-bottom {
+      margin-top: 10px;
+    }
+    .schedule-segment-line {
+      width: calc(100% - 30px);
+      height: 6px;
+      border-radius: 999px;
+      background: #dbe3ea;
+    }
+    .schedule-segment.is-done .schedule-segment-line {
+      background: linear-gradient(90deg, #19b96b 0%, #0fa85f 100%);
+    }
+    .schedule-segment-tone {
+      color: #7b8397;
+    }
+    .schedule-segment-tone.is-positive {
+      color: #0d8f55;
+    }
+    .schedule-segment-tone.is-negative {
+      color: #cf3f36;
+    }
+    .schedule-segment-divider {
+      color: #99a3b3;
+    }
+    .schedule-clearance-marker {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 118px;
+      pointer-events: none;
+    }
+    .schedule-clearance-top,
+    .schedule-clearance-bottom {
+      min-height: 18px;
+      padding: 0 6px;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.3;
+      white-space: nowrap;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 999px;
+    }
+    .schedule-clearance-top {
+      margin-bottom: 10px;
+    }
+    .schedule-clearance-bottom {
+      margin-top: 10px;
+      color: #7b8397;
+    }
+    .schedule-stage {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      align-self: center;
+    }
+    .schedule-stage-card {
+      width: 68px;
+      height: 68px;
+      margin: 0 auto 10px;
+      border-radius: 20px;
+      background: #f1f4f8;
+      border: 1px solid rgba(0, 43, 127, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 22px rgba(19, 29, 58, 0.06);
+    }
+    .schedule-stage-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      background: #d6dde4;
+      color: #7b8397;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      line-height: 1;
+    }
+    .schedule-stage-label {
+      font-size: 14px;
+      font-weight: 700;
+      color: #5f6880;
+      line-height: 1.5;
+    }
+    .schedule-stage.is-done .schedule-stage-card {
+      background: #effaf4;
+      border-color: rgba(16, 176, 103, 0.16);
+    }
+    .schedule-stage.is-done .schedule-stage-icon {
+      background: #10b067;
+      color: #fff;
+      box-shadow: 0 0 0 8px rgba(16, 176, 103, 0.12);
+    }
+    .schedule-stage.is-done .schedule-stage-label {
+      color: #0d8f55;
+    }
+    .schedule-row-title {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 54px;
+      padding-left: 4px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #4c556b;
+      white-space: nowrap;
+    }
+    .schedule-time-cell {
+      min-height: 54px;
+      border-radius: 16px;
+      border: 1px solid #e4ebf3;
+      background: #f6f8fb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 10px 8px;
+      font-size: 14px;
+      color: #1a2235;
+      line-height: 1.5;
+    }
+    .schedule-time-cell.is-done {
+      background: #eefaf4;
+      color: #0d8f55;
+      font-weight: 700;
+    }
+    .schedule-missing {
+      color: #99a3b3;
+    }
+    .chat-fab {
+      position: fixed;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 74px;
+      height: 74px;
+      border: none;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #1677ff 0%, #0f5fd8 100%);
+      color: #fff;
+      box-shadow: 0 22px 42px rgba(0, 43, 127, 0.24);
+      cursor: pointer;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+    }
+    .chat-panel {
+      position: fixed;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: min(360px, calc(100vw - 24px));
+      height: min(620px, calc(100vh - 40px));
+      border-radius: 28px;
+      overflow: hidden;
+      background: #fff;
+      border: 1px solid rgba(0, 43, 127, 0.08);
+      box-shadow: 0 28px 64px rgba(19, 29, 58, 0.2);
+      z-index: 50;
+      display: none;
+      flex-direction: column;
+    }
+    .chat-panel.is-open {
+      display: flex;
+    }
+    .chat-header {
+      height: 90px;
+      padding: 0 24px;
+      background: linear-gradient(135deg, #1677ff 0%, #0f5fd8 100%);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .chat-header-title {
+      font-size: 18px;
+      font-weight: 800;
+    }
+    .chat-close {
+      border: none;
+      background: transparent;
+      color: #fff;
+      font-size: 22px;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .chat-body {
+      flex: 1;
+      padding: 18px;
+      background: #f6f8fb;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .chat-message {
+      max-width: 84%;
+      padding: 16px 18px;
+      border-radius: 20px;
+      box-shadow: 0 8px 18px rgba(19, 29, 58, 0.06);
+      line-height: 1.7;
+      font-size: 14px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .chat-message.bot {
+      align-self: flex-start;
+      background: #fff;
+      color: #1a2235;
+    }
+    .chat-message.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, #2583ff 0%, #1677ff 100%);
+      color: #fff;
+    }
+    .chat-message.status {
+      align-self: center;
+      max-width: 100%;
+      padding: 8px 12px;
+      background: transparent;
+      color: #7b8397;
+      box-shadow: none;
+      font-size: 12px;
+    }
+    .chat-message.error {
+      align-self: flex-start;
+      background: #fff2f2;
+      color: #b43a33;
+    }
+    .chat-footer {
+      padding: 18px;
+      background: #fff;
+      border-top: 1px solid #e9eef5;
+    }
+    .chat-form {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .chat-input {
+      flex: 1;
+      height: 56px;
+      border-radius: 999px;
+      border: 1px solid #d7dfef;
+      padding: 0 20px;
+      font-size: 15px;
+      outline: none;
+    }
+    .chat-input:focus {
+      border-color: #1677ff;
+      box-shadow: 0 0 0 4px rgba(22, 119, 255, 0.08);
+    }
+    .chat-send {
+      border: none;
+      background: transparent;
+      color: #1677ff;
+      font-weight: 800;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0 6px;
+    }
+    .chat-send:disabled {
+      opacity: 0.5;
+      cursor: progress;
+    }
+    .timeline {
+      list-style: none;
+      position: relative;
+      padding-left: 24px;
+    }
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 4px;
+      bottom: 8px;
+      width: 2px;
+      background: linear-gradient(180deg, #d7dfef 0%, #eef2f8 100%);
+    }
+    .timeline-item {
+      position: relative;
+      padding-left: 16px;
+      margin-bottom: 18px;
+    }
+    .timeline-item:last-child {
+      margin-bottom: 0;
+    }
+    .timeline-item::before {
+      content: "";
+      position: absolute;
+      left: -24px;
+      top: 4px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #d7dfef;
+      border: 3px solid #fff;
+      box-shadow: 0 0 0 1px rgba(0, 43, 127, 0.08);
+    }
+    .timeline-item.latest::before {
+      background: #002b7f;
+      box-shadow: 0 0 0 6px rgba(0, 43, 127, 0.08);
+    }
+    .time {
+      font-size: 12px;
+      color: #7b8397;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .context {
+      font-size: 14px;
+      line-height: 1.65;
+      color: #1a2235;
+      white-space: pre-wrap;
+    }
+    .error-box {
+      display: none;
+      width: 100%;
+      margin-top: 18px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: #fff2f2;
+      border: 1px solid #ffd2d2;
+      color: #9d2f2f;
+      font-size: 14px;
+    }
+    footer {
+      padding: 22px;
+      text-align: center;
+      color: #7b8397;
+      font-size: 12px;
+    }
+    @media (max-width: 640px) {
+      header {
+        padding: 18px 16px 0;
+      }
+      .search-card,
+      .result-card {
+        padding: 18px;
+        border-radius: 20px;
+      }
+      .search-input {
+        height: 58px;
+        padding-right: 114px;
+      }
+      .flag-search-btn {
+        padding: 0 12px;
+      }
+      .schedule-board {
+        grid-template-columns: 58px repeat(7, minmax(0, 1fr));
+        column-gap: 6px;
+        row-gap: 8px;
+      }
+      .schedule-segment {
+        min-height: 90px;
+      }
+      .schedule-segment-top,
+      .schedule-segment-bottom {
+        min-height: 14px;
+        font-size: 9px;
+      }
+      .schedule-segment-top {
+        margin-bottom: 6px;
+      }
+      .schedule-segment-bottom {
+        margin-top: 6px;
+      }
+      .schedule-segment-line {
+        width: calc(100% - 16px);
+      }
+      .schedule-stage-card {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        margin-bottom: 6px;
+      }
+      .schedule-stage-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 9px;
+        font-size: 16px;
+      }
+      .schedule-stage-label {
+        font-size: 11px;
+      }
+      .schedule-row-title {
+        min-height: 40px;
+        font-size: 11px;
+      }
+      .schedule-time-cell {
+        min-height: 40px;
+        font-size: 11px;
+        padding: 6px 3px;
+      }
+      .chat-fab {
+        top: auto;
+        bottom: 18px;
+        right: 18px;
+        transform: none;
+        width: 64px;
+        height: 64px;
+        font-size: 26px;
+      }
+      .chat-panel {
+        top: auto;
+        right: 12px;
+        bottom: 96px;
+        transform: none;
+        width: calc(100vw - 24px);
+        height: min(560px, calc(100vh - 120px));
+      }
+    }
+  </style>
 </head>
 <body>
+  <header>
+    <a href="javascript:void(0)" onclick="alert('价格预算页面暂未接入。')">价格预算</a>
+    <a href="javascript:void(0)" class="nav-login-btn" onclick="loginToERP()">ERP 登录</a>
+  </header>
 
-    <header>
-        <div class="logo" onclick="showSection('orders')">AULALA</div>
-        <div class="nav-btns">
-            <span id="guest-nav">
-                <a href="javascript:void(0)" onclick="showSection('auth')">登录/注册</a>
-            </span>
-            <span id="user-nav" class="hidden">
-                <a href="javascript:void(0)" onclick="showSection('profile')" style="background:rgba(255,255,255,0.2)">个人中心</a>
-                <a href="javascript:void(0)" onclick="logout()">退出</a>
-            </span>
-        </div>
-    </header>
+  <main>
+    <div class="logo-container">
+      <div class="logo-main"><span class="blue">澳洲</span><span class="gold">专线联盟</span></div>
+      <div class="logo-sub">AI-EXPRESS ALLIANCE</div>
+    </div>
 
-    <section id="filter-bar" class="filter-section">
-        <input type="date" id="date-filter" class="filter-item" onchange="applyFilters()">
-        <select id="state-filter" class="filter-item" onchange="applyFilters()">
-            <option value="">州</option>
-            <option value="NSW">NSW</option>
-            <option value="VIC">VIC</option>
-            <option value="QLD">QLD</option>
-        </select>
-        <input type="text" id="suburb-input" class="filter-item" placeholder="输入区域 Suburb..." oninput="applyFilters()">
+    <section class="search-card">
+      <div class="search-wrapper">
+        <input
+          id="searchBox"
+          class="search-input"
+          type="text"
+          placeholder="输入入仓号查询轨迹 (如: MY06001294AU3)"
+        >
+        <button id="searchBtn" class="flag-search-btn" type="button" onclick="handleSearch()">
+          <span class="flag-image"></span>
+          <span>查询</span>
+        </button>
+      </div>
+      <div id="loading">正在从腾讯云调取轨迹信息，请稍候...</div>
+      <div id="errorBox" class="error-box"></div>
     </section>
 
-    <div class="container">
-        <section id="order-section">
-            <div id="order-list">
-                </div>
-        </section>
-
-        <section id="auth-section" class="hidden">
-            <div class="card" style="margin-top: 20px; padding: 30px;">
-                <div style="text-align:center; margin-bottom:20px; font-weight:bold;">司机端登录</div>
-                <input type="tel" id="login-phone" class="filter-item" style="width:100%; margin-bottom:15px; padding:0 15px;" placeholder="手机号 (13888888888)">
-                <input type="password" id="login-pass" class="filter-item" style="width:100%; margin-bottom:15px; padding:0 15px;" placeholder="密码 (123456)">
-                <button class="btn-main" onclick="handleLogin()">进入系统</button>
-            </div>
-        </section>
-
-        <section id="user-profile" class="hidden">
-            <div class="section-title">进行中的订单 (1)</div>
-            <div class="card">
-                <div class="card-header"><span class="tag" style="background:#e7f5ff;color:#1971c2">运输中</span><span class="price">$95.00</span></div>
-                
-                <div class="specs-grid">
-                    <div class="spec-item"><span class="spec-label">卡板数</span><span class="spec-val">4 Pallets</span></div>
-                    <div class="spec-item"><span class="spec-label">重量</span><span class="spec-val">850 kg</span></div>
-                    <div class="spec-item"><span class="spec-label">提货时间</span><span class="spec-val">14:00</span></div>
-                </div>
-
-                <div class="addr-box">
-                    <a href="https://www.google.com/maps/search/Regents+Park" target="_blank" class="addr">
-                        <span class="dot" style="background:var(--success)"></span>
-                        <b>提:</b> Regents Park, NSW <span class="nav-icon">导航</span>
-                    </a>
-                    <a href="https://www.google.com/maps/search/Sydney+CBD" target="_blank" class="addr">
-                        <span class="dot" style="background:var(--accent)"></span>
-                        <b>送:</b> Sydney CBD, NSW <span class="nav-icon">导航</span>
-                    </a>
-                </div>
-
-                <div style="font-size:12px; color:#666; margin-bottom:8px;">完结凭证：</div>
-                <div class="upload-area">
-                    <div class="upload-btn" onclick="simulateUpload('p1')">📷 货物照片</div>
-                    <img id="p1" class="preview-img">
-                    <div class="upload-btn" onclick="simulateUpload('p2')">✍️ 签单照片</div>
-                    <img id="p2" class="preview-img">
-                </div>
-                <button class="btn-main" onclick="completeOrder()">提交并完结订单</button>
-            </div>
-
-            <div class="section-title">历史完结单</div>
-            <div id="history-list">
-                <div class="card">
-                    <div class="card-header"><span class="tag" style="background:#ebfbee;color:#2b8a3e">已完结</span><span style="font-weight:bold">$150.00</span></div>
-                    <div style="font-size:13px; color:#666; margin-bottom:10px;">
-                        路线：Clayton → Melbourne CBD<br>
-                        时间：2024-03-22 15:45
-                    </div>
-                    <button class="btn-outline" onclick="openDetail()">查看完整详情/存证</button>
-                </div>
-            </div>
-            
-            <button class="btn-main" style="background:#666; margin-top:20px;" onclick="showSection('orders')">返回抢单大厅</button>
-        </section>
-    </div>
-
-    <div id="detail-modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeDetail()">×</span>
-            <h3 style="color:var(--primary); margin-bottom:15px; border-bottom:2px solid var(--primary); padding-bottom:10px;">订单完结凭证</h3>
-            <div class="detail-row"><span>订单编号</span><span>AU-7728192</span></div>
-            <div class="detail-row"><span>总运费</span><span style="color:var(--accent); font-weight:bold;">$150.00</span></div>
-            <div class="detail-row"><span>卡板数量</span><span>6 Pallets</span></div>
-            <div class="detail-row"><span>货物重量</span><span>1.2 Tons</span></div>
-            <div class="detail-row"><span>实际送达</span><span>03-22 15:45</span></div>
-            
-            <div style="margin-top:15px;">
-                <p style="font-size:13px; font-weight:bold; margin-bottom:5px;">现场送达照片：</p>
-                <img class="proof-img" src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=500&q=80">
-                <p style="font-size:13px; font-weight:bold; margin:15px 0 5px;">客户签收确认：</p>
-                <img class="proof-img" style="height:120px; object-fit:contain; background:#f9f9f9;" src="https://upload.wikimedia.org/wikipedia/commons/7/7d/John_Hancock_signature.svg">
-            </div>
-            <button class="btn-main" style="margin-top:20px;" onclick="closeDetail()">关闭详情</button>
+    <section id="result-container">
+      <div id="schedule-section" class="result-card schedule-panel" style="display:none;">
+        <div class="schedule-board-wrap">
+          <div id="schedule-board" class="schedule-board"></div>
         </div>
+      </div>
+
+      <div class="result-card track-panel">
+        <div class="track-header">
+          <h4 id="res-title">查询结果</h4>
+          <div id="res-summary" class="track-summary"></div>
+        </div>
+        <ul id="track-list" class="timeline"></ul>
+      </div>
+    </section>
+  </main>
+
+  <button id="chatFab" class="chat-fab" type="button" aria-label="打开官网客服">💬</button>
+  <aside id="chatPanel" class="chat-panel" aria-hidden="true">
+    <div class="chat-header">
+      <div class="chat-header-title">AI 智能客服</div>
+      <button id="chatClose" class="chat-close" type="button" aria-label="关闭客服">✕</button>
     </div>
+    <div id="chatBody" class="chat-body">
+      <div class="chat-message bot">您好！我是澳洲专线联盟官网客服。查轨迹建议直接用上方查询框；有其他疑问可以直接和我说。</div>
+    </div>
+    <div class="chat-footer">
+      <form id="chatForm" class="chat-form">
+        <input id="chatInput" class="chat-input" type="text" placeholder="输入问题..." maxlength="1000">
+        <button id="chatSend" class="chat-send" type="submit">发送</button>
+      </form>
+    </div>
+  </aside>
 
-    <script>
-        // 模拟数据（补全了卡板和重量）
-        const mockOrders = [
-            { id: 101, price: 68.0, state: 'NSW', pickup: 'Regents Park', dropoff: 'Sydney CBD', type: 'VAN', pallets: 2, weight: '400kg', time: '2026-03-24 14:00' },
-            { id: 102, price: 115.0, state: 'VIC', pickup: 'Clayton', dropoff: 'Melbourne CBD', type: 'Truck', pallets: 6, weight: '1.5t', time: '2026-03-24 10:30' },
-            { id: 103, price: 45.0, state: 'NSW', pickup: 'Hurstville', dropoff: 'Burwood', type: 'SUV', pallets: 1, weight: '50kg', time: '2026-03-25 09:00' }
-        ];
+  <footer>联盟总部：悉尼 | 官方域名：ai-express.cn</footer>
 
-        // 格式化时间
-        function formatTime(str) {
-            const t = str.split(' ');
-            return t[1];
+  <script>
+    const TRACK_API_URL = "https://api.ai-express.cn:8443/api/track";
+    const CHAT_API_URL = "https://api.ai-express.cn:8443/api/chat";
+
+    const searchBox = document.getElementById("searchBox");
+    const searchBtn = document.getElementById("searchBtn");
+    const loading = document.getElementById("loading");
+    const errorBox = document.getElementById("errorBox");
+    const resultContainer = document.getElementById("result-container");
+    const scheduleSection = document.getElementById("schedule-section");
+    const scheduleBoard = document.getElementById("schedule-board");
+    const trackList = document.getElementById("track-list");
+    const resTitle = document.getElementById("res-title");
+    const resSummary = document.getElementById("res-summary");
+    const chatFab = document.getElementById("chatFab");
+    const chatPanel = document.getElementById("chatPanel");
+    const chatClose = document.getElementById("chatClose");
+    const chatBody = document.getElementById("chatBody");
+    const chatForm = document.getElementById("chatForm");
+    const chatInput = document.getElementById("chatInput");
+    const chatSend = document.getElementById("chatSend");
+    const SCHEDULE_STEPS = [
+      { key: "warehousing", label: "入库", icon: "&#127970;", plannedKey: "planJoinDate", actualKey: "actualJoinDate" },
+      { key: "load", label: "装柜", icon: "&#128230;", plannedKey: "plannedLoadDate", actualKey: "actualLoadDate" },
+      { key: "departure", label: "离港", icon: "&#9992;&#65039;", plannedKey: "plannedDepartureDate", actualKey: "actualDepartureDate" },
+      { key: "arrival", label: "到港", icon: "&#128748;", plannedKey: "plannedArrivalDate", actualKey: "actualArrivalDate" },
+      { key: "pickup", label: "提柜", icon: "&#128666;", plannedKey: "plannedPickupDate", actualKey: "actualPickupDate" },
+      { key: "unpack", label: "拆柜", icon: "&#128736;&#65039;", plannedKey: "plannedUnpackDate", actualKey: "actualUnpackDate" },
+      { key: "delivery", label: "派送", icon: "&#9989;", plannedKey: "plannedDeliveryDate", actualKey: "actualDeliveryDate" }
+    ];
+    const SCHEDULE_SEGMENTS = [
+      { from: "warehousing", to: "load", defaultLabel: "" },
+      { from: "load", to: "departure", defaultLabel: "", statusKey: "customsStatus" },
+      { from: "departure", to: "arrival", defaultLabel: "" },
+      { from: "arrival", to: "pickup", defaultLabel: "" },
+      { from: "pickup", to: "unpack", defaultLabel: "" },
+      { from: "unpack", to: "delivery", defaultLabel: "" }
+    ];
+
+    searchBox.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        handleSearch();
+      }
+    });
+    chatFab.addEventListener("click", openChatPanel);
+    chatClose.addEventListener("click", closeChatPanel);
+    chatForm.addEventListener("submit", handleChatSubmit);
+
+    function loginToERP() {
+      window.location.href = "http://121.196.233.99";
+    }
+
+    function setLoading(isLoading) {
+      loading.style.display = isLoading ? "block" : "none";
+      searchBtn.disabled = isLoading;
+    }
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.style.display = "block";
+    }
+
+    function clearError() {
+      errorBox.textContent = "";
+      errorBox.style.display = "none";
+    }
+
+    function hideSchedule() {
+      scheduleSection.style.display = "none";
+      scheduleBoard.innerHTML = "";
+    }
+
+    function renderTimeline(replyText, timeline) {
+      const items = Array.isArray(timeline) ? timeline : [];
+      if (!items.length) {
+        trackList.innerHTML = `<li class="timeline-item latest"><div class="context">${escapeHtml(replyText || "暂无轨迹信息")}</div></li>`;
+        return;
+      }
+      trackList.innerHTML = items.map((item, index) => `
+        <li class="timeline-item ${index === 0 ? "latest" : ""}">
+          <div class="time">${escapeHtml(item.time || "")}</div>
+          <div class="context">${escapeHtml(item.info || "")}</div>
+        </li>
+      `).join("");
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll("\"", "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function normalizeMomentText(value) {
+      const text = String(value || "").trim();
+      if (!text) {
+        return "";
+      }
+      const isoMatch = text.match(/\d{4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2}(?::\d{2})?)?/);
+      if (isoMatch) {
+        return isoMatch[0];
+      }
+      const slashMatch = text.match(/\b(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}:\d{2}(?::\d{2})?))?\b/);
+      if (slashMatch) {
+        const [, day, month, year, timePart = ""] = slashMatch;
+        return `${year}-${month}-${day}${timePart ? ` ${timePart}` : ""}`;
+      }
+      return text;
+    }
+
+    function normalizeDateText(value) {
+      const text = normalizeMomentText(value);
+      if (!text) {
+        return "";
+      }
+      const match = text.match(/\d{4}-\d{2}-\d{2}/);
+      return match ? match[0] : text;
+    }
+
+    function parseScheduleFromReplyText(replyText) {
+      const result = {};
+      const mapping = {
+        "预配众筹柜": "crowdfundCode",
+        "众筹柜名称": "crowdfundName",
+        "计划进仓日期": "planJoinDate",
+        "计划进仓时间": "planJoinDate",
+        "计划入仓日期": "planJoinDate",
+        "计划入仓时间": "planJoinDate",
+        "实际进仓日期": "actualJoinDate",
+        "实际进仓时间": "actualJoinDate",
+        "实际入仓日期": "actualJoinDate",
+        "实际入仓时间": "actualJoinDate",
+        "计划装柜日期": "plannedLoadDate",
+        "计划装柜时间": "plannedLoadDate",
+        "实际装柜日期": "actualLoadDate",
+        "实际装柜时间": "actualLoadDate",
+        "计划离港日期": "plannedDepartureDate",
+        "计划离港时间": "plannedDepartureDate",
+        "计划到港日期": "plannedArrivalDate",
+        "计划到港时间": "plannedArrivalDate",
+        "实际离港日期": "actualDepartureDate",
+        "实际离港时间": "actualDepartureDate",
+        "实际到港日期": "actualArrivalDate",
+        "实际到港时间": "actualArrivalDate",
+        "计划提货日期": "plannedPickupDate",
+        "计划提货时间": "plannedPickupDate",
+        "计划提柜日期": "plannedPickupDate",
+        "计划提柜时间": "plannedPickupDate",
+        "实际提货日期": "actualPickupDate",
+        "实际提货时间": "actualPickupDate",
+        "实际提柜日期": "actualPickupDate",
+        "实际提柜时间": "actualPickupDate",
+        "实际拆柜日期": "actualUnpackDate",
+        "实际拆柜时间": "actualUnpackDate",
+        "计划拆柜日期": "plannedUnpackDate",
+        "计划拆柜时间": "plannedUnpackDate",
+        "计划派送日期": "plannedDeliveryDate",
+        "计划派送时间": "plannedDeliveryDate",
+        "实际派送日期": "actualDeliveryDate",
+        "实际派送时间": "actualDeliveryDate",
+        "实际签收日期": "actualDeliveryDate",
+        "实际签收时间": "actualDeliveryDate",
+        "进口清关日期": "importClearanceTime",
+        "进口清关时间": "importClearanceTime",
+        "清关日期": "importClearanceTime",
+        "清关时间": "importClearanceTime",
+        "进口清关状态": "importClearanceStatus",
+        "清关状态": "importClearanceStatus",
+        "报关状态": "customsStatus",
+        "报关放行状态": "customsStatus",
+        "航程状态": "voyageStatus",
+        "海运状态": "voyageStatus"
+      };
+      const textKeys = new Set([
+        "crowdfundCode",
+        "crowdfundName",
+        "customsStatus",
+        "voyageStatus",
+        "importClearanceStatus",
+      ]);
+      const lines = String(replyText || "").split("\n");
+      for (const line of lines) {
+        const match = line.trim().match(/^([^:：]+)[:：]\s*(.+)$/);
+        if (!match) {
+          continue;
+        }
+        const key = mapping[match[1].trim()];
+        if (!key) {
+          continue;
+        }
+        result[key] = textKeys.has(key)
+          ? match[2].trim()
+          : normalizeMomentText(match[2]);
+      }
+      return result;
+    }
+
+    function parseTimelineEntriesFromReplyText(replyText) {
+      const items = [];
+      for (const rawLine of String(replyText || "").split("\n")) {
+        const cleaned = rawLine.trim().replace(/^[-·•]+\s*/, "");
+        if (!cleaned) {
+          continue;
+        }
+        const match = cleaned.match(/^(\d{4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2}(?::\d{2})?)?)\s*\|\s*(.+)$/);
+        if (!match) {
+          continue;
+        }
+        items.push({
+          time: match[1].trim(),
+          info: match[2].trim(),
+        });
+      }
+      return items;
+    }
+
+    function pickText(...values) {
+      for (const value of values) {
+        const text = String(value || "").trim();
+        if (text) {
+          return text;
+        }
+      }
+      return "";
+    }
+
+    function classifyClearanceStatus(value) {
+      const text = String(value || "").trim();
+      if (!text) {
+        return "";
+      }
+      const lower = text.toLowerCase();
+      if (lower.includes("clearance processing complete") || /\bclean\b/.test(lower)) {
+        return "clean";
+      }
+      if (lower.includes("customs held") || /\bheld\b/.test(lower)) {
+        return "held";
+      }
+      return "";
+    }
+
+    function deriveStageMomentsFromTimeline(payload) {
+      const timelineEntries = Array.isArray(payload?.timeline) && payload.timeline.length
+        ? payload.timeline
+        : parseTimelineEntriesFromReplyText(payload?.replyText || "");
+      const derived = {};
+
+      const register = (key, timeValue) => {
+        const momentText = normalizeMomentText(timeValue);
+        if (!momentText || derived[key]) {
+          return;
+        }
+        derived[key] = momentText;
+      };
+
+      for (const item of timelineEntries) {
+        const info = String(item?.info || "").trim().toLowerCase();
+        if (!info) {
+          continue;
+        }
+        if (info.includes("flight dispatched")) {
+          register("actualDepartureDate", item.time);
+          continue;
+        }
+        if (info.includes("flight arrived")) {
+          register("actualArrivalDate", item.time);
+          continue;
+        }
+        if (info.includes("arrived at warehouse")) {
+          register("actualPickupDate", item.time);
+          continue;
+        }
+        if (info.includes("deconsolidation has been done")) {
+          register("actualUnpackDate", item.time);
+          continue;
+        }
+        const bookingTimeMatch = info.match(/booking time:\s*(\d{2}\/\d{2}\/\d{4}(?:\s+\d{2}:\d{2}(?::\d{2})?)?)/i);
+        if (bookingTimeMatch) {
+          register("plannedDeliveryDate", bookingTimeMatch[1]);
+        }
+        const isDeliveredEvent =
+          info.includes("parcels successfully delivered") ||
+          info.includes("parcel delivered") ||
+          info.includes("shipment delivered") ||
+          info.includes("delivered successfully");
+        if (isDeliveredEvent) {
+          register("actualDeliveryDate", item.time);
+        }
+      }
+
+      return derived;
+    }
+
+    function chooseClearanceSignals(payload, fallback) {
+      const candidates = [];
+      const pushCandidate = (timeValue, statusValue, source) => {
+        const status = classifyClearanceStatus(statusValue);
+        if (!status) {
+          return;
+        }
+        const momentText = normalizeMomentText(timeValue);
+        candidates.push({
+          source,
+          status,
+          momentText,
+          moment: parseMomentValue(momentText),
+        });
+      };
+
+      pushCandidate(
+        payload?.planSchedule?.importClearanceTime || payload?.planSchedule?.importClearanceDate,
+        payload?.planSchedule?.importClearanceStatus,
+        "api"
+      );
+      pushCandidate(fallback.importClearanceTime, fallback.importClearanceStatus, "reply");
+
+      const timelineEntries = Array.isArray(payload?.timeline) && payload.timeline.length
+        ? payload.timeline
+        : parseTimelineEntriesFromReplyText(payload?.replyText || "");
+      for (const item of timelineEntries) {
+        pushCandidate(item?.time, item?.info, "timeline");
+      }
+
+      const bestByStatus = new Map();
+      for (const item of candidates) {
+        const current = bestByStatus.get(item.status);
+        if (!current) {
+          bestByStatus.set(item.status, item);
+          continue;
+        }
+        if (item.moment && !current.moment) {
+          bestByStatus.set(item.status, item);
+          continue;
+        }
+        if (item.moment && current.moment && item.moment > current.moment) {
+          bestByStatus.set(item.status, item);
+        }
+      }
+
+      return Array.from(bestByStatus.values()).sort((a, b) => {
+        if (a.moment && b.moment) {
+          return a.moment - b.moment;
+        }
+        if (a.moment) {
+          return -1;
+        }
+        if (b.moment) {
+          return 1;
+        }
+        return a.status.localeCompare(b.status);
+      });
+    }
+
+    function hasMomentTime(value) {
+      return /\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/.test(normalizeMomentText(value));
+    }
+
+    function pickMomentText(...values) {
+      let fallback = "";
+      for (const value of values) {
+        const text = normalizeMomentText(value);
+        if (!text) {
+          continue;
+        }
+        if (hasMomentTime(text)) {
+          return text;
+        }
+        if (!fallback) {
+          fallback = text;
+        }
+      }
+      return fallback;
+    }
+
+    function buildScheduleView(payload) {
+      const apiSchedule = payload?.planSchedule && typeof payload.planSchedule === "object"
+        ? payload.planSchedule
+        : {};
+      const fallback = parseScheduleFromReplyText(payload?.replyText || "");
+      const timelineDerived = deriveStageMomentsFromTimeline(payload);
+      const clearanceSignals = chooseClearanceSignals(payload, fallback);
+      const stages = SCHEDULE_STEPS.map((step) => {
+        const plannedMoment = pickMomentText(
+          apiSchedule[step.plannedKey],
+          fallback[step.plannedKey],
+          timelineDerived[step.plannedKey],
+          Array.isArray(apiSchedule.milestones)
+            ? apiSchedule.milestones.find((item) => item?.key === step.plannedKey)?.date
+            : ""
+        );
+        const actualMoment = pickMomentText(
+          apiSchedule[step.actualKey],
+          fallback[step.actualKey],
+          timelineDerived[step.actualKey],
+          Array.isArray(apiSchedule.milestones)
+            ? apiSchedule.milestones.find((item) => item?.key === step.actualKey)?.date
+            : ""
+        );
+        return {
+          ...step,
+          plannedMoment,
+          actualMoment,
+          plannedDate: normalizeDateText(plannedMoment),
+          actualDate: normalizeDateText(actualMoment),
+        };
+      });
+      return {
+        crowdfundCode: pickText(apiSchedule.crowdfundCode, fallback.crowdfundCode),
+        crowdfundName: pickText(apiSchedule.crowdfundName, fallback.crowdfundName),
+        planJoinDate: pickText(apiSchedule.planJoinDate, fallback.planJoinDate),
+        customsStatus: pickText(apiSchedule.customsStatus, fallback.customsStatus),
+        voyageStatus: pickText(apiSchedule.voyageStatus, fallback.voyageStatus),
+        importClearanceSignals: clearanceSignals,
+        stages,
+        hasAnyDate: stages.some((item) => item.plannedDate || item.actualDate)
+      };
+    }
+
+    function isScheduleStageDone(item) {
+      if (item?.actualDate) {
+        return true;
+      }
+      if (!item?.plannedDate) {
+        return false;
+      }
+      const probe = new Date(`${item.plannedDate}T00:00:00`);
+      if (Number.isNaN(probe.getTime())) {
+        return false;
+      }
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return probe.getTime() <= today.getTime();
+    }
+
+    function formatDisplayDate(value) {
+      const text = normalizeDateText(value);
+      const match = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!match) {
+        return text;
+      }
+      return `${Number(match[2])}月${Number(match[3])}日`;
+    }
+
+    function formatMomentLabel(value) {
+      const text = normalizeMomentText(value);
+      if (!text) {
+        return "";
+      }
+      const match = text.match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{2}:\d{2})(?::\d{2})?)?$/);
+      if (!match) {
+        return text;
+      }
+      const datePart = `${Number(match[2])}月${Number(match[3])}日`;
+      return match[4] ? `${datePart} ${match[4]}` : datePart;
+    }
+
+    function normalizeSingleStatusLabel(value) {
+      const text = String(value || "").trim();
+      if (!text) {
+        return "";
+      }
+      const lower = text.toLowerCase();
+      if (lower.includes("held")) {
+        return "held";
+      }
+      if (lower.includes("clean")) {
+        return "clean";
+      }
+      if (text.includes("未报关")) {
+        return "未报关";
+      }
+      if (text.includes("已报关")) {
+        return "已报关";
+      }
+      return text.split("/")[0].trim();
+    }
+
+    function parseMomentValue(value) {
+      const text = normalizeMomentText(value);
+      if (!text) {
+        return null;
+      }
+      const isoText = /^\d{4}-\d{2}-\d{2}$/.test(text)
+        ? `${text}T00:00:00`
+        : text.replace(" ", "T");
+      const probe = new Date(isoText);
+      return Number.isNaN(probe.getTime()) ? null : probe;
+    }
+
+    function getStageMomentText(item) {
+      return item?.actualMoment || item?.plannedMoment || "";
+    }
+
+    function buildClearanceMarker(signal, stages) {
+      const status = normalizeSingleStatusLabel(signal?.status);
+      if (!status) {
+        return null;
+      }
+
+      const fallbackStart = stages.findIndex((item) => item.key === "departure");
+      const fallbackEnd = stages.findIndex((item) => item.key === "arrival");
+      const clearanceTime = normalizeMomentText(signal?.momentText);
+      const clearanceMoment = parseMomentValue(clearanceTime);
+      const knownMoments = stages
+        .map((item, index) => ({
+          index,
+          momentText: getStageMomentText(item),
+          moment: parseMomentValue(getStageMomentText(item)),
+        }))
+        .filter((item) => item.moment);
+
+      let startIndex = fallbackStart >= 0 ? fallbackStart : 0;
+      let endIndex = fallbackEnd >= 0 ? fallbackEnd : Math.min(stages.length - 1, startIndex + 1);
+
+      if (clearanceMoment && knownMoments.length >= 2) {
+        let previous = null;
+        let next = null;
+        for (const item of knownMoments) {
+          if (item.moment <= clearanceMoment) {
+            previous = item;
+          }
+          if (item.moment >= clearanceMoment) {
+            next = item;
+            break;
+          }
+        }
+        if (!previous) {
+          previous = knownMoments[0];
+          next = knownMoments[1] || next;
+        } else if (!next) {
+          next = knownMoments[knownMoments.length - 1];
+          previous = knownMoments[knownMoments.length - 2] || previous;
+        } else if (previous.index === next.index) {
+          next = knownMoments.find((item) => item.index > previous.index) || next;
+          if (previous.index === next.index) {
+            previous = [...knownMoments].reverse().find((item) => item.index < next.index) || previous;
+          }
+        }
+        if (previous && next && previous.index !== next.index) {
+          startIndex = Math.min(previous.index, next.index);
+          endIndex = Math.max(previous.index, next.index);
+        }
+      }
+
+      if (startIndex === endIndex) {
+        endIndex = Math.min(stages.length - 1, startIndex + 1);
+      }
+
+      return {
+        status,
+        timeLabel: formatMomentLabel(clearanceTime),
+        startIndex,
+        endIndex,
+      };
+    }
+
+    function buildClearanceMarkers(schedule, stages) {
+      const rawSignals = Array.isArray(schedule.importClearanceSignals)
+        ? schedule.importClearanceSignals
+        : [];
+      const markers = rawSignals
+        .map((signal) => buildClearanceMarker(signal, stages))
+        .filter(Boolean)
+        .sort((a, b) => a.startIndex - b.startIndex || a.endIndex - b.endIndex || a.status.localeCompare(b.status));
+
+      if (markers.length >= 2) {
+        const heldMarker = markers.find((item) => item.status === "held");
+        const cleanMarker = markers.find((item) => item.status === "clean");
+        if (
+          heldMarker &&
+          cleanMarker &&
+          heldMarker.startIndex === cleanMarker.startIndex &&
+          heldMarker.endIndex === cleanMarker.endIndex
+        ) {
+          const nextStart = Math.min(stages.length - 2, cleanMarker.startIndex + 1);
+          const nextEnd = Math.min(stages.length - 1, cleanMarker.endIndex + 1);
+          if (nextStart < nextEnd) {
+            cleanMarker.startIndex = nextStart;
+            cleanMarker.endIndex = nextEnd;
+          }
+        }
+      }
+
+      return markers;
+    }
+
+    function getSegmentTone(labelPart) {
+      const text = String(labelPart || "").trim().toLowerCase();
+      if (!text) {
+        return "";
+      }
+      if (text.includes("未报关") || text.includes("未放行") || text.includes("held")) {
+        return "is-negative";
+      }
+      if (text.includes("已报关") || text.includes("已放行") || text.includes("clean")) {
+        return "is-positive";
+      }
+      return "";
+    }
+
+    function renderSegmentToneHtml(text) {
+      const value = String(text || "").trim();
+      if (!value) {
+        return "&nbsp;";
+      }
+      return `<span class="schedule-segment-tone ${getSegmentTone(value)}">${escapeHtml(value)}</span>`;
+    }
+
+    function splitSegmentLabel(label) {
+      const parts = String(label || "").split("/").map((part) => part.trim()).filter(Boolean);
+      if (!parts.length) {
+        return { top: "", bottom: "" };
+      }
+      if (parts.length === 1) {
+        return { top: parts[0], bottom: "" };
+      }
+      return {
+        top: parts[0],
+        bottom: parts.slice(1).join(" / ")
+      };
+    }
+
+    function openChatPanel() {
+      chatPanel.classList.add("is-open");
+      chatPanel.setAttribute("aria-hidden", "false");
+      chatFab.style.display = "none";
+      window.setTimeout(() => chatInput.focus(), 50);
+    }
+
+    function closeChatPanel() {
+      chatPanel.classList.remove("is-open");
+      chatPanel.setAttribute("aria-hidden", "true");
+      chatFab.style.display = "flex";
+    }
+
+    function appendChatMessage(role, text) {
+      const message = document.createElement("div");
+      message.className = `chat-message ${role}`;
+      message.textContent = String(text || "").trim();
+      chatBody.appendChild(message);
+      chatBody.scrollTop = chatBody.scrollHeight;
+      return message;
+    }
+
+    async function handleChatSubmit(event) {
+      event.preventDefault();
+      const message = chatInput.value.trim();
+      if (!message) {
+        return;
+      }
+
+      appendChatMessage("user", message);
+      chatInput.value = "";
+      chatSend.disabled = true;
+      chatInput.disabled = true;
+      const loadingMessage = appendChatMessage("status", "正在回复...");
+
+      try {
+        const response = await fetch(CHAT_API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ message })
+        });
+        const rawBody = await response.text();
+        let payload = null;
+        try {
+          payload = rawBody ? JSON.parse(rawBody) : {};
+        } catch (_error) {
+          throw new Error("AI 服务返回了无效内容，请稍后重试。");
+        }
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload?.error?.message || `AI 服务异常 (${response.status})`);
+        }
+        loadingMessage.remove();
+        appendChatMessage("bot", payload.replyText || "暂时没有拿到回复，请稍后再试。");
+      } catch (error) {
+        loadingMessage.remove();
+        appendChatMessage("error", error.message || "AI 服务短暂波动，请稍后重试。");
+      } finally {
+        chatSend.disabled = false;
+        chatInput.disabled = false;
+        chatInput.focus();
+      }
+    }
+
+    function renderSchedule(payload) {
+      const schedule = buildScheduleView(payload);
+      if (!schedule.hasAnyDate) {
+        hideSchedule();
+        return;
+      }
+
+      const stages = schedule.stages.map((item) => ({
+        ...item,
+        done: isScheduleStageDone(item)
+      }));
+      const segments = SCHEDULE_SEGMENTS.map((segment) => {
+        const toStageIndex = stages.findIndex((item) => item.key === segment.to);
+        const label = segment.statusKey === "customsStatus"
+          ? (schedule.customsStatus || segment.defaultLabel)
+          : segment.statusKey === "voyageStatus"
+            ? (schedule.voyageStatus || segment.defaultLabel)
+            : segment.defaultLabel;
+        return {
+          ...segment,
+          label,
+          parts: splitSegmentLabel(label),
+          done: toStageIndex >= 0 ? stages[toStageIndex].done : false
+        };
+      });
+      const clearanceMarkers = buildClearanceMarkers(schedule, stages);
+
+      scheduleBoard.innerHTML = `
+        ${segments.map((segment, index) => `
+          <div class="schedule-segment ${segment.done ? "is-done" : ""}" style="grid-column:${index + 2} / span 2; grid-row:1;">
+            <div class="schedule-segment-top">${renderSegmentToneHtml(segment.parts.top)}</div>
+            <div class="schedule-segment-line"></div>
+            <div class="schedule-segment-bottom">${renderSegmentToneHtml(segment.parts.bottom)}</div>
+          </div>
+        `).join("")}
+        ${clearanceMarkers.map((clearanceMarker) => `
+          <div class="schedule-clearance-marker" style="grid-column:${clearanceMarker.startIndex + 2} / ${clearanceMarker.endIndex + 3}; grid-row:1;">
+            <div class="schedule-clearance-top">${renderSegmentToneHtml(clearanceMarker.status)}</div>
+            <div class="schedule-clearance-bottom">${clearanceMarker.timeLabel ? escapeHtml(clearanceMarker.timeLabel) : "&nbsp;"}</div>
+          </div>
+        `).join("")}
+        ${stages.map((item, index) => `
+          <div class="schedule-stage ${item.done ? "is-done" : ""}" style="grid-column:${index + 2}; grid-row:1;">
+            <div class="schedule-stage-card">
+              <div class="schedule-stage-icon">${item.icon}</div>
+            </div>
+            <div class="schedule-stage-label">${escapeHtml(item.label)}</div>
+          </div>
+        `).join("")}
+        <div class="schedule-row-title" style="grid-column:1; grid-row:2;">计划时间</div>
+          ${stages.map((item, index) => `
+            <div class="schedule-time-cell ${item.done ? "is-done" : ""}" style="grid-column:${index + 2}; grid-row:2;">
+              ${item.plannedDate ? escapeHtml(formatDisplayDate(item.plannedDate)) : '<span class="schedule-missing">待更新</span>'}
+            </div>
+          `).join("")}
+        <div class="schedule-row-title" style="grid-column:1; grid-row:3;">实际时间</div>
+          ${stages.map((item, index) => `
+            <div class="schedule-time-cell ${item.actualDate ? "is-done" : ""}" style="grid-column:${index + 2}; grid-row:3;">
+              ${item.actualDate ? escapeHtml(formatDisplayDate(item.actualDate)) : '<span class="schedule-missing">待更新</span>'}
+            </div>
+          `).join("")}
+      `;
+      scheduleSection.style.display = "block";
+    }
+
+    async function handleSearch() {
+      const putCode = searchBox.value.trim().toUpperCase();
+      if (!putCode) {
+        showError("请输入入仓号");
+        return;
+      }
+
+      clearError();
+      setLoading(true);
+      resultContainer.style.display = "none";
+      hideSchedule();
+      trackList.innerHTML = "";
+      resSummary.textContent = "";
+
+      try {
+        const response = await fetch(TRACK_API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ putCode })
+        });
+        const rawBody = await response.text();
+        let payload = null;
+        try {
+          payload = rawBody ? JSON.parse(rawBody) : {};
+        } catch (_error) {
+          throw new Error("查询接口返回了页面内容，请检查 api.ai-express.cn 的 HTTPS 与 /api/track 配置");
+        }
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload?.error?.message || `查询失败 (${response.status})`);
         }
 
-        // 渲染抢单大厅
-        function renderOrders(data) {
-            const list = document.getElementById('order-list');
-            const sorted = data.sort((a,b) => new Date(a.time) - new Date(b.time));
-            
-            list.innerHTML = sorted.length ? sorted.map(o => `
-                <div class="card">
-                    <div class="card-header"><span class="tag">${o.type}</span><span class="price">$${o.price.toFixed(2)}</span></div>
-                    
-                    <div class="specs-grid">
-                        <div class="spec-item"><span class="spec-label">卡板数</span><span class="spec-val">${o.pallets} Plt</span></div>
-                        <div class="spec-item"><span class="spec-label">重量</span><span class="spec-val">${o.weight}</span></div>
-                        <div class="spec-item"><span class="spec-label">提货</span><span class="spec-val" style="color:var(--accent)">${formatTime(o.time)}</span></div>
-                    </div>
-
-                    <div class="addr-box">
-                        <div class="addr"><span class="dot" style="background:var(--success)"></span><b>提:</b> ${o.pickup}, ${o.state}</div>
-                        <div class="addr"><span class="dot" style="background:var(--accent)"></span><b>送:</b> ${o.dropoff}, ${o.state}</div>
-                    </div>
-                    <button class="btn-main" onclick="tryAccept()">立即抢单</button>
-                </div>
-            `).join('') : '<div style="text-align:center;padding:50px;color:#999;">没有搜索到符合要求的货源</div>';
-        }
-
-        function applyFilters() {
-            const d = document.getElementById('date-filter').value;
-            const s = document.getElementById('state-filter').value;
-            const sub = document.getElementById('suburb-input').value.toLowerCase();
-            const filtered = mockOrders.filter(o => 
-                (!d || o.time.includes(d)) && (!s || o.state === s) && (!sub || o.pickup.toLowerCase().includes(sub))
-            );
-            renderOrders(filtered);
-        }
-
-        function showSection(sec) {
-            document.getElementById('order-section').style.display = (sec === 'orders' ? 'block' : 'none');
-            document.getElementById('filter-bar').style.display = (sec === 'orders' ? 'flex' : 'none');
-            document.getElementById('auth-section').classList.toggle('hidden', sec !== 'auth');
-            document.getElementById('user-profile').classList.toggle('hidden', sec !== 'profile');
-            window.scrollTo(0,0);
-        }
-
-        function handleLogin() {
-            const p = document.getElementById('login-phone').value;
-            const pass = document.getElementById('login-pass').value;
-            if(p === '13888888888' && pass === '123456') {
-                document.getElementById('guest-nav').classList.add('hidden');
-                document.getElementById('user-nav').classList.remove('hidden');
-                showSection('profile');
-            } else { alert("账号或密码错误"); }
-        }
-
-        function simulateUpload(id) {
-            alert("正在激活手机相机...");
-            const el = document.getElementById(id);
-            el.src = id === 'p1' ? 
-                "https://images.unsplash.com/photo-1566576721346-d4a3b4eaad5b?auto=format&fit=crop&w=200&q=80" : 
-                "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80";
-            el.style.display = "block";
-            el.previousElementSibling.style.display = "none";
-        }
-
-        function completeOrder() {
-            if(document.getElementById('p1').style.display !== 'block') {
-                alert("请先拍照！"); return;
-            }
-            alert("完结成功！运费已计入余额。");
-            showSection('orders');
-        }
-
-        function openDetail() { document.getElementById('detail-modal').style.display = "block"; }
-        function closeDetail() { document.getElementById('detail-modal').style.display = "none"; }
-        function logout() { location.reload(); }
-        function tryAccept() { if(confirm("确认抢此单吗？")) { alert("抢单成功！请在个人中心查看。"); showSection('profile'); } }
-
-        window.onload = () => renderOrders(mockOrders);
-    </script>
+        resTitle.textContent = `${payload.putCode} 轨迹结果`;
+        const timeline = Array.isArray(payload.timeline) ? payload.timeline : [];
+        resSummary.textContent = timeline.length ? `共 ${timeline.length} 条轨迹` : "已返回原始结果";
+        renderSchedule(payload);
+        renderTimeline(payload.replyText, timeline);
+        resultContainer.style.display = "grid";
+      } catch (error) {
+        hideSchedule();
+        showError(error.message || "连接腾讯云查询服务失败");
+      } finally {
+        setLoading(false);
+      }
+    }
+  </script>
 </body>
 </html>
