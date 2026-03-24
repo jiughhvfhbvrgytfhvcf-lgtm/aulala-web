@@ -163,6 +163,14 @@
             border-bottom: 1px dashed #ebedf0;
         }
 
+        .order-code {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 8px;
+            letter-spacing: 0.2px;
+        }
+
         .highlight-specs {
             display: flex;
             flex-wrap: wrap;
@@ -679,13 +687,42 @@
         </div>
     </div>
 
+    <script src="./orders-data.js"></script>
     <script>
-        const initialOrders = [
+        const fallbackOrders = [
             { id: 101, price: 95, state: "NSW", pickup: "Regents Park", dropoff: "Sydney CBD", pallets: 4, weight: "850kg", time: "24-03 14:00", date: "2026-03-24", pickupAddress: "Regents Park, NSW", dropoffAddress: "Sydney CBD, NSW" },
             { id: 102, price: 125, state: "VIC", pickup: "Clayton", dropoff: "Melbourne CBD", pallets: 6, weight: "1.2t", time: "24-03 09:30", date: "2026-03-24", pickupAddress: "Clayton, VIC", dropoffAddress: "Melbourne CBD, VIC" },
             { id: 103, price: 65, state: "NSW", pickup: "Hurstville", dropoff: "Burwood", pallets: 2, weight: "200kg", time: "25-03 10:00", date: "2026-03-25", pickupAddress: "Hurstville, NSW", dropoffAddress: "Burwood, NSW" },
             { id: 104, price: 148, state: "QLD", pickup: "Acacia Ridge", dropoff: "Brisbane City", pallets: 8, weight: "1.5t", time: "25-03 15:30", date: "2026-03-25", pickupAddress: "Acacia Ridge, QLD", dropoffAddress: "Brisbane City, QLD" }
         ];
+
+        function normalizeOrder(order, index) {
+            const weightLabel = typeof order.weight === "string"
+                ? order.weight
+                : (Number.isFinite(Number(order.weightKg)) ? `${Number(order.weightKg).toFixed(2).replace(/\.00$/, "")}kg` : "0kg");
+            return {
+                id: order.id ?? (1000 + index),
+                price: Number(order.price ?? 100),
+                state: order.state || "NSW",
+                pickup: order.pickup || "TLA",
+                dropoff: order.dropoff || order.dropoffAddress || "待分配",
+                pallets: Number(order.pallets ?? 1),
+                weight: weightLabel,
+                time: order.time || "--",
+                date: order.date || "",
+                pickupAddress: order.pickupAddress || order.pickup || "",
+                dropoffAddress: order.dropoffAddress || order.dropoff || "",
+                orderCode: order.orderCode || order.putCode || "",
+                cbm: Number(order.cbm || 0),
+                pieces: Number(order.pieces || 0),
+                source: order.source || "manual"
+            };
+        }
+
+        const externalOrders = Array.isArray(window.AULALA_ORDER_FEED?.orders) && window.AULALA_ORDER_FEED.orders.length
+            ? window.AULALA_ORDER_FEED.orders
+            : fallbackOrders;
+        const initialOrders = externalOrders.map((order, index) => normalizeOrder(order, index + 1));
 
         const state = {
             loggedIn: false,
@@ -800,9 +837,13 @@
             list.innerHTML = filtered.map(order => `
                 <div class="card">
                     <div class="card-header">
-                        <div class="highlight-specs">
-                            <span class="spec-tag">${order.pallets} Plt</span>
-                            <span class="spec-tag">${order.weight}</span>
+                        <div>
+                            ${order.orderCode ? `<div class="order-code">${order.orderCode}</div>` : ""}
+                            <div class="highlight-specs">
+                                <span class="spec-tag">${order.pallets} Plt</span>
+                                <span class="spec-tag">${order.weight}</span>
+                                ${order.cbm ? `<span class="spec-tag">${order.cbm.toFixed(2)} CBM</span>` : ""}
+                            </div>
                         </div>
                         <span class="price">${formatCurrency(order.price)}</span>
                     </div>
@@ -835,9 +876,13 @@
             return `
                 <div class="card">
                     <div class="card-header">
-                        <div class="highlight-specs">
-                            <span class="spec-tag">${order.pallets} Plt</span>
-                            <span class="spec-tag">${order.weight}</span>
+                        <div>
+                            ${order.orderCode ? `<div class="order-code">${order.orderCode}</div>` : ""}
+                            <div class="highlight-specs">
+                                <span class="spec-tag">${order.pallets} Plt</span>
+                                <span class="spec-tag">${order.weight}</span>
+                                ${order.cbm ? `<span class="spec-tag">${Number(order.cbm).toFixed(2)} CBM</span>` : ""}
+                            </div>
                         </div>
                         <span class="price">${formatCurrency(order.price)}</span>
                     </div>
@@ -971,7 +1016,10 @@
             return `
                 <div class="card">
                     <div class="card-header">
-                        <span style="font-size:14px; color:#667085;">实际提货 ${order.actualPickupTime || "待更新"}</span>
+                        <div>
+                            ${order.orderCode ? `<div class="order-code">${order.orderCode}</div>` : ""}
+                            <span style="font-size:14px; color:#667085;">实际提货 ${order.actualPickupTime || "待更新"}</span>
+                        </div>
                         <span class="status-chip status-completed">已完成 ${formatCurrency(order.price)}</span>
                     </div>
                     <div class="history-line">路线: ${order.pickup} → ${order.dropoff} (${order.pallets} Pallets)</div>
@@ -1180,6 +1228,7 @@
 
             document.getElementById("detail-content").innerHTML = `
                 <h3 style="color:var(--primary); margin-bottom:15px; border-bottom:2px solid var(--primary); padding-bottom:10px;">历史订单详情</h3>
+                ${order.orderCode ? `<div class="detail-row"><span>入仓号</span><span>${order.orderCode}</span></div>` : ""}
                 <div class="detail-row"><span>结算运费</span><span style="color:var(--accent); font-weight:800;">${formatCurrency(order.price)}</span></div>
                 <div class="detail-row"><span>实际提货时间</span><span>${order.actualPickupTime || "待更新"}</span></div>
                 <div class="detail-row"><span>预约提货时刻</span><span>${order.scheduledPickupTime || "--"}</span></div>
