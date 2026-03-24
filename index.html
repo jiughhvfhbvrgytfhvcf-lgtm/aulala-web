@@ -2,14 +2,14 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Aulala | 澳洲货运抢单中心</title>
     <style>
         /* 基础样式复位 */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f4f7f9; color: #1a1b1e; line-height: 1.5; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f7f9; color: #1a1b1e; line-height: 1.5; }
         
-        /* 导航栏 - 保持品牌色 */
+        /* 导航栏 - 品牌蓝色调 */
         header { 
             background: #002b7f; color: white; padding: 12px 20px; 
             display: flex; justify-content: space-between; align-items: center;
@@ -21,37 +21,33 @@
             margin-left: 8px; border: 1px solid rgba(255,255,255,0.4); 
             padding: 4px 12px; border-radius: 20px; transition: 0.3s;
         }
-        .nav-btns a:hover { background: rgba(255,255,255,0.2); }
 
-        /* 搜索筛选栏 - 类似货拉拉的置顶操作 */
+        /* 增强筛选栏 - 支持日期筛选 */
         .filter-section {
             background: white; padding: 12px; position: sticky; top: 52px; 
-            z-index: 999; border-bottom: 1px solid #eee; display: flex; gap: 8px;
+            z-index: 999; border-bottom: 1px solid #eee; display: flex; flex-wrap: wrap; gap: 8px;
         }
         .filter-section select, .filter-section input {
-            border: 1px solid #e0e0e0; border-radius: 6px; padding: 8px; font-size: 14px; outline: none;
+            border: 1px solid #e0e0e0; border-radius: 6px; padding: 8px; font-size: 13px; outline: none; flex: 1; min-width: 100px;
         }
-        .filter-section select { flex: 1; background-color: #f8f9fa; }
-        .filter-section input { flex: 2; }
+        .filter-section .full-width { flex: 100%; }
 
         .container { padding: 12px; max-width: 600px; margin: 0 auto; min-height: 100vh; }
 
-        /* 登录模块 */
-        #auth-section { display: none; background: white; padding: 30px; border-radius: 16px; margin-top: 50px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        /* 注册登录模块 - 扩展字段 */
+        #auth-section { display: none; background: white; padding: 25px; border-radius: 16px; margin-top: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
         .tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #eee; }
         .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #888; font-weight: bold; }
         .tab.active { color: #002b7f; border-bottom: 2px solid #002b7f; }
-        .auth-input { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; }
-        .btn-auth { width: 100%; background: #002b7f; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .auth-input { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; background: #fff; }
+        .section-title { font-size: 12px; color: #002b7f; margin: 15px 0 8px 2px; font-weight: bold; text-transform: uppercase; border-left: 3px solid #002b7f; padding-left: 8px; }
+        .btn-auth { width: 100%; background: #002b7f; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
 
-        /* 订单列表容器 */
-        #order-list { margin-top: 10px; }
-        
-        /* 订单卡片增强 */
+        /* 订单卡片样式 */
         .order-card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f0f0f0; }
         .order-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
         .tag-vehicle { background: #fff9db; color: #f08c00; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid #ffe066; }
-        .price { color: #e63946; font-size: 20px; font-weight: 800; }
+        .price { color: #e63946; font-size: 22px; font-weight: 800; }
         
         .goods-specs { display: flex; background: #f1f3f5; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 12px; justify-content: space-between; }
         .spec-item { text-align: center; flex: 1; }
@@ -64,9 +60,7 @@
         .addr-dot { position: absolute; left: -21px; top: 5px; width: 10px; height: 10px; border-radius: 50%; }
         
         .btn-accept { width: 100%; background: #002b7f; color: white; border: none; padding: 14px; border-radius: 50px; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-accept:active { transform: scale(0.98); opacity: 0.9; }
-
-        /* 空状态 */
+        .btn-accept:active { transform: scale(0.97); }
         .empty-state { text-align: center; padding: 40px; color: #adb5bd; }
     </style>
 </head>
@@ -82,13 +76,14 @@
 
     <section id="filter-wrapper" class="filter-section">
         <select id="state-filter" onchange="applyFilters()">
-            <option value="">全澳洲</option>
+            <option value="">所有地区 (State)</option>
             <option value="NSW">NSW (新州)</option>
             <option value="VIC">VIC (维州)</option>
             <option value="QLD">QLD (昆州)</option>
             <option value="WA">WA (西澳)</option>
         </select>
-        <input type="text" id="suburb-input" placeholder="输入区域名 (Suburb)" oninput="applyFilters()">
+        <input type="date" id="date-filter" onchange="applyFilters()">
+        <input type="text" id="suburb-input" placeholder="输入区域名搜索 (Suburb)" oninput="applyFilters()" class="full-width">
     </section>
 
     <div class="container">
@@ -98,18 +93,30 @@
                 <div class="tab" id="tab-reg" onclick="switchAuthMode('reg')">申请加入</div>
             </div>
             <div id="auth-form-content">
-                <input type="text" id="phone" class="auth-input" placeholder="手机号">
+                <input type="tel" class="auth-input" placeholder="手机号 (Mobile)">
+                
                 <div id="reg-only-fields" style="display:none;">
-                    <input type="text" class="auth-input" placeholder="真实姓名">
+                    <input type="text" class="auth-input" placeholder="真实姓名 (Full Name)">
+                    
+                    <div class="section-title">车辆详情</div>
+                    <input type="text" class="auth-input" placeholder="车牌号 (License Plate)">
                     <select class="auth-input">
-                        <option>车型：SUV/轿车</option>
-                        <option>车型：面包车 (Van)</option>
-                        <option>车型：小型货车 (Ute)</option>
-                        <option>车型：大货车 (Truck)</option>
+                        <option value="">请选择车型 (Vehicle Type)</option>
+                        <option>SUV / Car</option>
+                        <option>Van (面包车)</option>
+                        <option>Ute (皮卡)</option>
+                        <option>Medium Truck (中型货车)</option>
+                        <option>Heavy Truck (大型货车)</option>
                     </select>
+
+                    <div class="section-title">结算账户 (用于发放运费)</div>
+                    <input type="text" class="auth-input" placeholder="开户行名称 (Bank Name)">
+                    <input type="text" class="auth-input" placeholder="BSB (6位数字)">
+                    <input type="text" class="auth-input" placeholder="账号 (Account Number)">
                 </div>
-                <input type="password" class="auth-input" placeholder="密码">
-                <button class="btn-auth" onclick="handleAuthSubmit()">立即进入</button>
+
+                <input type="password" class="auth-input" placeholder="登录密码">
+                <button class="btn-auth" onclick="handleAuthSubmit()">提交资料并进入</button>
             </div>
         </section>
 
@@ -120,65 +127,84 @@
     </div>
 
     <script>
-        // 1. 模拟数据 (实际开发请对接 http://121.196.233.99)
+        /**
+         * 1. 模拟货源数据
+         * 实际开发中请通过 fetch API 接入 http://121.196.233.99
+         */
         const mockData = [
-            { id: 1, price: 55.00, state: 'NSW', pickup: 'Regents Park', dropoff: 'Sydney CBD', type: 'SUV / VAN', specs: ['2 Pallets', '今天 14:00', '400kg'] },
-            { id: 2, price: 125.50, state: 'VIC', pickup: 'Clayton', dropoff: 'Melbourne CBD', type: 'VAN', specs: ['4 Pallets', '明天 09:00', '800kg'] },
-            { id: 3, price: 88.00, state: 'NSW', pickup: 'Burwood', dropoff: 'Parramatta', type: 'SUV', specs: ['1 Pallet', '今天 16:00', '150kg'] },
-            { id: 4, price: 210.00, state: 'QLD', pickup: 'Brisbane Port', dropoff: 'Gold Coast', type: 'TRUCK', specs: ['8 Pallets', '周一 08:00', '2500kg'] }
+            { id: 202401, price: 65.00, state: 'NSW', pickup: 'Regents Park', dropoff: 'Sydney CBD', type: 'VAN', pallets: '2', weight: '450kg', pickupTime: '2026-03-24 15:30' },
+            { id: 202402, price: 140.00, state: 'VIC', pickup: 'Clayton', dropoff: 'Melbourne CBD', type: 'TRUCK', pallets: '5', weight: '1.2t', pickupTime: '2026-03-25 08:30' },
+            { id: 202403, price: 85.00, state: 'NSW', pickup: 'Burwood', dropoff: 'Parramatta', type: 'SUV', pallets: '1', weight: '100kg', pickupTime: '2026-03-24 14:00' },
+            { id: 202404, price: 195.00, state: 'QLD', pickup: 'Brisbane Port', dropoff: 'Gold Coast', type: 'TRUCK', pallets: '6', weight: '2.0t', pickupTime: '2026-03-26 10:00' }
         ];
 
-        // 2. 核心渲染函数
+        /**
+         * 2. 时间格式化工具 (输出格式: 24-03 14:00)
+         */
+        function formatDisplayTime(dateStr) {
+            const d = new Date(dateStr.replace(/-/g, "/"));
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const hours = String(d.getHours()).padStart(2, '0');
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            return `${day}-${month} ${hours}:${minutes}`;
+        }
+
+        /**
+         * 3. 渲染引擎：自动按提货时间升序排序
+         */
         function renderOrders(orders) {
             const listContainer = document.getElementById('order-list');
-            if (orders.length === 0) {
-                listContainer.innerHTML = '<div class="empty-state">暂无匹配货源，换个区域试试吧</div>';
+            
+            // 排序逻辑：时间越早（越近）排在越上面
+            const sortedOrders = orders.sort((a, b) => new Date(a.pickupTime) - new Date(b.pickupTime));
+
+            if (sortedOrders.length === 0) {
+                listContainer.innerHTML = '<div class="empty-state">当前条件下暂无货源</div>';
                 return;
             }
 
-            listContainer.innerHTML = orders.map(order => `
+            listContainer.innerHTML = sortedOrders.map(order => `
                 <div class="order-card">
                     <div class="order-header">
                         <span class="tag-vehicle">${order.type}</span>
                         <span class="price">$${order.price.toFixed(2)}</span>
                     </div>
                     <div class="goods-specs">
-                        <div class="spec-item"><span class="spec-label">规格</span><span class="spec-value">${order.specs[0]}</span></div>
-                        <div class="spec-item"><span class="spec-label">装货时间</span><span class="spec-value">${order.specs[1]}</span></div>
-                        <div class="spec-item"><span class="spec-label">重量</span><span class="spec-value">${order.specs[2]}</span></div>
+                        <div class="spec-item"><span class="spec-label">货量</span><span class="spec-value">${order.pallets} Pallets</span></div>
+                        <div class="spec-item"><span class="spec-label">装货时间</span><span class="spec-value" style="color:#e63946">${formatDisplayTime(order.pickupTime)}</span></div>
+                        <div class="spec-item"><span class="spec-label">载重</span><span class="spec-value">${order.weight}</span></div>
                     </div>
                     <div class="address-box">
-                        <div class="addr">
-                            <span class="addr-dot" style="background:#28a745;"></span>
-                            <b>提:</b> ${order.pickup}, ${order.state}
-                        </div>
-                        <div class="addr">
-                            <span class="addr-dot" style="background:#e63946;"></span>
-                            <b>送:</b> ${order.dropoff}, ${order.state}
-                        </div>
+                        <div class="addr"><span class="addr-dot" style="background:#28a745;"></span><b>提:</b> ${order.pickup}, ${order.state}</div>
+                        <div class="addr"><span class="addr-dot" style="background:#d62828;"></span><b>送:</b> ${order.dropoff}, ${order.state}</div>
                     </div>
                     <button class="btn-accept" onclick="tryAccept(${order.id})">立即抢单</button>
                 </div>
             `).join('');
         }
 
-        // 3. 筛选逻辑
+        /**
+         * 4. 筛选逻辑：支持 州、日期、区域
+         */
         function applyFilters() {
-            const stateFilter = document.getElementById('state-filter').value;
-            const suburbFilter = document.getElementById('suburb-input').value.toLowerCase();
+            const stateVal = document.getElementById('state-filter').value;
+            const dateVal = document.getElementById('date-filter').value; // YYYY-MM-DD
+            const suburbVal = document.getElementById('suburb-input').value.toLowerCase();
 
             const filtered = mockData.filter(item => {
-                const matchState = stateFilter === "" || item.state === stateFilter;
-                const matchSuburb = suburbFilter === "" || 
-                                   item.pickup.toLowerCase().includes(suburbFilter) || 
-                                   item.dropoff.toLowerCase().includes(suburbFilter);
-                return matchState && matchSuburb;
+                const matchState = stateVal === "" || item.state === stateVal;
+                const matchSuburb = suburbVal === "" || item.pickup.toLowerCase().includes(suburbVal) || item.dropoff.toLowerCase().includes(suburbVal);
+                const matchDate = dateVal === "" || item.pickupTime.startsWith(dateVal);
+                return matchState && matchSuburb && matchDate;
             });
 
             renderOrders(filtered);
         }
 
-        // 4. 界面切换逻辑
+        /**
+         * 5. 交互逻辑
+         */
         function showSection(section, mode) {
             const isAuth = (section === 'auth');
             document.getElementById('order-section').style.display = isAuth ? 'none' : 'block';
@@ -194,20 +220,19 @@
             document.getElementById('tab-reg').className = isReg ? 'tab active' : 'tab';
         }
 
-        // 5. 交互处理
         function handleAuthSubmit() {
-            // 这里你可以对接 ERP 登录 API
-            alert("正在身份验证...");
+            // 提醒用户正在连接 ERP
+            alert("资料已提交，正在连接 ERP (121.196.233.99) 审核身份...");
             showSection('orders');
         }
 
         function tryAccept(id) {
-            if(confirm(`确认抢下 ${id} 号订单吗？\n接单后请尽快前往提货点。`)) {
-                alert("抢单成功！请在'我的订单'中查看联系方式。");
+            if(confirm(`确认抢下订单 #${id} 吗？`)) {
+                alert("抢单成功！请尽快前往装货点。");
             }
         }
 
-        // 初始化加载
+        // 页面初始化
         window.onload = () => renderOrders(mockData);
     </script>
 </body>
