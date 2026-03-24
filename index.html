@@ -611,7 +611,7 @@
                 <option value="VIC">VIC</option>
                 <option value="QLD">QLD</option>
             </select>
-            <input type="text" id="suburb-input" class="filter-item" placeholder="搜索区域 Suburb..." oninput="applyFilters()">
+            <input type="text" id="suburb-input" class="filter-item" placeholder="搜索区域 / 入仓号..." oninput="applyFilters()">
         </div>
     </section>
 
@@ -811,16 +811,26 @@
             const list = document.getElementById("order-list");
             const date = document.getElementById("date-filter").value;
             const selectedState = document.getElementById("state-filter").value;
-            const suburb = document.getElementById("suburb-input").value.trim().toLowerCase();
+            const searchKeyword = document.getElementById("suburb-input").value.trim().toLowerCase();
 
             const filtered = state.availableOrders
                 .filter(order => !date || order.date === date)
                 .filter(order => !selectedState || order.state === selectedState)
                 .filter(order => {
-                    if (!suburb) {
+                    if (!searchKeyword) {
                         return true;
                     }
-                    return `${order.pickup} ${order.dropoff}`.toLowerCase().includes(suburb);
+                    return [
+                        order.orderCode,
+                        order.pickup,
+                        order.dropoff,
+                        order.pickupAddress,
+                        order.dropoffAddress
+                    ]
+                        .filter(Boolean)
+                        .join(" ")
+                        .toLowerCase()
+                        .includes(searchKeyword);
                 })
                 .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
 
@@ -828,7 +838,7 @@
                 list.innerHTML = `
                     <div class="card empty-card">
                         <div style="font-size:16px; font-weight:800; color:#344054; margin-bottom:6px;">没有匹配订单</div>
-                        <div>换个州、日期或 Suburb 再试试。</div>
+                        <div>换个州、日期、区域关键词或入仓号再试试。</div>
                     </div>
                 `;
                 return;
