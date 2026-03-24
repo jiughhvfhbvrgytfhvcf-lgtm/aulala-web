@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>司机登录 | Aulala</title>
+    <style>
+        body { font-family: -apple-system, system-ui, sans-serif; background: #f4f7f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 90%; max-width: 400px; }
+        .tabs { display: flex; margin-bottom: 25px; border-bottom: 2px solid #eee; }
+        .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #888; font-weight: bold; }
+        .tab.active { color: #002b7f; border-bottom: 2px solid #002b7f; }
+        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; outline: none; box-sizing: border-box; }
+        .btn-main { width: 100%; background: #002b7f; color: white; border: none; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .footer-link { text-align: center; margin-top: 15px; font-size: 13px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="tabs">
+            <div class="tab active" id="loginTab" onclick="switchTab('login')">登录</div>
+            <div class="tab" id="regTab" onclick="switchTab('reg')">注册账号</div>
+        </div>
+
+        <div id="loginForm">
+            <input type="text" id="phone" placeholder="请输入手机号">
+            <input type="password" id="pw" placeholder="请输入密码">
+            <button class="btn-main" onclick="doLogin()">立即登录</button>
+        </div>
+
+        <div id="regForm" style="display: none;">
+            <input type="text" placeholder="手机号">
+            <input type="text" placeholder="姓名">
+            <input type="text" placeholder="车型 (如：丰田 HiAce)">
+            <input type="password" placeholder="设置密码">
+            <button class="btn-main" style="background: #28a745;">提交注册</button>
+        </div>
+        
+        <div class="footer-link">
+            登录即代表同意《Aulala 司机服务协议》
+        </div>
+    </div>
+
+    <script>
+        function switchTab(type) {
+            const isLogin = type === 'login';
+            document.getElementById('loginForm').style.display = isLogin ? 'block' : 'none';
+            document.getElementById('regForm').style.display = isLogin ? 'none' : 'block';
+            document.getElementById('loginTab').className = isLogin ? 'tab active' : 'tab';
+            document.getElementById('regTab').className = isLogin ? 'tab' : 'tab active';
+        }
+
+        function doLogin() {
+            const phone = document.getElementById('phone').value;
+            if(!phone) return alert("请输入手机号");
+            // 这里后期对接 ERP 的登录接口
+            alert("正在通过 ERP (121.196.233.99) 验证身份...");
+            // 登录成功后跳转回首页
+            window.location.href = "index.html";
+        }
+    </script>
+</body>
+</html>
