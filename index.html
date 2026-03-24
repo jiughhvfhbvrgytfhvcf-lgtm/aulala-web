@@ -3,58 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aulala | 澳洲货运接单中心</title>
+    <title>Aulala | 澳洲货运抢单中心</title>
     <style>
-        body { font-family: -apple-system, system-ui, sans-serif; background: #f0f2f5; margin: 0; color: #1a1b1e; }
-        .header { background: #002b7f; color: white; padding: 20px; text-align: center; font-weight: bold; font-size: 1.2rem; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: #f0f2f5; color: #1a1b1e; }
+        
+        /* 导航栏 */
+        header { 
+            background: #002b7f; color: white; padding: 15px 20px; 
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .logo { font-weight: bold; font-size: 18px; }
+        .nav-btns a { 
+            color: white; text-decoration: none; font-size: 14px; 
+            margin-left: 10px; border: 1px solid rgba(255,255,255,0.3); 
+            padding: 5px 12px; border-radius: 4px; 
+        }
+
         .container { padding: 15px; max-width: 600px; margin: 0 auto; }
-        
-        /* 订单卡片风格 */
-        .order-card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #eee; }
+
+        /* 登录注册模块样式 */
+        #auth-section { display: none; background: white; padding: 30px; border-radius: 16px; margin-top: 20vh; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #eee; }
+        .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #888; font-weight: bold; }
+        .tab.active { color: #002b7f; border-bottom: 2px solid #002b7f; }
+        input, select { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
+        .btn-auth { width: 100%; background: #002b7f; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+
+        /* 订单卡片样式 */
+        .order-card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .order-meta { display: flex; justify-content: space-between; margin-bottom: 15px; }
-        .tag { background: #ffcd00; color: #002b7f; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; }
-        .price { color: #e63946; font-size: 1.2rem; font-weight: bold; }
+        .price { color: #e63946; font-size: 22px; font-weight: bold; }
         
-        .address-box { position: relative; padding-left: 20px; border-left: 2px dashed #ddd; margin: 10px 0 10px 10px; }
-        .address-item { margin-bottom: 15px; position: relative; }
-        .address-item::before { content: ''; position: absolute; left: -26px; top: 5px; width: 10px; height: 10px; border-radius: 50%; }
-        .pickup::before { background: #28a745; }
-        .dropoff::before { background: #d62828; }
+        .goods-specs { display: flex; background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; justify-content: space-around; }
+        .spec-item { display: flex; flex-direction: column; align-items: center; }
+        .spec-label { color: #888; margin-bottom: 2px; }
+        .spec-value { font-weight: bold; color: #002b7f; }
+
+        .address-line { border-left: 2px dashed #ddd; margin-left: 10px; padding-left: 20px; position: relative; }
+        .address-item { margin-bottom: 15px; }
+        .dot { position: absolute; left: -6px; width: 10px; height: 10px; border-radius: 50%; }
         
-        .label { font-size: 12px; color: #888; }
-        .detail { font-size: 15px; font-weight: 600; }
-        
-        .btn-accept { width: 100%; background: #002b7f; color: white; border: none; padding: 15px; border-radius: 30px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn-accept:active { background: #001a4d; }
+        .btn-accept { width: 100%; background: #002b7f; color: white; border: none; padding: 16px; border-radius: 30px; font-size: 16px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div class="header">Aulala 司机抢单中心</div>
-    <div class="container" id="orderList">
-        <div class="order-card">
-            <div class="order-meta">
-                <span class="tag">Van / SUV 可接</span>
-                <span class="price">$55.00</span>
-            </div>
-            <div class="address-box">
-                <div class="address-item pickup">
-                    <div class="label">提货 (Pickup)</div>
-                    <div class="detail">Regents Park Warehouse, NSW 2143</div>
-                </div>
-                <div class="address-item dropoff">
-                    <div class="label">送货 (Drop-off)</div>
-                    <div class="detail">Sydney CBD, NSW 2000</div>
-                </div>
-            </div>
-            <button class="btn-accept" onclick="handleAccept('ORD88291')">立即抢单</button>
+
+    <header>
+        <div class="logo" onclick="showSection('orders')">AULALA 货运</div>
+        <div class="nav-btns">
+            <a href="javascript:void(0)" onclick="showSection('auth', 'reg')">注册</a>
+            <a href="javascript:void(0)" onclick="showSection('auth', 'login')">登录</a>
         </div>
+    </header>
+
+    <div class="container">
+        <section id="auth-section">
+            <div class="tabs">
+                <div class="tab" id="tab-login" onclick="switchAuthMode('login')">司机登录</div>
+                <div class="tab" id="tab-reg" onclick="switchAuthMode('reg')">申请加入</div>
+            </div>
+            <div id="auth-form-content">
+                <input type="text" id="phone" placeholder="手机号">
+                <div id="reg-only-fields" style="display:none;">
+                    <input type="text" placeholder="姓名">
+                    <select>
+                        <option>车型：SUV/轿车</option>
+                        <option>车型：面包车 (Van)</option>
+                        <option>车型：小型货车 (Ute)</option>
+                    </select>
+                </div>
+                <input type="password" placeholder="密码">
+                <button class="btn-auth" onclick="handleAuthSubmit()">确认</button>
+            </div>
+        </section>
+
+        <section id="order-section">
+            <div class="order-card">
+                <div class="order-meta">
+                    <span style="background:#ffcd00; padding:4px 8px; border-radius:4px; font-size:12px; font-weight:bold;">SUV / VAN</span>
+                    <span class="price">$55.00</span>
+                </div>
+                <div class="goods-specs">
+                    <div class="spec-item"><span class="spec-label">卡板数</span><span class="spec-value">2 Pallets</span></div>
+                    <div class="spec-item"><span class="spec-label">提货时间</span><span class="spec-value">今天 14:00</span></div>
+                    <div class="spec-item"><span class="spec-label">重量</span><span class="spec-value">400kg</span></div>
+                </div>
+                <div class="address-line">
+                    <div class="address-item"><span class="dot" style="background:#28a745;"></span><b>提货:</b> Regents Park, NSW</div>
+                    <div class="address-item"><span class="dot" style="background:#d62828;"></span><b>送货:</b> Sydney CBD, NSW</div>
+                </div>
+                <button class="btn-accept" onclick="tryAccept()">立即抢单</button>
+            </div>
+        </section>
     </div>
 
     <script>
-        function handleAccept(orderId) {
-            if(confirm('确认接下订单 ' + orderId + ' 吗？')) {
-                // 此处对接 ERP 修改状态
-                alert('抢单成功！请准时前往提货点。');
+        // 核心逻辑：切换显示模块
+        function showSection(section, mode) {
+            document.getElementById('order-section').style.display = (section === 'orders') ? 'block' : 'none';
+            document.getElementById('auth-section').style.display = (section === 'auth') ? 'block' : 'none';
+            if(mode) switchAuthMode(mode);
+        }
+
+        // 切换登录/注册表单内容
+        function switchAuthMode(mode) {
+            const isReg = (mode === 'reg');
+            document.getElementById('reg-only-fields').style.display = isReg ? 'block' : 'none';
+            document.getElementById('tab-login').className = isReg ? 'tab' : 'tab active';
+            document.getElementById('tab-reg').className = isReg ? 'tab active' : 'tab';
+        }
+
+        function handleAuthSubmit() {
+            alert("正在连接 ERP (121.196.233.99) 验证身份...");
+            showSection('orders');
+        }
+
+        function tryAccept() {
+            if(confirm("接单需先登录，现在去登录吗？")) {
+                showSection('auth', 'login');
             }
         }
     </script>
