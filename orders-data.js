@@ -1,5 +1,5 @@
 window.AULALA_ORDER_FEED = {
-  "generatedAt": "2026-03-25 00:11:30",
+  "generatedAt": "2026-03-25 00:14:07",
   "source": "fbadidi-erp-bridge",
   "rules": {
     "pickupAddress": "TLA",
