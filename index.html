@@ -206,6 +206,11 @@
             gap: 12px;
         }
 
+        .time-box.time-box-confirmed {
+            background: #ebfbee;
+            border-color: #c3fae8;
+        }
+
         .time-label {
             font-size: 12px;
             color: #e03131;
@@ -218,6 +223,55 @@
             font-weight: 900;
             letter-spacing: 0.4px;
             text-align: right;
+        }
+
+        .time-box.time-box-confirmed .time-label {
+            color: #2b8a3e;
+        }
+
+        .time-box.time-box-confirmed .time-val {
+            color: #2f9e44;
+        }
+
+        .clearance-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: -4px;
+            margin-bottom: 12px;
+        }
+
+        .clearance-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 800;
+            border: 1px solid transparent;
+        }
+
+        .clearance-chip.clearance-clean {
+            background: #ebfbee;
+            border-color: #c3fae8;
+            color: #2b8a3e;
+        }
+
+        .clearance-chip.clearance-held {
+            background: #fff4e6;
+            border-color: #ffe8cc;
+            color: #d9480f;
+        }
+
+        .clearance-chip.clearance-pending {
+            background: #fff5f5;
+            border-color: #ffe3e3;
+            color: #c92a2a;
+        }
+
+        .clearance-chip.clearance-unknown {
+            background: #f2f4f7;
+            border-color: #d0d5dd;
+            color: #475467;
         }
 
         .addr-box {
@@ -700,6 +754,7 @@
             const weightLabel = typeof order.weight === "string"
                 ? order.weight
                 : (Number.isFinite(Number(order.weightKg)) ? `${Number(order.weightKg).toFixed(2).replace(/\.00$/, "")}kg` : "0kg");
+            const clearanceStatus = normalizeClearanceStatus(order.clearanceStatus || order.clearanceStatusRaw);
             return {
                 id: order.id ?? (1000 + index),
                 price: Number(order.price ?? 100),
@@ -715,7 +770,19 @@
                 orderCode: order.orderCode || order.putCode || "",
                 cbm: Number(order.cbm || 0),
                 pieces: Number(order.pieces || 0),
-                source: order.source || "manual"
+                source: order.source || "manual",
+                expectedPickupTime: order.expectedPickupTime || "",
+                pickupTimeLabel: order.pickupTimeLabel || "预计提货时间",
+                pickupTimeStatus: order.pickupTimeStatus || (order.pickupTimeColor === "green" ? "confirmed" : "estimated"),
+                pickupTimeColor: order.pickupTimeColor || (order.pickupTimeStatus === "confirmed" ? "green" : "red"),
+                pickupTimeBasis: order.pickupTimeBasis || "",
+                clearanceStatus,
+                clearanceStatusRaw: order.clearanceStatusRaw || order.clearanceStatus || "",
+                clearanceStatusLabel: order.clearanceStatusLabel || clearanceStatusText(clearanceStatus),
+                actualLeavePortTime: order.actualLeavePortTime || "",
+                planArrivedPortTime: order.planArrivedPortTime || "",
+                actualArrivedPortTime: order.actualArrivedPortTime || "",
+                importClearanceTime: order.importClearanceTime || ""
             };
         }
 
@@ -758,6 +825,70 @@
 
         function formatCurrency(value) {
             return `$${Number(value).toFixed(2)}`;
+        }
+
+        function normalizeClearanceStatus(value) {
+            const text = String(value || "").trim().toLowerCase();
+            if (!text) {
+                return "";
+            }
+            if (text === "2") {
+                return "clean";
+            }
+            if (text === "1") {
+                return "held";
+            }
+            return text;
+        }
+
+        function clearanceStatusText(status) {
+            if (status === "clean") {
+                return "清关已放行";
+            }
+            if (status === "held") {
+                return "清关查验中";
+            }
+            if (status) {
+                return `清关状态 ${status.toUpperCase()}`;
+            }
+            return "清关待放行";
+        }
+
+        function clearanceChipClass(order) {
+            const status = normalizeClearanceStatus(order.clearanceStatus || order.clearanceStatusRaw);
+            if (status === "clean") {
+                return "clearance-chip clearance-clean";
+            }
+            if (status === "held") {
+                return "clearance-chip clearance-held";
+            }
+            if (!status) {
+                return "clearance-chip clearance-pending";
+            }
+            return "clearance-chip clearance-unknown";
+        }
+
+        function pickupTimeMeta(order, valueOverride = "") {
+            const confirmed = order.pickupTimeStatus === "confirmed" || order.pickupTimeColor === "green";
+            return {
+                boxClass: confirmed ? "time-box time-box-confirmed" : "time-box",
+                label: order.pickupTimeLabel || order.scheduledPickupLabel || "预计提货时间",
+                value: valueOverride || order.scheduledPickupTime || order.time || "--",
+                textClass: confirmed ? "color:#2f9e44;" : "color:#c92a2a;"
+            };
+        }
+
+        function renderPickupTimePanel(order, valueOverride = "") {
+            const meta = pickupTimeMeta(order, valueOverride);
+            return `
+                <div class="${meta.boxClass}">
+                    <span class="time-label">${meta.label}</span>
+                    <span class="time-val">${meta.value}</span>
+                </div>
+                <div class="clearance-row">
+                    <span class="${clearanceChipClass(order)}">${order.clearanceStatusLabel || clearanceStatusText(order.clearanceStatus)}</span>
+                </div>
+            `;
         }
 
         function nowStamp() {
@@ -858,10 +989,7 @@
                         <span class="price">${formatCurrency(order.price)}</span>
                     </div>
 
-                    <div class="time-box">
-                        <span class="time-label">提货日期时刻:</span>
-                        <span class="time-val">${order.time}</span>
-                    </div>
+                    ${renderPickupTimePanel(order)}
 
                     <div class="addr-box">
                         <div class="addr">
@@ -903,10 +1031,7 @@
                         <div class="${flowClass(order.status, 2)}"><strong>派送途中</strong><span>卸货后待回单</span></div>
                     </div>
 
-                    <div class="time-box">
-                        <span class="time-label">预约提货时刻:</span>
-                        <span class="time-val">${order.scheduledPickupTime}</span>
-                    </div>
+                    ${renderPickupTimePanel(order, order.scheduledPickupTime)}
 
                     ${renderRouteBox(order)}
 
@@ -1136,6 +1261,7 @@
                 ...order,
                 status: "waiting_pickup",
                 scheduledPickupTime: order.time,
+                scheduledPickupLabel: order.pickupTimeLabel || "预计提货时间",
                 actualPickupTime: "",
                 deliveredAt: "",
                 pickupPhoto: "",
@@ -1241,7 +1367,8 @@
                 ${order.orderCode ? `<div class="detail-row"><span>入仓号</span><span>${order.orderCode}</span></div>` : ""}
                 <div class="detail-row"><span>结算运费</span><span style="color:var(--accent); font-weight:800;">${formatCurrency(order.price)}</span></div>
                 <div class="detail-row"><span>实际提货时间</span><span>${order.actualPickupTime || "待更新"}</span></div>
-                <div class="detail-row"><span>预约提货时刻</span><span>${order.scheduledPickupTime || "--"}</span></div>
+                <div class="detail-row"><span>${order.scheduledPickupLabel || order.pickupTimeLabel || "预计提货时间"}</span><span style="${order.pickupTimeStatus === "confirmed" ? "color:#2f9e44; font-weight:800;" : "color:#c92a2a; font-weight:800;"}">${order.scheduledPickupTime || order.time || "--"}</span></div>
+                <div class="detail-row"><span>清关状态</span><span>${order.clearanceStatusLabel || clearanceStatusText(order.clearanceStatus)}</span></div>
                 <div class="detail-row"><span>送达完成时间</span><span>${order.deliveredAt || "--"}</span></div>
                 <div class="detail-row"><span>提货地点</span><span>${order.pickupAddress}</span></div>
                 <div class="detail-row"><span>送达地点</span><span>${order.dropoffAddress}</span></div>
