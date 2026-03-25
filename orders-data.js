@@ -1,5 +1,5 @@
 window.AULALA_ORDER_FEED = {
-  "generatedAt": "2026-03-25 09:24:54",
+  "generatedAt": "2026-03-25 09:28:00",
   "source": "fbadidi-erp-bridge",
   "rules": {
     "pickupAddress": "TLA",
@@ -13,10 +13,15 @@ window.AULALA_ORDER_FEED = {
     "minimumPriceAud": 80.0,
     "intrastateRateCardPath": "/Users/yangxiaochun/项目/fbadidi/pricing/2025私人卡派价格.xlsx",
     "intrastateCityCode": "SYD",
+    "metroRateCardCities": [
+      "BNE",
+      "MEL",
+      "SYD"
+    ],
     "intrastateChargeableRatio": 250.0,
     "intrastateFuelSurchargeRate": 0.1,
     "expectedPickupTime": "use actual_unpack_time + 1 day, or plan_unpack_time + 1 day when actual is missing; if computed date is earlier than today, clamp to today and preserve time-of-day",
-    "priceFormula": "same-state orders use the workbook zone rate based on postcode zone (fallback: 15/30/60/90KM) and chargeableWeightKg=max(weightKg, cbm*intrastateChargeableRatio), then add fuel surcharge; other states keep max(minimumPriceAud, distanceKm * pallets * audPerKmPerPallet)"
+    "priceFormula": "orders whose destination postcode is covered by the workbook metro zones use the matching city rate card (SYD/MEL/BNE), chargeableWeightKg=max(weightKg, cbm*intrastateChargeableRatio), plus fuel surcharge; uncovered orders keep max(minimumPriceAud, distanceKm * pallets * audPerKmPerPallet)"
   },
   "orders": [
     {
