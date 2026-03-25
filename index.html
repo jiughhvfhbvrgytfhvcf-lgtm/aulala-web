@@ -286,16 +286,26 @@
         .addr {
             margin-bottom: 10px;
             position: relative;
-            display: block;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
             text-decoration: none;
             color: #444;
         }
 
+        .addr-text {
+            flex: 1;
+            min-width: 0;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
         .addr-trailing {
-            float: right;
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            flex-shrink: 0;
         }
 
         .dot {
@@ -779,6 +789,7 @@
                 clearanceStatus,
                 clearanceStatusRaw: order.clearanceStatusRaw || order.clearanceStatus || "",
                 clearanceStatusLabel: order.clearanceStatusLabel || clearanceStatusText(clearanceStatus),
+                clearanceStatusShortLabel: order.clearanceStatusShortLabel || clearanceStatusShortText(clearanceStatus),
                 actualLeavePortTime: order.actualLeavePortTime || "",
                 planArrivedPortTime: order.planArrivedPortTime || "",
                 actualArrivedPortTime: order.actualArrivedPortTime || "",
@@ -852,6 +863,36 @@
                 return `清关状态 ${status.toUpperCase()}`;
             }
             return "清关待放行";
+        }
+
+        function clearanceStatusShortText(status) {
+            if (status === "clean") {
+                return "已放行";
+            }
+            if (status === "held") {
+                return "查验中";
+            }
+            if (status) {
+                return status.toUpperCase();
+            }
+            return "待放行";
+        }
+
+        function orderCodeLabel(order) {
+            if (!order.orderCode) {
+                return "";
+            }
+            const status = normalizeClearanceStatus(order.clearanceStatus || order.clearanceStatusRaw);
+            const suffix = order.clearanceStatusShortLabel || clearanceStatusShortText(status);
+            return suffix ? `${order.orderCode}(${suffix})` : order.orderCode;
+        }
+
+        function pickupAddressText(order) {
+            return order.pickupAddress || order.pickup || "--";
+        }
+
+        function dropoffAddressText(order) {
+            return order.dropoffAddress || order.dropoff || "--";
         }
 
         function clearanceChipClass(order) {
@@ -979,7 +1020,7 @@
                 <div class="card">
                     <div class="card-header">
                         <div>
-                            ${order.orderCode ? `<div class="order-code">${order.orderCode}</div>` : ""}
+                            ${order.orderCode ? `<div class="order-code">${orderCodeLabel(order)}</div>` : ""}
                             <div class="highlight-specs">
                                 <span class="spec-tag">${order.pallets} Plt</span>
                                 <span class="spec-tag">${order.weight}</span>
@@ -994,14 +1035,14 @@
                     <div class="addr-box">
                         <div class="addr">
                             <span class="dot" style="background:var(--success)"></span>
-                            <b>提:</b> ${order.pickup}
-                            <span class="nav-icon">导航</span>
-                            <span class="state-label">${order.state}</span>
+                            <span class="addr-text"><b>提:</b> ${pickupAddressText(order)}</span>
+                            <span class="addr-trailing">
+                                <span class="nav-icon">导航</span>
+                            </span>
                         </div>
                         <div class="addr">
                             <span class="dot" style="background:var(--accent)"></span>
-                            <b>送:</b> ${order.dropoff}
-                            <span class="state-label">${order.state}</span>
+                            <span class="addr-text"><b>送:</b> ${dropoffAddressText(order)}</span>
                         </div>
                     </div>
 
@@ -1015,7 +1056,7 @@
                 <div class="card">
                     <div class="card-header">
                         <div>
-                            ${order.orderCode ? `<div class="order-code">${order.orderCode}</div>` : ""}
+                            ${order.orderCode ? `<div class="order-code">${orderCodeLabel(order)}</div>` : ""}
                             <div class="highlight-specs">
                                 <span class="spec-tag">${order.pallets} Plt</span>
                                 <span class="spec-tag">${order.weight}</span>
@@ -1049,7 +1090,7 @@
                 <div class="addr-box">
                     <a href="${pickupUrl}" target="_blank" class="addr">
                         <span class="dot" style="background:var(--success)"></span>
-                        提: ${order.pickup}
+                        <span class="addr-text">提: ${pickupAddressText(order)}</span>
                         <span class="addr-trailing">
                             <span class="nav-icon">导航</span>
                         </span>
@@ -1059,9 +1100,9 @@
                             ? `
                                 <a href="${dropoffUrl}" target="_blank" class="addr">
                                     <span class="dot" style="background:var(--accent)"></span>
-                                    送: ${order.dropoffAddress || order.dropoff}
+                                    <span class="addr-text">送: ${dropoffAddressText(order)}</span>
                                     <span class="addr-trailing">
-                                        <span class="copy-btn" onclick="event.preventDefault(); event.stopPropagation(); copyAddress('${escapeForJs(order.dropoffAddress || order.dropoff)}', '送货地址')">复制</span>
+                                        <span class="copy-btn" onclick="event.preventDefault(); event.stopPropagation(); copyAddress('${escapeForJs(dropoffAddressText(order))}', '送货地址')">复制</span>
                                         <span class="nav-icon">导航</span>
                                     </span>
                                 </a>
@@ -1069,7 +1110,7 @@
                             : `
                                 <div class="addr">
                                     <span class="dot" style="background:var(--accent)"></span>
-                                    送: ${order.dropoffAddress || order.dropoff}
+                                    <span class="addr-text">送: ${dropoffAddressText(order)}</span>
                                 </div>
                                 <div class="addr-locked-note">上传提货照片后，才显示送货导航和复制按钮。</div>
                             `
@@ -1152,12 +1193,14 @@
                 <div class="card">
                     <div class="card-header">
                         <div>
-                            ${order.orderCode ? `<div class="order-code">${order.orderCode}</div>` : ""}
+                            ${order.orderCode ? `<div class="order-code">${orderCodeLabel(order)}</div>` : ""}
                             <span style="font-size:14px; color:#667085;">实际提货 ${order.actualPickupTime || "待更新"}</span>
                         </div>
                         <span class="status-chip status-completed">已完成 ${formatCurrency(order.price)}</span>
                     </div>
-                    <div class="history-line">路线: ${order.pickup} → ${order.dropoff} (${order.pallets} Pallets)</div>
+                    <div class="history-line">提货地址: ${pickupAddressText(order)}</div>
+                    <div class="history-line">送货地址: ${dropoffAddressText(order)}</div>
+                    <div class="history-line">货物规格: ${order.pallets} Pallets / ${order.weight}</div>
                     <div class="history-line">送达时间: ${order.deliveredAt || "--"}</div>
                     <button class="btn-outline" onclick="openDetail(${order.id})">查看完整详情/回单照片</button>
                 </div>
@@ -1364,7 +1407,7 @@
 
             document.getElementById("detail-content").innerHTML = `
                 <h3 style="color:var(--primary); margin-bottom:15px; border-bottom:2px solid var(--primary); padding-bottom:10px;">历史订单详情</h3>
-                ${order.orderCode ? `<div class="detail-row"><span>入仓号</span><span>${order.orderCode}</span></div>` : ""}
+                ${order.orderCode ? `<div class="detail-row"><span>入仓号</span><span>${orderCodeLabel(order)}</span></div>` : ""}
                 <div class="detail-row"><span>结算运费</span><span style="color:var(--accent); font-weight:800;">${formatCurrency(order.price)}</span></div>
                 <div class="detail-row"><span>实际提货时间</span><span>${order.actualPickupTime || "待更新"}</span></div>
                 <div class="detail-row"><span>${order.scheduledPickupLabel || order.pickupTimeLabel || "预计提货时间"}</span><span style="${order.pickupTimeStatus === "confirmed" ? "color:#2f9e44; font-weight:800;" : "color:#c92a2a; font-weight:800;"}">${order.scheduledPickupTime || order.time || "--"}</span></div>
