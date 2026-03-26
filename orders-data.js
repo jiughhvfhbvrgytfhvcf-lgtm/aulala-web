@@ -1,5 +1,5 @@
 window.AULALA_ORDER_FEED = {
-  "generatedAt": "2026-03-26 00:12:12",
+  "generatedAt": "2026-03-26 09:03:28",
   "source": "fbadidi-erp-api-bridge",
   "rules": {
     "pickupAddress": "悉尼",
@@ -170,6 +170,14 @@ window.AULALA_ORDER_FEED = {
         "provider": "TLA"
       },
       {
+        "orderCode": "QY02000422AU2",
+        "provider": "TLA"
+      },
+      {
+        "orderCode": "QY10000289AU2",
+        "provider": "TLA"
+      },
+      {
         "orderCode": "QY06001771AU2",
         "provider": "TLA"
       },
@@ -190,7 +198,35 @@ window.AULALA_ORDER_FEED = {
         "provider": "TLA"
       },
       {
+        "orderCode": "MY01000095AU4",
+        "provider": "TLA"
+      },
+      {
+        "orderCode": "MY10000371AU2",
+        "provider": "TLA"
+      },
+      {
+        "orderCode": "MY01000025AU6",
+        "provider": "TLA"
+      },
+      {
+        "orderCode": "MY01000201AU2",
+        "provider": "TLA"
+      },
+      {
+        "orderCode": "QY02000338AU4",
+        "provider": "TLA"
+      },
+      {
+        "orderCode": "MY02001124BWU2",
+        "provider": "TLA"
+      },
+      {
         "orderCode": "MY09000334AU2",
+        "provider": "TLA"
+      },
+      {
+        "orderCode": "MY02000493AU2",
         "provider": "TLA"
       },
       {
@@ -339,6 +375,22 @@ window.AULALA_ORDER_FEED = {
       },
       {
         "orderCode": "QY06014247BWU2",
+        "provider": "TLA"
+      },
+      {
+        "orderCode": "QY02001534BWU2",
+        "provider": "TLA"
+      },
+      {
+        "orderCode": "MY02000372AU4",
+        "provider": "TLA"
+      },
+      {
+        "orderCode": "MY02001130BWU2",
+        "provider": "TLA"
+      },
+      {
+        "orderCode": "MY02001128BWU2",
         "provider": "TLA"
       },
       {
@@ -658,10 +710,6 @@ window.AULALA_ORDER_FEED = {
         "provider": "TLA"
       },
       {
-        "orderCode": "MY02001102BWU2",
-        "provider": "TLA"
-      },
-      {
         "orderCode": "QY04001858BWU2",
         "provider": "TLA"
       },
@@ -683,10 +731,6 @@ window.AULALA_ORDER_FEED = {
       },
       {
         "orderCode": "QY02001449BWU2",
-        "provider": "TLA"
-      },
-      {
-        "orderCode": "QY04001855BWU2",
         "provider": "TLA"
       },
       {
@@ -786,7 +830,7 @@ window.AULALA_ORDER_FEED = {
       "refId": "",
       "provider": "",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 02:17:04"
+      "sourceRefreshedAt": "2026-03-26 02:26:19"
     },
     {
       "id": 1002,
@@ -850,7 +894,7 @@ window.AULALA_ORDER_FEED = {
       "refId": "QY06001783AU2",
       "provider": "SINOLINX",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 17:32:42"
+      "sourceRefreshedAt": "2026-03-26 03:04:35"
     },
     {
       "id": 1003,
@@ -908,13 +952,13 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeColor": "green",
       "expectedPickupTime": "2026-04-12 00:00",
       "clearanceStatus": "clean",
-      "clearanceStatusRaw": "2",
+      "clearanceStatusRaw": "clean",
       "clearanceStatusLabel": "已放行",
       "chargeCode": "",
       "refId": "",
       "provider": "",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 22:17:33"
+      "sourceRefreshedAt": "2026-03-26 03:30:25"
     },
     {
       "id": 1004,
@@ -978,7 +1022,7 @@ window.AULALA_ORDER_FEED = {
       "refId": "",
       "provider": "",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 22:37:37"
+      "sourceRefreshedAt": "2026-03-26 03:30:27"
     },
     {
       "id": 1005,
@@ -1042,7 +1086,7 @@ window.AULALA_ORDER_FEED = {
       "refId": "MYH002982",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 18:45:40"
+      "sourceRefreshedAt": "2026-03-26 02:25:45"
     },
     {
       "id": 1006,
@@ -1106,7 +1150,7 @@ window.AULALA_ORDER_FEED = {
       "refId": "MYH002980",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 02:12:11"
+      "sourceRefreshedAt": "2026-03-26 02:10:21"
     },
     {
       "id": 1007,
@@ -1170,7 +1214,7 @@ window.AULALA_ORDER_FEED = {
       "refId": "MYH002973",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 17:37:56"
+      "sourceRefreshedAt": "2026-03-26 02:18:59"
     },
     {
       "id": 1008,
@@ -1234,7 +1278,7 @@ window.AULALA_ORDER_FEED = {
       "refId": "MYH002941",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 02:14:25"
+      "sourceRefreshedAt": "2026-03-26 02:11:55"
     },
     {
       "id": 1009,
@@ -1298,7 +1342,7 @@ window.AULALA_ORDER_FEED = {
       "refId": "MYH002940",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 02:14:35"
+      "sourceRefreshedAt": "2026-03-26 02:12:07"
     },
     {
       "id": 1010,
@@ -1362,7 +1406,7 @@ window.AULALA_ORDER_FEED = {
       "refId": "",
       "provider": "",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 02:42:34"
+      "sourceRefreshedAt": "2026-03-26 02:45:42"
     },
     {
       "id": 1011,
@@ -1426,7 +1470,7 @@ window.AULALA_ORDER_FEED = {
       "refId": "MYH002974",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 17:42:07"
+      "sourceRefreshedAt": "2026-03-26 03:08:31"
     },
     {
       "id": 1012,
@@ -1490,7 +1534,7 @@ window.AULALA_ORDER_FEED = {
       "refId": "MYH002972",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 17:42:30"
+      "sourceRefreshedAt": "2026-03-26 02:19:19"
     },
     {
       "id": 1013,
@@ -1547,14 +1591,14 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
       "expectedPickupTime": "2026-03-27 00:00",
-      "clearanceStatus": "",
-      "clearanceStatusRaw": "",
-      "clearanceStatusLabel": "待放行",
+      "clearanceStatus": "held",
+      "clearanceStatusRaw": "held",
+      "clearanceStatusLabel": "查验中",
       "chargeCode": "-1",
       "refId": "MYH002970",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 02:12:31"
+      "sourceRefreshedAt": "2026-03-26 02:11:49"
     },
     {
       "id": 1014,
@@ -1565,7 +1609,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Mount Pleasant",
       "pallets": 1,
       "weight": "119kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "101 Daniel St, Mount Pleasant, QLD, 4740",
@@ -1610,7 +1654,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -1618,7 +1662,7 @@ window.AULALA_ORDER_FEED = {
       "refId": "",
       "provider": "",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 10:04:16"
+      "sourceRefreshedAt": "2026-03-26 02:45:47"
     },
     {
       "id": 1015,
@@ -1629,7 +1673,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Burpengary",
       "pallets": 1,
       "weight": "20kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "37 Henderson Road, Burpengary, QLD, 4505",
@@ -1674,7 +1718,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -1682,7 +1726,7 @@ window.AULALA_ORDER_FEED = {
       "refId": "MYH002979",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 17:36:00"
+      "sourceRefreshedAt": "2026-03-26 02:17:54"
     },
     {
       "id": 1016,
@@ -1693,7 +1737,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Macquarie Fields",
       "pallets": 1,
       "weight": "22kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "83 Helicia road, macquarie fields, NSW, 2564",
@@ -1738,7 +1782,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -1746,7 +1790,7 @@ window.AULALA_ORDER_FEED = {
       "refId": "MYH002977",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 02:12:24"
+      "sourceRefreshedAt": "2026-03-26 02:11:16"
     },
     {
       "id": 1017,
@@ -1757,7 +1801,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Frenchs Forest",
       "pallets": 1,
       "weight": "30kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "18 Dakara Drive,, frenchs forest, NSW, 2086",
@@ -1802,7 +1846,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -1810,7 +1854,7 @@ window.AULALA_ORDER_FEED = {
       "refId": "MYH002976",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 17:31:04"
+      "sourceRefreshedAt": "2026-03-26 02:16:25"
     },
     {
       "id": 1018,
@@ -1821,7 +1865,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Greenvale",
       "pallets": 1,
       "weight": "134.6kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "11 palmaston drive, Greenvale, VIC, 3059",
@@ -1866,7 +1910,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -1874,7 +1918,7 @@ window.AULALA_ORDER_FEED = {
       "refId": "MYH002978",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 17:42:15"
+      "sourceRefreshedAt": "2026-03-26 02:19:17"
     },
     {
       "id": 1019,
@@ -1885,7 +1929,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Villawood",
       "pallets": 1,
       "weight": "30kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "2B/246 Miller Road, Villawood, NSW, 2163",
@@ -1930,7 +1974,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -1938,7 +1982,7 @@ window.AULALA_ORDER_FEED = {
       "refId": "MYH002968",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 17:38:09"
+      "sourceRefreshedAt": "2026-03-26 02:19:02"
     },
     {
       "id": 1020,
@@ -1949,7 +1993,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Villawood",
       "pallets": 1,
       "weight": "22kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "2B/246 Miller Road, Villawood, NSW, 2163",
@@ -1994,7 +2038,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -2002,7 +2046,7 @@ window.AULALA_ORDER_FEED = {
       "refId": "MYH002969",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 17:58:44"
+      "sourceRefreshedAt": "2026-03-26 02:20:07"
     },
     {
       "id": 1021,
@@ -2013,7 +2057,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Parramatta Park",
       "pallets": 1,
       "weight": "30kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "3/8 Clare Street, Parramatta Park, QLD, 4870",
@@ -2058,7 +2102,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -2066,7 +2110,7 @@ window.AULALA_ORDER_FEED = {
       "refId": "MYH002961",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 18:07:01"
+      "sourceRefreshedAt": "2026-03-26 02:20:10"
     },
     {
       "id": 1022,
@@ -2077,7 +2121,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Heathmont",
       "pallets": 1,
       "weight": "110kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "12 Cuthbert Street, Heathmont, Heathmont., VIC, 3135",
@@ -2122,7 +2166,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -2130,7 +2174,7 @@ window.AULALA_ORDER_FEED = {
       "refId": "MYH002967",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 17:46:06"
+      "sourceRefreshedAt": "2026-03-26 02:19:38"
     },
     {
       "id": 1023,
@@ -2141,7 +2185,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Pimpama",
       "pallets": 1,
       "weight": "48kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "39 Baldwin Crescent, Pimpama, QLD, 4209",
@@ -2186,7 +2230,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -2194,74 +2238,10 @@ window.AULALA_ORDER_FEED = {
       "refId": "MYH002962",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 17:46:52"
+      "sourceRefreshedAt": "2026-03-26 02:19:50"
     },
     {
       "id": 1024,
-      "orderCode": "QY02000398AU2",
-      "price": 18.15,
-      "state": "NSW",
-      "pickup": "悉尼",
-      "dropoff": "Smithfield",
-      "pallets": 1,
-      "weight": "30kg",
-      "time": "27-03 00:12",
-      "date": "2026-03-27",
-      "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
-      "dropoffAddress": "U2/17 Tarlington Place, SMITHFIELD, NSW, 2164",
-      "pieces": 2,
-      "cbm": 0.06,
-      "weightKg": 30.0,
-      "distanceKm": 35.4,
-      "distancePricingBasis": "osrm",
-      "pricingModel": "tla_rate_card",
-      "pricingVendor": "TLA",
-      "destinationPostcode": "2164",
-      "chargeableWeightKg": 30.0,
-      "chargeableCbm": 0.12,
-      "unloadCityCode": "SYD",
-      "tlaRateCardPrice": 18.15,
-      "zonghengRateCardPrice": 44.0,
-      "distanceFallbackPrice": 106.12,
-      "rateCardVendor": "TLA",
-      "rateCardCityCode": "SYD",
-      "rateCardZone": "ZONE2",
-      "rateCardZoneLabel": "ZONE2",
-      "rateCardZoneBasis": "postcode_zone",
-      "rateCardZoneMaxKm": 30,
-      "rateCardRowMaxKg": 30.0,
-      "rateCardRowMaxCbm": 0.12,
-      "rateCardBasePrice": 16.5,
-      "rateCardFuelSurchargeRate": 0.1,
-      "rateCardFuelSurchargeAud": 1.65,
-      "rateCardInterstateFromCityCode": null,
-      "rateCardInterstateToCityCode": null,
-      "rateCardInterstateRatePerCbm": null,
-      "rateCardInterstateBillableCbm": null,
-      "rateCardInterstateFeeAud": null,
-      "rateCardLocalPricePerCbm": null,
-      "rateCardLocalMinimumCharge": null,
-      "rateCardLocalBillableCbm": null,
-      "actualLeavePortTime": "2026-03-13",
-      "planArrivedPortTime": "2026-03-14",
-      "actualArrivedPortTime": "2026-03-14",
-      "importClearanceTime": "",
-      "pickupTimeBasis": "today_plus_1_after_7_days_without_clearance",
-      "pickupTimeLabel": "预计提货时间",
-      "pickupTimeStatus": "estimated",
-      "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
-      "clearanceStatus": "",
-      "clearanceStatusRaw": "",
-      "clearanceStatusLabel": "待放行",
-      "chargeCode": "-1",
-      "refId": "MYH002955",
-      "provider": "HUNTER",
-      "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 18:16:43"
-    },
-    {
-      "id": 1025,
       "orderCode": "MY02000068MEL1",
       "price": 33.0,
       "state": "VIC",
@@ -2269,7 +2249,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Dandenong South",
       "pallets": 1,
       "weight": "36kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "29 National Drive, Dandenong South, VIC, 3175",
@@ -2314,7 +2294,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -2322,10 +2302,10 @@ window.AULALA_ORDER_FEED = {
       "refId": "",
       "provider": "",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 02:32:12"
+      "sourceRefreshedAt": "2026-03-26 02:32:19"
     },
     {
-      "id": 1026,
+      "id": 1025,
       "orderCode": "QY06000071AU5",
       "price": 84.39,
       "state": "SA",
@@ -2333,7 +2313,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Torrens Park",
       "pallets": 1,
       "weight": "40kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "10 John fisher drive, Torrens park, SA, 5062",
@@ -2378,7 +2358,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -2386,10 +2366,10 @@ window.AULALA_ORDER_FEED = {
       "refId": "MYH002951",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 02:15:12"
+      "sourceRefreshedAt": "2026-03-26 02:12:59"
     },
     {
-      "id": 1027,
+      "id": 1026,
       "orderCode": "MY06000415XBW3",
       "price": 44.0,
       "state": "NSW",
@@ -2397,7 +2377,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Kemps Creek",
       "pallets": 1,
       "weight": "103kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "19 Giba Drive, Kemps Creek, NSW, 2178",
@@ -2442,7 +2422,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -2450,74 +2430,10 @@ window.AULALA_ORDER_FEED = {
       "refId": "",
       "provider": "",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 02:32:19"
+      "sourceRefreshedAt": "2026-03-26 02:32:24"
     },
     {
-      "id": 1028,
-      "orderCode": "QY02000416AU3",
-      "price": 85.8,
-      "state": "VIC",
-      "pickup": "悉尼",
-      "dropoff": "Bayswater",
-      "pallets": 1,
-      "weight": "100kg",
-      "time": "27-03 00:12",
-      "date": "2026-03-27",
-      "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
-      "dropoffAddress": "F 18 / 21 Barry Street, Bayswater, VIC, 3153",
-      "pieces": 5,
-      "cbm": 0.58,
-      "weightKg": 100.0,
-      "distanceKm": 861.7,
-      "distancePricingBasis": "osrm",
-      "pricingModel": "tla_rate_card",
-      "pricingVendor": "TLA",
-      "destinationPostcode": "3153",
-      "chargeableWeightKg": 145.75,
-      "chargeableCbm": 0.583,
-      "unloadCityCode": "SYD",
-      "tlaRateCardPrice": 85.8,
-      "zonghengRateCardPrice": 108.13,
-      "distanceFallbackPrice": 2585.17,
-      "rateCardVendor": "TLA",
-      "rateCardCityCode": "MEL",
-      "rateCardZone": "ZONE3",
-      "rateCardZoneLabel": "ZONE3",
-      "rateCardZoneBasis": "postcode_zone",
-      "rateCardZoneMaxKm": 60,
-      "rateCardRowMaxKg": 150.0,
-      "rateCardRowMaxCbm": 0.6,
-      "rateCardBasePrice": 78.0,
-      "rateCardFuelSurchargeRate": 0.1,
-      "rateCardFuelSurchargeAud": 7.8,
-      "rateCardInterstateFromCityCode": null,
-      "rateCardInterstateToCityCode": null,
-      "rateCardInterstateRatePerCbm": null,
-      "rateCardInterstateBillableCbm": null,
-      "rateCardInterstateFeeAud": null,
-      "rateCardLocalPricePerCbm": null,
-      "rateCardLocalMinimumCharge": null,
-      "rateCardLocalBillableCbm": null,
-      "actualLeavePortTime": "2026-03-05",
-      "planArrivedPortTime": "2026-03-07",
-      "actualArrivedPortTime": "2026-03-07",
-      "importClearanceTime": "",
-      "pickupTimeBasis": "today_plus_1_after_7_days_without_clearance",
-      "pickupTimeLabel": "预计提货时间",
-      "pickupTimeStatus": "estimated",
-      "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
-      "clearanceStatus": "",
-      "clearanceStatusRaw": "",
-      "clearanceStatusLabel": "待放行",
-      "chargeCode": "-1",
-      "refId": "MYH002929",
-      "provider": "HUNTER",
-      "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 18:28:29"
-    },
-    {
-      "id": 1029,
+      "id": 1027,
       "orderCode": "MY02000130AU6",
       "price": 11534.79,
       "state": "WA",
@@ -2525,7 +2441,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Landsdale",
       "pallets": 1,
       "weight": "51kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "Unit 1, 14 Fallon Road, Landsdale, WA, 6065",
@@ -2570,7 +2486,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -2578,10 +2494,10 @@ window.AULALA_ORDER_FEED = {
       "refId": "MYH002933",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 02:12:21"
+      "sourceRefreshedAt": "2026-03-26 02:11:14"
     },
     {
-      "id": 1030,
+      "id": 1028,
       "orderCode": "QY08000031AU6",
       "price": 11476.54,
       "state": "WA",
@@ -2589,7 +2505,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Lathlain",
       "pallets": 1,
       "weight": "20kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "5 Getting St, Lathlain, WA, 6100",
@@ -2634,7 +2550,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -2642,10 +2558,10 @@ window.AULALA_ORDER_FEED = {
       "refId": "MYH002935",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 02:15:05"
+      "sourceRefreshedAt": "2026-03-26 02:12:55"
     },
     {
-      "id": 1031,
+      "id": 1029,
       "orderCode": "MY06005271BWU2",
       "price": 41.8,
       "state": "NSW",
@@ -2653,7 +2569,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Kemps Creek",
       "pallets": 1,
       "weight": "40.71kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "13 Emporium Avenue, Kemps Creek, NSW, 2178",
@@ -2698,7 +2614,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -2706,10 +2622,10 @@ window.AULALA_ORDER_FEED = {
       "refId": "270-BWU2-0130",
       "provider": "AOOBAO",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 10:40:53"
+      "sourceRefreshedAt": "2026-03-26 02:45:51"
     },
     {
-      "id": 1032,
+      "id": 1030,
       "orderCode": "MY06005300BWU2",
       "price": 11.55,
       "state": "NSW",
@@ -2717,7 +2633,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Kemps Creek",
       "pallets": 1,
       "weight": "7.9kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "13 Emporium Avenue, Kemps Creek, NSW, 2178",
@@ -2762,7 +2678,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -2770,10 +2686,10 @@ window.AULALA_ORDER_FEED = {
       "refId": "270-BWU2-0130",
       "provider": "AOOBAO",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 11:24:00"
+      "sourceRefreshedAt": "2026-03-26 02:45:53"
     },
     {
-      "id": 1033,
+      "id": 1031,
       "orderCode": "QY06013639BWU2",
       "price": 44.0,
       "state": "NSW",
@@ -2781,7 +2697,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Kemps Creek",
       "pallets": 1,
       "weight": "167.7kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "13 Emporium Avenue, Kemps Creek, NSW, 2178",
@@ -2826,7 +2742,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -2834,10 +2750,10 @@ window.AULALA_ORDER_FEED = {
       "refId": "270-BWU2-0130",
       "provider": "AOOBAO",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 15:40:03"
+      "sourceRefreshedAt": "2026-03-26 02:45:57"
     },
     {
-      "id": 1034,
+      "id": 1032,
       "orderCode": "MY06000419XBW3",
       "price": 119.64,
       "state": "NSW",
@@ -2845,7 +2761,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Kemps Creek",
       "pallets": 2,
       "weight": "150kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "19 Giba Drive, Kemps Creek, NSW, 2178",
@@ -2890,7 +2806,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -2898,10 +2814,10 @@ window.AULALA_ORDER_FEED = {
       "refId": "",
       "provider": "",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 02:32:18"
+      "sourceRefreshedAt": "2026-03-26 02:32:22"
     },
     {
-      "id": 1035,
+      "id": 1033,
       "orderCode": "QY06000070CKY",
       "price": 22.0,
       "state": "NSW",
@@ -2909,7 +2825,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Villawood",
       "pallets": 1,
       "weight": "58kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "9B/2 Christina road, Villawood, NSW, 2163",
@@ -2954,7 +2870,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -2962,10 +2878,10 @@ window.AULALA_ORDER_FEED = {
       "refId": "MYH002912",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 02:14:48"
+      "sourceRefreshedAt": "2026-03-26 02:12:37"
     },
     {
-      "id": 1036,
+      "id": 1034,
       "orderCode": "QY06001698AU2",
       "price": 49.63,
       "state": "NSW",
@@ -2973,7 +2889,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Georges Hall",
       "pallets": 1,
       "weight": "282kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "Number 4 Owen road, Georges Hall, NSW, 2198",
@@ -3018,7 +2934,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -3026,10 +2942,10 @@ window.AULALA_ORDER_FEED = {
       "refId": "MYH002903",
       "provider": "HUNTER",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 02:15:02"
+      "sourceRefreshedAt": "2026-03-26 02:12:52"
     },
     {
-      "id": 1037,
+      "id": 1035,
       "orderCode": "MY06000247BNE1",
       "price": 33.0,
       "state": "QLD",
@@ -3037,7 +2953,7 @@ window.AULALA_ORDER_FEED = {
       "dropoff": "Lytton",
       "pallets": 1,
       "weight": "32kg",
-      "time": "27-03 00:12",
+      "time": "27-03 09:03",
       "date": "2026-03-27",
       "pickupAddress": "16 Erskine Road, Caringbah NSW 2229, Australia",
       "dropoffAddress": "42-52 EXPORT STREETY, LYTTON, QLD, 4178",
@@ -3082,7 +2998,7 @@ window.AULALA_ORDER_FEED = {
       "pickupTimeLabel": "预计提货时间",
       "pickupTimeStatus": "estimated",
       "pickupTimeColor": "red",
-      "expectedPickupTime": "2026-03-27 00:12",
+      "expectedPickupTime": "2026-03-27 09:03",
       "clearanceStatus": "",
       "clearanceStatusRaw": "",
       "clearanceStatusLabel": "待放行",
@@ -3090,7 +3006,7 @@ window.AULALA_ORDER_FEED = {
       "refId": "",
       "provider": "",
       "source": "fbadidi_putcode_order_api",
-      "sourceRefreshedAt": "2026-03-25 19:54:18"
+      "sourceRefreshedAt": "2026-03-26 03:30:19"
     }
   ]
 };
