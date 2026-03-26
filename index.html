@@ -408,6 +408,122 @@
             margin-top: 8px;
         }
 
+        .mini-btn {
+            border: none;
+            border-radius: 999px;
+            background: #eef4ff;
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 800;
+            padding: 8px 12px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .section-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .section-row .section-title {
+            margin: 0;
+        }
+
+        .compact-field {
+            margin-bottom: 0;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .full-span {
+            grid-column: 1 / -1;
+        }
+
+        textarea.auth-field {
+            min-height: 96px;
+            resize: vertical;
+        }
+
+        .action-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .action-row .btn-main,
+        .action-row .btn-outline,
+        .action-row .btn-light {
+            width: auto;
+            flex: 1 1 180px;
+            margin-top: 0;
+        }
+
+        .quote-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin: 14px 0;
+        }
+
+        .quote-card {
+            background: #f8fafc;
+            border: 1px solid #e4e7ec;
+            border-radius: 14px;
+            padding: 14px;
+        }
+
+        .quote-card-label {
+            font-size: 12px;
+            color: #667085;
+            font-weight: 700;
+        }
+
+        .quote-card-value {
+            display: block;
+            margin-top: 6px;
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--primary);
+        }
+
+        .quote-card-sub {
+            display: block;
+            margin-top: 6px;
+            font-size: 12px;
+            color: #667085;
+        }
+
+        .spec-tag-owner {
+            background: #eef4ff;
+            color: #175cd3;
+            border-color: #dbe7ff;
+        }
+
+        .owner-meta {
+            font-size: 13px;
+            color: #475467;
+            margin-top: 3px;
+        }
+
+        .owner-edit-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .owner-edit-row .auth-field {
+            flex: 1;
+        }
+
         .hidden {
             display: none !important;
         }
@@ -653,6 +769,16 @@
             .upload-card {
                 width: 100%;
             }
+
+            .form-grid,
+            .quote-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .owner-edit-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
         }
     </style>
 </head>
@@ -662,9 +788,10 @@
         <div class="nav-btns">
             <span id="guest-nav">
                 <a href="javascript:void(0)" onclick="showSection('auth')">登录/注册</a>
+                <a href="javascript:void(0)" onclick="openOwnerEntry()">货主发货</a>
             </span>
             <span id="user-nav" class="hidden">
-                <a href="javascript:void(0)" onclick="showSection('profile')">个人中心</a>
+                <a href="javascript:void(0)" id="dashboard-link" onclick="openDashboard()">个人中心</a>
                 <a href="javascript:void(0)" onclick="logout()">退出</a>
             </span>
         </div>
@@ -685,7 +812,10 @@
 
     <div class="container">
         <section id="order-section">
-            <div class="section-title">抢单大厅</div>
+            <div class="section-row">
+                <div class="section-title">抢单大厅</div>
+                <button class="mini-btn" onclick="openOwnerEntry()">货主发货</button>
+            </div>
             <div id="order-list"></div>
         </section>
 
@@ -696,7 +826,7 @@
                     <div id="tab-reg" style="flex:1; text-align:center; padding:10px; cursor:pointer; color:#999;" onclick="switchAuthMode('reg')">注册账号</div>
                 </div>
 
-                <div id="reg-role-select" class="hidden" style="margin-bottom:15px; text-align:center;">
+                <div id="auth-role-select" style="margin-bottom:15px; text-align:center;">
                     <label><input type="radio" name="role" value="driver" checked onclick="toggleRegForm('driver')"> 我是司机</label>
                     &nbsp;&nbsp;
                     <label><input type="radio" name="role" value="owner" onclick="toggleRegForm('owner')"> 我是货主</label>
@@ -714,9 +844,9 @@
                 </div>
 
                 <div id="owner-fields" class="hidden">
-                    <input type="text" class="auth-field" placeholder="公司名/个人名">
-                    <input type="email" class="auth-field" placeholder="邮箱">
-                    <input type="text" class="auth-field" placeholder="澳洲联系地址">
+                    <input type="text" id="owner-auth-name" class="auth-field" placeholder="公司名/个人名">
+                    <input type="email" id="owner-auth-email" class="auth-field" placeholder="邮箱">
+                    <input type="text" id="owner-auth-address" class="auth-field" placeholder="澳洲联系地址">
                     <div style="font-size:12px; color:var(--primary); margin-bottom:5px;">上传证明(多附件)</div>
                     <div style="border:1px dashed #ccc; padding:15px; text-align:center; background:#fafafa; font-size:12px; cursor:pointer;">点击添加附件 (营业执照等)</div>
                 </div>
@@ -746,6 +876,63 @@
 
             <button class="btn-main" style="background:#667085; margin-top:20px;" onclick="showSection('orders')">返回抢单厅</button>
         </section>
+
+        <section id="owner-panel" class="hidden">
+            <div class="stat-grid">
+                <div class="stat-card">
+                    <span class="stat-val" id="owner-open-count">0</span>
+                    <span class="stat-label">待抢单货源</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-val" id="owner-grabbed-count">0</span>
+                    <span class="stat-label">已被抢单</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-val" id="owner-completed-count">0</span>
+                    <span class="stat-label">已完成货源</span>
+                </div>
+            </div>
+
+            <div class="section-title">发布新货源</div>
+            <div class="card">
+                <div class="note-box">货主录入提货时间、提货地址、目的地、货物参数和备注要求后，系统会先给出一个参考评估价。你也可以填自己的报价；如果一直没人抢单，下方后台可以随时调价。</div>
+                <div class="form-grid">
+                    <input id="owner-publish-name" class="auth-field compact-field" type="text" placeholder="货主名 / 公司名">
+                    <input id="owner-publish-phone" class="auth-field compact-field" type="tel" placeholder="联系电话">
+                    <input id="owner-pickup-at" class="auth-field compact-field full-span" type="datetime-local">
+                    <input id="owner-pickup-address" class="auth-field compact-field full-span" type="text" placeholder="提货地址">
+                    <input id="owner-dropoff-address" class="auth-field compact-field full-span" type="text" placeholder="目的地 / 送货地址">
+                    <input id="owner-pieces" class="auth-field compact-field" type="number" min="0" placeholder="件数">
+                    <input id="owner-weight-kg" class="auth-field compact-field" type="number" min="0" step="0.01" placeholder="重量 (kg)">
+                    <input id="owner-cbm" class="auth-field compact-field" type="number" min="0" step="0.01" placeholder="体积 (CBM)">
+                    <input id="owner-price" class="auth-field compact-field" type="number" min="0" step="0.01" placeholder="货主报价 (AUD)">
+                    <textarea id="owner-remarks" class="auth-field compact-field full-span" placeholder="备注要求，例如到场前电话联系、限高、需尾板、签回单要求等"></textarea>
+                </div>
+
+                <div class="quote-grid">
+                    <div class="quote-card">
+                        <span class="quote-card-label">系统评估参考价</span>
+                        <strong class="quote-card-value" id="owner-system-estimate">--</strong>
+                        <span class="quote-card-sub" id="owner-estimate-meta">录入完整地址和 CBM 后可估价</span>
+                    </div>
+                    <div class="quote-card">
+                        <span class="quote-card-label">货主当前报价</span>
+                        <strong class="quote-card-value" id="owner-price-preview">--</strong>
+                        <span class="quote-card-sub" id="owner-price-meta">可高于或低于系统参考价，没人抢单时可再调</span>
+                    </div>
+                </div>
+
+                <div class="action-row">
+                    <button id="owner-estimate-btn" class="btn-outline" onclick="calculateOwnerEstimate()">系统估价</button>
+                    <button class="btn-main" onclick="publishOwnerOrder()">发布到抢单大厅</button>
+                </div>
+            </div>
+
+            <div class="section-title">货主后台</div>
+            <div id="owner-order-list"></div>
+
+            <button class="btn-main" style="background:#667085; margin-top:20px;" onclick="showSection('orders')">返回抢单厅</button>
+        </section>
     </div>
 
     <div id="detail-modal">
@@ -769,6 +956,10 @@
                 ? order.weight
                 : (Number.isFinite(Number(order.weightKg)) ? `${Number(order.weightKg).toFixed(2).replace(/\.00$/, "")}kg` : "0kg");
             const clearanceStatus = normalizeClearanceStatus(order.clearanceStatus || order.clearanceStatusRaw);
+            const source = order.source || "manual";
+            const showClearanceSuffix = order.showClearanceSuffix !== undefined
+                ? Boolean(order.showClearanceSuffix)
+                : Boolean(order.clearanceStatusRaw || order.clearanceStatus || String(source).startsWith("fbadidi"));
             return {
                 id: order.id ?? (1000 + index),
                 price: Number(order.price ?? 100),
@@ -784,7 +975,9 @@
                 orderCode: order.orderCode || order.putCode || "",
                 cbm: Number(order.cbm || 0),
                 pieces: Number(order.pieces || 0),
-                source: order.source || "manual",
+                source,
+                sourceType: order.sourceType || (source === "owner_portal" ? "owner_portal" : "erp"),
+                sourceLabel: order.sourceLabel || (source === "owner_portal" ? "货主发布" : ""),
                 expectedPickupTime: order.expectedPickupTime || "",
                 pickupTimeLabel: order.pickupTimeLabel || "预计提货时间",
                 pickupTimeStatus: order.pickupTimeStatus || (order.pickupTimeColor === "green" ? "confirmed" : "estimated"),
@@ -797,7 +990,17 @@
                 actualLeavePortTime: order.actualLeavePortTime || "",
                 planArrivedPortTime: order.planArrivedPortTime || "",
                 actualArrivedPortTime: order.actualArrivedPortTime || "",
-                importClearanceTime: order.importClearanceTime || ""
+                importClearanceTime: order.importClearanceTime || "",
+                showClearanceSuffix,
+                systemEstimatedPrice: Number(order.systemEstimatedPrice || 0),
+                ownerQuotedPrice: Number(order.ownerQuotedPrice ?? order.price ?? 0),
+                ownerLifecycleStatus: order.ownerLifecycleStatus || "",
+                ownerName: order.ownerName || "",
+                ownerPhone: order.ownerPhone || "",
+                remarks: order.remarks || "",
+                createdAt: order.createdAt || "",
+                quoteAdjustedAt: order.quoteAdjustedAt || "",
+                driverAcceptedAt: order.driverAcceptedAt || ""
             };
         }
 
@@ -805,30 +1008,29 @@
             ? window.AULALA_ORDER_FEED.orders
             : fallbackOrders;
         const initialOrders = externalOrders.map((order, index) => normalizeOrder(order, index + 1));
+        const APP_STORAGE_KEY = "aulala_app_runtime_v1";
+        const estimateCache = {
+            geocodes: {},
+            routes: {}
+        };
+        let ownerEstimateDraft = null;
 
         const state = {
             loggedIn: false,
-            availableOrders: initialOrders.map(order => ({ ...order })),
+            userRole: "driver",
+            authMode: "login",
+            ownerProfile: {
+                name: "",
+                phone: "",
+                email: "",
+                address: ""
+            },
+            baseExternalOrders: initialOrders.map(order => ({ ...order })),
+            availableOrders: [],
             activeOrder: null,
-            completedOrders: [
-                {
-                    id: 88,
-                    price: 150,
-                    pickup: "Clayton",
-                    dropoff: "Melbourne CBD",
-                    state: "VIC",
-                    pallets: 6,
-                    weight: "1.2 Tons",
-                    scheduledPickupTime: "24-03 09:30",
-                    actualPickupTime: "24-03 09:42",
-                    deliveredAt: "24-03 13:18",
-                    pickupAddress: "Clayton, VIC",
-                    dropoffAddress: "Melbourne CBD, VIC",
-                    pickupPhoto: createMockImage("提货照片", "#f59f00"),
-                    deliveryPhoto: createMockImage("送达照片", "#1c7ed6"),
-                    signaturePhoto: createMockImage("客户签字", "#495057", true)
-                }
-            ]
+            completedOrders: [],
+            ownerOrders: [],
+            consumedExternalOrderIds: []
         };
 
         function createMockImage(label, fill, isSignature = false) {
@@ -838,8 +1040,264 @@
             return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
         }
 
+        function getDefaultCompletedOrders() {
+            return [
+                normalizeOrder(
+                    {
+                        id: 88,
+                        price: 150,
+                        pickup: "Clayton",
+                        dropoff: "Melbourne CBD",
+                        state: "VIC",
+                        pallets: 6,
+                        weight: "1.2 Tons",
+                        scheduledPickupTime: "24-03 09:30",
+                        actualPickupTime: "24-03 09:42",
+                        deliveredAt: "24-03 13:18",
+                        pickupAddress: "Clayton, VIC",
+                        dropoffAddress: "Melbourne CBD, VIC",
+                        pickupPhoto: createMockImage("提货照片", "#f59f00"),
+                        deliveryPhoto: createMockImage("送达照片", "#1c7ed6"),
+                        signaturePhoto: createMockImage("客户签字", "#495057", true),
+                        showClearanceSuffix: false,
+                        source: "manual_demo"
+                    },
+                    88
+                )
+            ];
+        }
+
+        function saveAppState() {
+            try {
+                localStorage.setItem(
+                    APP_STORAGE_KEY,
+                    JSON.stringify({
+                        loggedIn: state.loggedIn,
+                        userRole: state.userRole,
+                        authMode: state.authMode,
+                        ownerProfile: state.ownerProfile,
+                        activeOrder: state.activeOrder,
+                        completedOrders: state.completedOrders,
+                        ownerOrders: state.ownerOrders,
+                        consumedExternalOrderIds: state.consumedExternalOrderIds
+                    })
+                );
+            } catch (error) {
+                console.warn("save state failed", error);
+            }
+        }
+
+        function rebuildAvailableOrders() {
+            const consumedIds = new Set((state.consumedExternalOrderIds || []).map(Number));
+            const activeId = state.activeOrder ? Number(state.activeOrder.id) : null;
+            const ownerPublished = (state.ownerOrders || [])
+                .filter(order => order.ownerLifecycleStatus === "published")
+                .map((order, index) => normalizeOrder(order, 5000 + index));
+            const externalAvailable = (state.baseExternalOrders || [])
+                .filter(order => !consumedIds.has(Number(order.id)) && Number(order.id) !== activeId)
+                .map((order, index) => normalizeOrder(order, index + 1));
+            state.availableOrders = [...ownerPublished, ...externalAvailable];
+        }
+
+        function hydrateAppState() {
+            let saved = {};
+            try {
+                saved = JSON.parse(localStorage.getItem(APP_STORAGE_KEY) || "{}") || {};
+            } catch (error) {
+                saved = {};
+            }
+
+            state.loggedIn = Boolean(saved.loggedIn);
+            state.userRole = saved.userRole === "owner" ? "owner" : "driver";
+            state.authMode = saved.authMode === "reg" ? "reg" : "login";
+            state.ownerProfile = {
+                name: saved.ownerProfile?.name || "",
+                phone: saved.ownerProfile?.phone || "",
+                email: saved.ownerProfile?.email || "",
+                address: saved.ownerProfile?.address || ""
+            };
+            state.activeOrder = saved.activeOrder ? normalizeOrder(saved.activeOrder, 4000) : null;
+            state.completedOrders = Array.isArray(saved.completedOrders) && saved.completedOrders.length
+                ? saved.completedOrders.map((order, index) => normalizeOrder(order, 7000 + index))
+                : getDefaultCompletedOrders();
+            state.ownerOrders = Array.isArray(saved.ownerOrders)
+                ? saved.ownerOrders.map((order, index) => normalizeOrder({ ...order, source: "owner_portal" }, 8000 + index))
+                : [];
+            state.consumedExternalOrderIds = Array.isArray(saved.consumedExternalOrderIds)
+                ? saved.consumedExternalOrderIds.map(Number)
+                : [];
+
+            rebuildAvailableOrders();
+        }
+
         function formatCurrency(value) {
             return `$${Number(value).toFixed(2)}`;
+        }
+
+        function formatWeightLabel(weightKg) {
+            const numeric = Number(weightKg || 0);
+            if (!Number.isFinite(numeric) || numeric <= 0) {
+                return "0kg";
+            }
+            return `${numeric.toFixed(2).replace(/\.00$/, "").replace(/(\.\d)0$/, "$1")}kg`;
+        }
+
+        function extractStateCode(address) {
+            const match = String(address || "").match(/\b(NSW|VIC|QLD|WA|SA|TAS|ACT|NT)\b/i);
+            return match ? match[1].toUpperCase() : "NSW";
+        }
+
+        function shortLocationLabel(address) {
+            const parts = String(address || "")
+                .split(",")
+                .map(part => part.trim())
+                .filter(Boolean);
+            return parts[1] || parts[0] || "待分配";
+        }
+
+        function formatDateTimeForHall(value) {
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) {
+                return {
+                    date: "",
+                    time: "--",
+                    expectedPickupTime: ""
+                };
+            }
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, "0");
+            const dd = String(date.getDate()).padStart(2, "0");
+            const hh = String(date.getHours()).padStart(2, "0");
+            const min = String(date.getMinutes()).padStart(2, "0");
+            return {
+                date: `${yyyy}-${mm}-${dd}`,
+                time: `${dd}-${mm} ${hh}:${min}`,
+                expectedPickupTime: `${yyyy}-${mm}-${dd} ${hh}:${min}`
+            };
+        }
+
+        function addressKey(value) {
+            return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+        }
+
+        function candidateAddresses(value) {
+            const raw = String(value || "").replace(/\n/g, ",").trim();
+            if (!raw) {
+                return [];
+            }
+            const parts = raw.split(",").map(part => part.trim()).filter(Boolean);
+            const variants = [
+                raw,
+                parts.join(", ")
+            ];
+            return [...new Set(variants.map(addressKey))].map(key =>
+                variants.find(item => addressKey(item) === key)
+            );
+        }
+
+        async function geocodeAddress(address) {
+            const candidates = candidateAddresses(address);
+            if (!candidates.length) {
+                throw new Error("请输入完整的地址");
+            }
+
+            for (const candidate of candidates) {
+                const cacheKey = addressKey(candidate);
+                if (estimateCache.geocodes[cacheKey]) {
+                    return estimateCache.geocodes[cacheKey];
+                }
+
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(candidate)}`);
+                    const rows = await response.json();
+                    if (Array.isArray(rows) && rows[0]) {
+                        const result = {
+                            address: candidate,
+                            lat: Number(rows[0].lat),
+                            lon: Number(rows[0].lon)
+                        };
+                        estimateCache.geocodes[cacheKey] = result;
+                        return result;
+                    }
+                } catch (error) {
+                    console.warn("nominatim failed", error);
+                }
+            }
+
+            for (const candidate of candidates) {
+                const cacheKey = addressKey(candidate);
+                try {
+                    const response = await fetch(`https://photon.komoot.io/api/?limit=1&q=${encodeURIComponent(candidate)}`);
+                    const payload = await response.json();
+                    const feature = payload?.features?.[0];
+                    const coordinates = feature?.geometry?.coordinates;
+                    if (Array.isArray(coordinates) && coordinates.length >= 2) {
+                        const result = {
+                            address: candidate,
+                            lat: Number(coordinates[1]),
+                            lon: Number(coordinates[0])
+                        };
+                        estimateCache.geocodes[cacheKey] = result;
+                        return result;
+                    }
+                } catch (error) {
+                    console.warn("photon failed", error);
+                }
+            }
+
+            throw new Error("系统暂时无法识别这两个地址，请补全州和邮编后再试");
+        }
+
+        function haversineKm(lat1, lon1, lat2, lon2) {
+            const toRad = value => value * Math.PI / 180;
+            const earthRadius = 6371;
+            const dLat = toRad(lat2 - lat1);
+            const dLon = toRad(lon2 - lon1);
+            const a = Math.sin(dLat / 2) ** 2
+                + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+            return 2 * earthRadius * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        async function routeDistanceKm(origin, destination) {
+            const routeKey = `${origin.lat.toFixed(5)},${origin.lon.toFixed(5)}|${destination.lat.toFixed(5)},${destination.lon.toFixed(5)}`;
+            if (estimateCache.routes[routeKey]) {
+                return estimateCache.routes[routeKey];
+            }
+
+            try {
+                const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${origin.lon},${origin.lat};${destination.lon},${destination.lat}?overview=false`);
+                const payload = await response.json();
+                const distanceKm = Number(payload?.routes?.[0]?.distance || 0) / 1000;
+                if (distanceKm > 0) {
+                    const result = {
+                        distanceKm,
+                        basis: "osrm"
+                    };
+                    estimateCache.routes[routeKey] = result;
+                    return result;
+                }
+            } catch (error) {
+                console.warn("osrm failed", error);
+            }
+
+            const fallbackKm = haversineKm(origin.lat, origin.lon, destination.lat, destination.lon) * 1.2;
+            const result = {
+                distanceKm: fallbackKm,
+                basis: "haversine_x1.2"
+            };
+            estimateCache.routes[routeKey] = result;
+            return result;
+        }
+
+        function ownerEstimateSignature(payload) {
+            return JSON.stringify([
+                payload.pickupAt,
+                payload.pickupAddress,
+                payload.dropoffAddress,
+                payload.cbm,
+                payload.weightKg,
+                payload.pieces
+            ]);
         }
 
         function normalizeClearanceStatus(value) {
@@ -886,12 +1344,18 @@
             if (!order.orderCode) {
                 return "";
             }
+            if (order.showClearanceSuffix === false) {
+                return order.orderCode;
+            }
             const status = normalizeClearanceStatus(order.clearanceStatus || order.clearanceStatusRaw);
             const suffix = order.clearanceStatusShortLabel || clearanceStatusShortText(status);
             return suffix ? `${order.orderCode}(${suffix})` : order.orderCode;
         }
 
         function orderCodeClass(order) {
+            if (order.showClearanceSuffix === false) {
+                return "order-code";
+            }
             const status = normalizeClearanceStatus(order.clearanceStatus || order.clearanceStatusRaw);
             return status === "clean" ? "order-code" : "order-code order-code-pending";
         }
@@ -902,6 +1366,19 @@
 
         function dropoffAddressText(order) {
             return order.dropoffAddress || order.dropoff || "--";
+        }
+
+        function sourceChip(order) {
+            return order.sourceType === "owner_portal"
+                ? `<span class="spec-tag spec-tag-owner">货主发布</span>`
+                : "";
+        }
+
+        function renderOrderRemark(order) {
+            if (!order.remarks) {
+                return "";
+            }
+            return `<div class="note-box"><b>备注要求：</b>${order.remarks}</div>`;
         }
 
         function clearanceChipClass(order) {
@@ -1028,6 +1505,7 @@
                         <div>
                             ${order.orderCode ? `<div class="${orderCodeClass(order)}">${orderCodeLabel(order)}</div>` : ""}
                             <div class="highlight-specs">
+                                ${sourceChip(order)}
                                 <span class="spec-tag">${order.pallets} Plt</span>
                                 <span class="spec-tag">${order.weight}</span>
                                 ${order.cbm ? `<span class="spec-tag">${order.cbm.toFixed(2)} CBM</span>` : ""}
@@ -1052,6 +1530,8 @@
                         </div>
                     </div>
 
+                    ${renderOrderRemark(order)}
+
                     <button class="btn-main" onclick="tryAccept(${order.id})">立即抢单</button>
                 </div>
             `).join("");
@@ -1064,6 +1544,7 @@
                         <div>
                             ${order.orderCode ? `<div class="${orderCodeClass(order)}">${orderCodeLabel(order)}</div>` : ""}
                             <div class="highlight-specs">
+                                ${sourceChip(order)}
                                 <span class="spec-tag">${order.pallets} Plt</span>
                                 <span class="spec-tag">${order.weight}</span>
                                 ${order.cbm ? `<span class="spec-tag">${Number(order.cbm).toFixed(2)} CBM</span>` : ""}
@@ -1081,6 +1562,8 @@
                     ${renderPickupTimePanel(order, order.scheduledPickupTime)}
 
                     ${renderRouteBox(order)}
+
+                    ${renderOrderRemark(order)}
 
                     ${renderActionPanel(order)}
                 </div>
@@ -1200,6 +1683,9 @@
                     <div class="card-header">
                         <div>
                             ${order.orderCode ? `<div class="${orderCodeClass(order)}">${orderCodeLabel(order)}</div>` : ""}
+                            <div class="highlight-specs" style="margin-bottom:6px;">
+                                ${sourceChip(order)}
+                            </div>
                             <span style="font-size:14px; color:#667085;">实际提货 ${order.actualPickupTime || "待更新"}</span>
                         </div>
                         <span class="status-chip status-completed">已完成 ${formatCurrency(order.price)}</span>
@@ -1207,10 +1693,320 @@
                     <div class="history-line">提货地址: ${pickupAddressText(order)}</div>
                     <div class="history-line">送货地址: ${dropoffAddressText(order)}</div>
                     <div class="history-line">货物规格: ${order.pallets} Pallets / ${order.weight}</div>
+                    ${order.remarks ? `<div class="history-line">备注要求: ${order.remarks}</div>` : ""}
                     <div class="history-line">送达时间: ${order.deliveredAt || "--"}</div>
                     <button class="btn-outline" onclick="openDetail(${order.id})">查看完整详情/回单照片</button>
                 </div>
             `;
+        }
+
+        function ownerLifecycleMeta(status) {
+            if (status === "completed") {
+                return { label: "已完成", className: "status-completed" };
+            }
+            if (status === "grabbed") {
+                return { label: "已被抢单", className: "status-transit" };
+            }
+            return { label: "待抢单", className: "status-waiting" };
+        }
+
+        function generateOwnerOrderCode() {
+            const now = new Date();
+            const yy = String(now.getFullYear()).slice(-2);
+            const mm = String(now.getMonth() + 1).padStart(2, "0");
+            const dd = String(now.getDate()).padStart(2, "0");
+            const todayPrefix = `HZ${yy}${mm}${dd}`;
+            const todayCount = state.ownerOrders.filter(order => String(order.orderCode || "").startsWith(todayPrefix)).length + 1;
+            return `${todayPrefix}${String(todayCount).padStart(3, "0")}`;
+        }
+
+        function populateOwnerFormFromProfile() {
+            const nameInput = document.getElementById("owner-publish-name");
+            const phoneInput = document.getElementById("owner-publish-phone");
+            if (nameInput && !nameInput.value.trim() && state.ownerProfile.name) {
+                nameInput.value = state.ownerProfile.name;
+            }
+            if (phoneInput && !phoneInput.value.trim() && state.ownerProfile.phone) {
+                phoneInput.value = state.ownerProfile.phone;
+            }
+        }
+
+        function updateOwnerPricePreview() {
+            const value = Number(document.getElementById("owner-price").value || 0);
+            document.getElementById("owner-price-preview").textContent = value > 0 ? formatCurrency(value) : "--";
+        }
+
+        function updateOwnerEstimateDisplay(estimate) {
+            const estimateVal = document.getElementById("owner-system-estimate");
+            const estimateMeta = document.getElementById("owner-estimate-meta");
+            estimateVal.textContent = estimate ? formatCurrency(estimate.systemEstimatedPrice) : "--";
+            estimateMeta.textContent = estimate
+                ? `${estimate.distanceKm.toFixed(1)} km / ${estimate.pallets} 板 / ${estimate.basis === "osrm" ? "路线里程" : "直线兜底"}`
+                : "录入完整地址和 CBM 后可估价";
+        }
+
+        function resetOwnerEstimateDisplay() {
+            ownerEstimateDraft = null;
+            updateOwnerEstimateDisplay(null);
+        }
+
+        function collectOwnerFormValues({ silent = false } = {}) {
+            const payload = {
+                ownerName: document.getElementById("owner-publish-name").value.trim(),
+                ownerPhone: document.getElementById("owner-publish-phone").value.trim(),
+                pickupAt: document.getElementById("owner-pickup-at").value,
+                pickupAddress: document.getElementById("owner-pickup-address").value.trim(),
+                dropoffAddress: document.getElementById("owner-dropoff-address").value.trim(),
+                pieces: Number(document.getElementById("owner-pieces").value || 0),
+                weightKg: Number(document.getElementById("owner-weight-kg").value || 0),
+                cbm: Number(document.getElementById("owner-cbm").value || 0),
+                ownerPrice: Number(document.getElementById("owner-price").value || 0),
+                remarks: document.getElementById("owner-remarks").value.trim()
+            };
+
+            if (!payload.ownerName || !payload.ownerPhone || !payload.pickupAt || !payload.pickupAddress || !payload.dropoffAddress || payload.weightKg <= 0 || payload.cbm <= 0) {
+                if (!silent) {
+                    alert("请先录入货主名、联系电话、提货时间、提货地址、目的地、重量和 CBM。");
+                }
+                return null;
+            }
+
+            return payload;
+        }
+
+        async function calculateOwnerEstimate(silent = false) {
+            const payload = collectOwnerFormValues({ silent });
+            if (!payload) {
+                return null;
+            }
+
+            const signature = ownerEstimateSignature(payload);
+            if (ownerEstimateDraft && ownerEstimateDraft.signature === signature) {
+                updateOwnerEstimateDisplay(ownerEstimateDraft);
+                return ownerEstimateDraft;
+            }
+
+            const button = document.getElementById("owner-estimate-btn");
+            if (button) {
+                button.disabled = true;
+                button.textContent = "系统估价中...";
+            }
+
+            try {
+                const [origin, destination] = await Promise.all([
+                    geocodeAddress(payload.pickupAddress),
+                    geocodeAddress(payload.dropoffAddress)
+                ]);
+                const route = await routeDistanceKm(origin, destination);
+                const pallets = Math.max(1, Math.ceil(payload.cbm / 1.5));
+                ownerEstimateDraft = {
+                    signature,
+                    distanceKm: route.distanceKm,
+                    pallets,
+                    systemEstimatedPrice: Number(Math.max(80, route.distanceKm * pallets * 3).toFixed(2)),
+                    basis: route.basis
+                };
+                updateOwnerEstimateDisplay(ownerEstimateDraft);
+                if (!document.getElementById("owner-price").value.trim()) {
+                    document.getElementById("owner-price").value = ownerEstimateDraft.systemEstimatedPrice.toFixed(2);
+                    updateOwnerPricePreview();
+                }
+                return ownerEstimateDraft;
+            } catch (error) {
+                console.warn(error);
+                if (!silent) {
+                    alert(error.message || "系统估价失败，请补全地址后再试。");
+                }
+                return null;
+            } finally {
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = "系统估价";
+                }
+            }
+        }
+
+        function resetOwnerForm() {
+            document.getElementById("owner-pickup-at").value = "";
+            document.getElementById("owner-pickup-address").value = "";
+            document.getElementById("owner-dropoff-address").value = "";
+            document.getElementById("owner-pieces").value = "";
+            document.getElementById("owner-weight-kg").value = "";
+            document.getElementById("owner-cbm").value = "";
+            document.getElementById("owner-price").value = "";
+            document.getElementById("owner-remarks").value = "";
+            updateOwnerPricePreview();
+            resetOwnerEstimateDisplay();
+            populateOwnerFormFromProfile();
+        }
+
+        async function publishOwnerOrder() {
+            const payload = collectOwnerFormValues();
+            if (!payload) {
+                return;
+            }
+
+            const estimate = await calculateOwnerEstimate(true);
+            if (!estimate) {
+                alert("系统估价失败，先点一次“系统估价”再发布。");
+                return;
+            }
+            if (payload.ownerPrice <= 0) {
+                alert("请输入货主报价。");
+                return;
+            }
+
+            const schedule = formatDateTimeForHall(payload.pickupAt);
+            const newOrder = normalizeOrder(
+                {
+                    id: Date.now(),
+                    orderCode: generateOwnerOrderCode(),
+                    price: payload.ownerPrice,
+                    ownerQuotedPrice: payload.ownerPrice,
+                    systemEstimatedPrice: estimate.systemEstimatedPrice,
+                    source: "owner_portal",
+                    sourceType: "owner_portal",
+                    sourceLabel: "货主发布",
+                    ownerLifecycleStatus: "published",
+                    ownerName: payload.ownerName,
+                    ownerPhone: payload.ownerPhone,
+                    pickup: shortLocationLabel(payload.pickupAddress),
+                    dropoff: shortLocationLabel(payload.dropoffAddress),
+                    pickupAddress: payload.pickupAddress,
+                    dropoffAddress: payload.dropoffAddress,
+                    state: extractStateCode(payload.dropoffAddress),
+                    pallets: estimate.pallets,
+                    pieces: payload.pieces,
+                    weightKg: payload.weightKg,
+                    weight: formatWeightLabel(payload.weightKg),
+                    cbm: payload.cbm,
+                    time: schedule.time,
+                    date: schedule.date,
+                    expectedPickupTime: schedule.expectedPickupTime,
+                    pickupTimeLabel: "提货时间",
+                    pickupTimeStatus: "estimated",
+                    pickupTimeColor: "red",
+                    pickupTimeBasis: "owner_manual_input",
+                    showClearanceSuffix: false,
+                    remarks: payload.remarks,
+                    createdAt: nowStamp()
+                },
+                Date.now()
+            );
+
+            state.ownerOrders.unshift(newOrder);
+            rebuildAvailableOrders();
+            saveAppState();
+            renderOrders();
+            renderOwnerPanel();
+            resetOwnerForm();
+            alert("货源已进入抢单大厅。");
+            showSection("owner");
+        }
+
+        function updateOwnerQuote(orderId) {
+            const order = state.ownerOrders.find(item => item.id === orderId);
+            if (!order || order.ownerLifecycleStatus !== "published") {
+                alert("这票已经被抢走或已完成，不能再调价。");
+                return;
+            }
+
+            const input = document.getElementById(`owner-quote-${orderId}`);
+            const nextPrice = Number(input?.value || 0);
+            if (nextPrice <= 0) {
+                alert("请输入新的货主报价。");
+                return;
+            }
+
+            order.price = nextPrice;
+            order.ownerQuotedPrice = nextPrice;
+            order.quoteAdjustedAt = nowStamp();
+            rebuildAvailableOrders();
+            saveAppState();
+            renderOrders();
+            renderOwnerPanel();
+            alert("报价已更新，抢单大厅价格也同步刷新了。");
+        }
+
+        function ownerLifecycleRank(status) {
+            const map = {
+                published: 0,
+                grabbed: 1,
+                completed: 2
+            };
+            return map[status] ?? 9;
+        }
+
+        function renderOwnerOrderCard(order) {
+            const meta = ownerLifecycleMeta(order.ownerLifecycleStatus);
+            return `
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="order-code">${order.orderCode}</div>
+                            <div class="highlight-specs">
+                                <span class="spec-tag spec-tag-owner">货主发布</span>
+                                <span class="spec-tag">${order.pallets} Plt</span>
+                                <span class="spec-tag">${order.weight}</span>
+                                ${order.cbm ? `<span class="spec-tag">${Number(order.cbm).toFixed(2)} CBM</span>` : ""}
+                            </div>
+                        </div>
+                        <span class="status-chip ${meta.className}">${meta.label}</span>
+                    </div>
+                    ${order.ownerName || order.ownerPhone ? `<div class="history-line">货主信息: ${[order.ownerName, order.ownerPhone].filter(Boolean).join(" / ")}</div>` : ""}
+                    <div class="history-line">提货时间: ${order.expectedPickupTime || "--"}</div>
+                    <div class="history-line">提货地址: ${pickupAddressText(order)}</div>
+                    <div class="history-line">送货地址: ${dropoffAddressText(order)}</div>
+                    <div class="history-line">系统参考价: ${formatCurrency(order.systemEstimatedPrice || 0)}</div>
+                    <div class="history-line">货主当前报价: ${formatCurrency(order.ownerQuotedPrice || order.price)}</div>
+                    ${order.createdAt ? `<div class="owner-meta">发布时间: ${order.createdAt}</div>` : ""}
+                    ${order.quoteAdjustedAt ? `<div class="owner-meta">最后调价: ${order.quoteAdjustedAt}</div>` : ""}
+                    ${order.driverAcceptedAt ? `<div class="owner-meta">被抢单时间: ${order.driverAcceptedAt}</div>` : ""}
+                    ${order.deliveredAt ? `<div class="owner-meta">完成时间: ${order.deliveredAt}</div>` : ""}
+                    ${order.remarks ? `<div class="note-box" style="margin-top:12px;"><b>备注要求：</b>${order.remarks}</div>` : ""}
+                    ${
+                        order.ownerLifecycleStatus === "published"
+                            ? `
+                                <div class="owner-edit-row">
+                                    <input id="owner-quote-${order.id}" class="auth-field compact-field" type="number" min="0" step="0.01" value="${Number(order.ownerQuotedPrice || order.price).toFixed(2)}">
+                                    <button class="btn-outline" onclick="updateOwnerQuote(${order.id})">调整价格</button>
+                                </div>
+                            `
+                            : ""
+                    }
+                </div>
+            `;
+        }
+
+        function renderOwnerPanel() {
+            const openCount = state.ownerOrders.filter(order => order.ownerLifecycleStatus === "published").length;
+            const grabbedCount = state.ownerOrders.filter(order => order.ownerLifecycleStatus === "grabbed").length;
+            const completedCount = state.ownerOrders.filter(order => order.ownerLifecycleStatus === "completed").length;
+            document.getElementById("owner-open-count").textContent = String(openCount);
+            document.getElementById("owner-grabbed-count").textContent = String(grabbedCount);
+            document.getElementById("owner-completed-count").textContent = String(completedCount);
+
+            const list = document.getElementById("owner-order-list");
+            if (!state.ownerOrders.length) {
+                list.innerHTML = `
+                    <div class="card empty-card">
+                        <div style="font-size:16px; font-weight:800; color:#344054; margin-bottom:6px;">还没有录入货源</div>
+                        <div>上面录入一票货源后，它会立即进入抢单大厅，同时在这里持续跟踪是否被抢单。</div>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = [...state.ownerOrders]
+                .sort((a, b) => {
+                    const rankDelta = ownerLifecycleRank(a.ownerLifecycleStatus) - ownerLifecycleRank(b.ownerLifecycleStatus);
+                    if (rankDelta !== 0) {
+                        return rankDelta;
+                    }
+                    return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+                })
+                .map(renderOwnerOrderCard)
+                .join("");
         }
 
         function renderProfile() {
@@ -1241,19 +2037,55 @@
                 `;
         }
 
+        function getSelectedAuthRole() {
+            return document.querySelector('input[name="role"]:checked')?.value || "driver";
+        }
+
+        function updateNavigation() {
+            document.getElementById("guest-nav").classList.toggle("hidden", state.loggedIn);
+            document.getElementById("user-nav").classList.toggle("hidden", !state.loggedIn);
+            document.getElementById("dashboard-link").textContent = state.userRole === "owner" ? "货主后台" : "个人中心";
+        }
+
+        function openDashboard() {
+            if (state.userRole === "owner") {
+                renderOwnerPanel();
+                showSection("owner");
+                return;
+            }
+            renderProfile();
+            showSection("profile");
+        }
+
+        function openOwnerEntry() {
+            if (state.loggedIn && state.userRole === "owner") {
+                openDashboard();
+                return;
+            }
+            const ownerRadio = document.querySelector('input[name="role"][value="owner"]');
+            if (ownerRadio) {
+                ownerRadio.checked = true;
+            }
+            switchAuthMode("reg");
+            toggleRegForm("owner");
+            showSection("auth");
+        }
+
         function switchAuthMode(mode) {
-            const isReg = mode === "reg";
+            state.authMode = mode === "reg" ? "reg" : "login";
+            const isReg = state.authMode === "reg";
             document.getElementById("tab-login").style.color = isReg ? "#999" : "#002b7f";
             document.getElementById("tab-login").style.borderBottom = isReg ? "none" : "2px solid #002b7f";
             document.getElementById("tab-reg").style.color = isReg ? "#002b7f" : "#999";
             document.getElementById("tab-reg").style.borderBottom = isReg ? "2px solid #002b7f" : "none";
-            document.getElementById("reg-role-select").classList.toggle("hidden", !isReg);
-            toggleRegForm(isReg ? "driver" : "none");
+            toggleRegForm(getSelectedAuthRole());
+            saveAppState();
         }
 
         function toggleRegForm(role) {
-            document.getElementById("driver-fields").classList.toggle("hidden", role !== "driver");
-            document.getElementById("owner-fields").classList.toggle("hidden", role !== "owner");
+            const showExtra = state.authMode === "reg";
+            document.getElementById("driver-fields").classList.toggle("hidden", !showExtra || role !== "driver");
+            document.getElementById("owner-fields").classList.toggle("hidden", !showExtra || role !== "owner");
         }
 
         function showSection(section) {
@@ -1261,25 +2093,46 @@
             document.getElementById("filter-bar").style.display = section === "orders" ? "block" : "none";
             document.getElementById("auth-section").classList.toggle("hidden", section !== "auth");
             document.getElementById("user-profile").classList.toggle("hidden", section !== "profile");
+            document.getElementById("owner-panel").classList.toggle("hidden", section !== "owner");
             window.scrollTo(0, 0);
         }
 
         function handleAuth() {
             const phone = document.getElementById("auth-phone").value.trim();
             const pass = document.getElementById("auth-pass").value.trim();
+            const role = getSelectedAuthRole();
             if (!phone || !pass) {
                 alert("请输入手机号和密码。");
                 return;
             }
 
             state.loggedIn = true;
-            document.getElementById("guest-nav").classList.add("hidden");
-            document.getElementById("user-nav").classList.remove("hidden");
+            state.userRole = role;
+            state.ownerProfile = {
+                name: (document.getElementById("owner-auth-name")?.value || "").trim() || state.ownerProfile.name || "",
+                phone,
+                email: (document.getElementById("owner-auth-email")?.value || "").trim() || state.ownerProfile.email || "",
+                address: (document.getElementById("owner-auth-address")?.value || "").trim() || state.ownerProfile.address || ""
+            };
+
+            updateNavigation();
+            populateOwnerFormFromProfile();
+            saveAppState();
+
+            if (role === "owner") {
+                renderOwnerPanel();
+                showSection("owner");
+                return;
+            }
+
             renderProfile();
             showSection("profile");
         }
 
         function logout() {
+            state.loggedIn = false;
+            state.userRole = "driver";
+            saveAppState();
             location.reload();
         }
 
@@ -1287,6 +2140,11 @@
             if (!state.loggedIn) {
                 alert("请先以司机身份登录，再去抢单。");
                 showSection("auth");
+                return;
+            }
+
+            if (state.userRole !== "driver") {
+                alert("当前登录的是货主账号，请切换司机身份后再抢单。");
                 return;
             }
 
@@ -1305,22 +2163,37 @@
                 return;
             }
 
-            state.availableOrders = state.availableOrders.filter(item => item.id !== orderId);
-            state.activeOrder = {
-                ...order,
-                status: "waiting_pickup",
-                scheduledPickupTime: order.time,
-                scheduledPickupLabel: order.pickupTimeLabel || "预计提货时间",
-                actualPickupTime: "",
-                deliveredAt: "",
-                pickupPhoto: "",
-                deliveryPhoto: "",
-                signaturePhoto: ""
-            };
+            if (order.sourceType === "owner_portal") {
+                const ownerOrder = state.ownerOrders.find(item => item.id === order.id);
+                if (ownerOrder) {
+                    ownerOrder.ownerLifecycleStatus = "grabbed";
+                    ownerOrder.driverAcceptedAt = nowStamp();
+                }
+            } else if (!state.consumedExternalOrderIds.includes(order.id)) {
+                state.consumedExternalOrderIds.push(order.id);
+            }
 
+            state.activeOrder = normalizeOrder(
+                {
+                    ...order,
+                    status: "waiting_pickup",
+                    scheduledPickupTime: order.time,
+                    scheduledPickupLabel: order.pickupTimeLabel || "预计提货时间",
+                    actualPickupTime: "",
+                    deliveredAt: "",
+                    pickupPhoto: "",
+                    deliveryPhoto: "",
+                    signaturePhoto: ""
+                },
+                order.id
+            );
+
+            rebuildAvailableOrders();
+            saveAppState();
             renderOrders();
             renderProfile();
-            alert("抢单成功，订单已进入“等待提货”。");
+            renderOwnerPanel();
+            alert(order.sourceType === "owner_portal" ? "抢单成功，货主后台已同步显示“已被抢单”。" : "抢单成功，订单已进入“等待提货”。");
             showSection("profile");
         }
 
@@ -1350,7 +2223,9 @@
                         state.activeOrder.actualPickupTime = nowStamp();
                     }
                     state.activeOrder.status = "picked_up";
+                    saveAppState();
                     renderProfile();
+                    renderOwnerPanel();
                     return;
                 }
 
@@ -1360,7 +2235,9 @@
                 }
 
                 state.activeOrder.status = "in_transit";
+                saveAppState();
                 renderProfile();
+                renderOwnerPanel();
             };
             reader.readAsDataURL(file);
         }
@@ -1381,9 +2258,21 @@
                 deliveredAt: nowStamp()
             };
 
-            state.completedOrders.unshift(finished);
+            if (finished.sourceType === "owner_portal") {
+                const ownerOrder = state.ownerOrders.find(item => item.id === finished.id);
+                if (ownerOrder) {
+                    Object.assign(ownerOrder, finished, {
+                        ownerLifecycleStatus: "completed"
+                    });
+                }
+            }
+
+            state.completedOrders.unshift(normalizeOrder(finished, finished.id));
             state.activeOrder = null;
+            rebuildAvailableOrders();
+            saveAppState();
             renderProfile();
+            renderOwnerPanel();
             alert("订单已完成，已进入“已完成订单”。");
         }
 
@@ -1417,11 +2306,12 @@
                 <div class="detail-row"><span>结算运费</span><span style="color:var(--accent); font-weight:800;">${formatCurrency(order.price)}</span></div>
                 <div class="detail-row"><span>实际提货时间</span><span>${order.actualPickupTime || "待更新"}</span></div>
                 <div class="detail-row"><span>${order.scheduledPickupLabel || order.pickupTimeLabel || "预计提货时间"}</span><span style="${order.pickupTimeStatus === "confirmed" ? "color:#2f9e44; font-weight:800;" : "color:#c92a2a; font-weight:800;"}">${order.scheduledPickupTime || order.time || "--"}</span></div>
-                <div class="detail-row"><span>清关状态</span><span>${order.clearanceStatusLabel || clearanceStatusText(order.clearanceStatus)}</span></div>
+                ${order.showClearanceSuffix !== false ? `<div class="detail-row"><span>清关状态</span><span>${order.clearanceStatusLabel || clearanceStatusText(order.clearanceStatus)}</span></div>` : ""}
                 <div class="detail-row"><span>送达完成时间</span><span>${order.deliveredAt || "--"}</span></div>
                 <div class="detail-row"><span>提货地点</span><span>${order.pickupAddress}</span></div>
                 <div class="detail-row"><span>送达地点</span><span>${order.dropoffAddress}</span></div>
                 <div class="detail-row"><span>货物规格</span><span>${order.pallets} Pallets / ${order.weight}</span></div>
+                ${order.remarks ? `<div class="detail-row"><span>备注要求</span><span>${order.remarks}</span></div>` : ""}
                 <div style="margin-top:15px;">
                     <p style="font-size:13px; font-weight:800;">提货照片：</p>
                     <img class="proof-img" src="${order.pickupPhoto}" alt="提货照片">
@@ -1451,9 +2341,36 @@
         });
 
         window.onload = () => {
+            hydrateAppState();
+            updateNavigation();
+            populateOwnerFormFromProfile();
+            updateOwnerPricePreview();
+            [
+                "owner-pickup-at",
+                "owner-pickup-address",
+                "owner-dropoff-address",
+                "owner-pieces",
+                "owner-weight-kg",
+                "owner-cbm"
+            ].forEach(id => {
+                document.getElementById(id)?.addEventListener("input", resetOwnerEstimateDisplay);
+            });
+            document.getElementById("owner-price")?.addEventListener("input", updateOwnerPricePreview);
             renderOrders();
             renderProfile();
-            switchAuthMode("login");
+            renderOwnerPanel();
+            if (state.userRole === "owner") {
+                const ownerRadio = document.querySelector('input[name="role"][value="owner"]');
+                if (ownerRadio) {
+                    ownerRadio.checked = true;
+                }
+            }
+            switchAuthMode(state.authMode || "login");
+            if (state.loggedIn) {
+                openDashboard();
+            } else {
+                showSection("orders");
+            }
         };
     </script>
 </body>
