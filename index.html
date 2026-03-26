@@ -1007,7 +1007,10 @@
                 source,
                 sourceType: order.sourceType || (source === "owner_portal" ? "owner_portal" : "erp"),
                 sourceLabel: order.sourceLabel || (source === "owner_portal" ? "货主发布" : ""),
+                status: order.status || "",
                 expectedPickupTime: order.expectedPickupTime || "",
+                scheduledPickupTime: order.scheduledPickupTime || "",
+                scheduledPickupLabel: order.scheduledPickupLabel || "",
                 pickupTimeLabel: order.pickupTimeLabel || "预计提货时间",
                 pickupTimeStatus: order.pickupTimeStatus || (order.pickupTimeColor === "green" ? "confirmed" : "estimated"),
                 pickupTimeColor: order.pickupTimeColor || (order.pickupTimeStatus === "confirmed" ? "green" : "red"),
@@ -1027,6 +1030,11 @@
                 ownerName: order.ownerName || "",
                 ownerPhone: order.ownerPhone || "",
                 remarks: order.remarks || "",
+                actualPickupTime: order.actualPickupTime || "",
+                deliveredAt: order.deliveredAt || "",
+                pickupPhoto: order.pickupPhoto || "",
+                deliveryPhoto: order.deliveryPhoto || "",
+                signaturePhoto: order.signaturePhoto || "",
                 createdAt: order.createdAt || "",
                 quoteAdjustedAt: order.quoteAdjustedAt || "",
                 driverAcceptedAt: order.driverAcceptedAt || ""
@@ -2415,6 +2423,10 @@
                     return;
                 }
 
+                if (type === "deliveryPhoto" && !state.activeOrder.deliveredAt) {
+                    state.activeOrder.deliveredAt = nowStamp();
+                }
+
                 if (state.activeOrder.deliveryPhoto && state.activeOrder.signaturePhoto) {
                     completeOrder();
                     return;
@@ -2441,7 +2453,7 @@
             const finished = {
                 ...state.activeOrder,
                 status: "completed",
-                deliveredAt: nowStamp()
+                deliveredAt: state.activeOrder.deliveredAt || nowStamp()
             };
 
             if (finished.sourceType === "owner_portal") {
