@@ -171,6 +171,10 @@
             letter-spacing: 0.2px;
         }
 
+        .order-code-pending {
+            color: #c92a2a;
+        }
+
         .highlight-specs {
             display: flex;
             flex-wrap: wrap;
@@ -887,6 +891,11 @@
             return suffix ? `${order.orderCode}(${suffix})` : order.orderCode;
         }
 
+        function orderCodeClass(order) {
+            const status = normalizeClearanceStatus(order.clearanceStatus || order.clearanceStatusRaw);
+            return status ? "order-code" : "order-code order-code-pending";
+        }
+
         function pickupAddressText(order) {
             return order.pickupAddress || order.pickup || "--";
         }
@@ -925,9 +934,6 @@
                 <div class="${meta.boxClass}">
                     <span class="time-label">${meta.label}</span>
                     <span class="time-val">${meta.value}</span>
-                </div>
-                <div class="clearance-row">
-                    <span class="${clearanceChipClass(order)}">${order.clearanceStatusLabel || clearanceStatusText(order.clearanceStatus)}</span>
                 </div>
             `;
         }
@@ -1020,7 +1026,7 @@
                 <div class="card">
                     <div class="card-header">
                         <div>
-                            ${order.orderCode ? `<div class="order-code">${orderCodeLabel(order)}</div>` : ""}
+                            ${order.orderCode ? `<div class="${orderCodeClass(order)}">${orderCodeLabel(order)}</div>` : ""}
                             <div class="highlight-specs">
                                 <span class="spec-tag">${order.pallets} Plt</span>
                                 <span class="spec-tag">${order.weight}</span>
@@ -1056,7 +1062,7 @@
                 <div class="card">
                     <div class="card-header">
                         <div>
-                            ${order.orderCode ? `<div class="order-code">${orderCodeLabel(order)}</div>` : ""}
+                            ${order.orderCode ? `<div class="${orderCodeClass(order)}">${orderCodeLabel(order)}</div>` : ""}
                             <div class="highlight-specs">
                                 <span class="spec-tag">${order.pallets} Plt</span>
                                 <span class="spec-tag">${order.weight}</span>
@@ -1193,7 +1199,7 @@
                 <div class="card">
                     <div class="card-header">
                         <div>
-                            ${order.orderCode ? `<div class="order-code">${orderCodeLabel(order)}</div>` : ""}
+                            ${order.orderCode ? `<div class="${orderCodeClass(order)}">${orderCodeLabel(order)}</div>` : ""}
                             <span style="font-size:14px; color:#667085;">实际提货 ${order.actualPickupTime || "待更新"}</span>
                         </div>
                         <span class="status-chip status-completed">已完成 ${formatCurrency(order.price)}</span>
