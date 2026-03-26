@@ -132,6 +132,22 @@
             box-shadow: 0 5px 14px rgba(15, 23, 42, 0.04);
         }
 
+        .stat-card.clickable {
+            cursor: pointer;
+            transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+        }
+
+        .stat-card.clickable:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+            border-color: #c7d7fe;
+        }
+
+        .stat-card.active {
+            border-color: #175cd3;
+            box-shadow: 0 10px 24px rgba(23, 92, 211, 0.14);
+        }
+
         .stat-val {
             display: block;
             font-size: 22px;
@@ -879,15 +895,15 @@
 
         <section id="owner-panel" class="hidden">
             <div class="stat-grid">
-                <div class="stat-card">
+                <div class="stat-card clickable" id="owner-open-card" onclick="focusOwnerOrders('published')">
                     <span class="stat-val" id="owner-open-count">0</span>
                     <span class="stat-label">待抢单货源</span>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card clickable" id="owner-grabbed-card" onclick="focusOwnerOrders('grabbed')">
                     <span class="stat-val" id="owner-grabbed-count">0</span>
                     <span class="stat-label">已被抢单</span>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card clickable" id="owner-completed-card" onclick="focusOwnerOrders('completed')">
                     <span class="stat-val" id="owner-completed-count">0</span>
                     <span class="stat-label">已完成货源</span>
                 </div>
@@ -911,19 +927,19 @@
 
                 <div class="quote-grid">
                     <div class="quote-card">
-                        <span class="quote-card-label">系统评估参考价</span>
-                        <strong class="quote-card-value" id="owner-system-estimate">--</strong>
-                        <span class="quote-card-sub" id="owner-estimate-meta">录入完整地址和 CBM 后可估价</span>
-                    </div>
-                    <div class="quote-card">
                         <span class="quote-card-label">货主当前报价</span>
                         <strong class="quote-card-value" id="owner-price-preview">--</strong>
                         <span class="quote-card-sub" id="owner-price-meta">可高于或低于系统参考价，没人抢单时可再调</span>
                     </div>
+                    <div class="quote-card">
+                        <span class="quote-card-label">系统评估参考价</span>
+                        <strong class="quote-card-value" id="owner-system-estimate">--</strong>
+                        <span class="quote-card-sub" id="owner-estimate-meta">录入提货地址、目的地、重量和 CBM 后自动估价</span>
+                    </div>
                 </div>
 
                 <div class="action-row">
-                    <button id="owner-estimate-btn" class="btn-outline" onclick="calculateOwnerEstimate()">系统估价</button>
+                    <button id="owner-estimate-btn" class="btn-outline" onclick="calculateOwnerEstimate()">重新估价</button>
                     <button class="btn-main" onclick="publishOwnerOrder()">发布到抢单大厅</button>
                 </div>
             </div>
@@ -1014,6 +1030,8 @@
             routes: {}
         };
         let ownerEstimateDraft = null;
+        let ownerEstimateTimer = null;
+        let ownerPanelFilter = "all";
 
         const state = {
             loggedIn: false,
@@ -1291,7 +1309,6 @@
 
         function ownerEstimateSignature(payload) {
             return JSON.stringify([
-                payload.pickupAt,
                 payload.pickupAddress,
                 payload.dropoffAddress,
                 payload.cbm,
@@ -1723,11 +1740,15 @@
         function populateOwnerFormFromProfile() {
             const nameInput = document.getElementById("owner-publish-name");
             const phoneInput = document.getElementById("owner-publish-phone");
+            const pickupAddressInput = document.getElementById("owner-pickup-address");
             if (nameInput && !nameInput.value.trim() && state.ownerProfile.name) {
                 nameInput.value = state.ownerProfile.name;
             }
             if (phoneInput && !phoneInput.value.trim() && state.ownerProfile.phone) {
                 phoneInput.value = state.ownerProfile.phone;
+            }
+            if (pickupAddressInput && !pickupAddressInput.value.trim() && state.ownerProfile.address) {
+                pickupAddressInput.value = state.ownerProfile.address;
             }
         }
 
@@ -1750,7 +1771,7 @@
             updateOwnerEstimateDisplay(null);
         }
 
-        function collectOwnerFormValues({ silent = false } = {}) {
+        function collectOwnerFormValues({ silent = false, requireOwnerIdentity = true, requirePickupSchedule = true } = {}) {
             const payload = {
                 ownerName: document.getElementById("owner-publish-name").value.trim(),
                 ownerPhone: document.getElementById("owner-publish-phone").value.trim(),
@@ -1764,9 +1785,13 @@
                 remarks: document.getElementById("owner-remarks").value.trim()
             };
 
-            if (!payload.ownerName || !payload.ownerPhone || !payload.pickupAt || !payload.pickupAddress || !payload.dropoffAddress || payload.weightKg <= 0 || payload.cbm <= 0) {
+            const missingOwnerIdentity = requireOwnerIdentity && (!payload.ownerName || !payload.ownerPhone);
+            const missingPickupSchedule = requirePickupSchedule && !payload.pickupAt;
+            const missingFreightFields = !payload.pickupAddress || !payload.dropoffAddress || payload.weightKg <= 0 || payload.cbm <= 0;
+
+            if (missingOwnerIdentity || missingPickupSchedule || missingFreightFields) {
                 if (!silent) {
-                    alert("请先录入货主名、联系电话、提货时间、提货地址、目的地、重量和 CBM。");
+                    alert(requireOwnerIdentity || requirePickupSchedule ? "请先录入货主名、联系电话、提货时间、提货地址、目的地、重量和 CBM。" : "请先录入提货地址、目的地、重量和 CBM。");
                 }
                 return null;
             }
@@ -1775,7 +1800,11 @@
         }
 
         async function calculateOwnerEstimate(silent = false) {
-            const payload = collectOwnerFormValues({ silent });
+            const payload = collectOwnerFormValues({
+                silent,
+                requireOwnerIdentity: false,
+                requirePickupSchedule: false
+            });
             if (!payload) {
                 return null;
             }
@@ -1789,7 +1818,7 @@
             const button = document.getElementById("owner-estimate-btn");
             if (button) {
                 button.disabled = true;
-                button.textContent = "系统估价中...";
+                button.textContent = "重新估价中...";
             }
 
             try {
@@ -1821,7 +1850,7 @@
             } finally {
                 if (button) {
                     button.disabled = false;
-                    button.textContent = "系统估价";
+                    button.textContent = "重新估价";
                 }
             }
         }
@@ -1840,6 +1869,26 @@
             populateOwnerFormFromProfile();
         }
 
+        function scheduleOwnerEstimate() {
+            if (ownerEstimateTimer) {
+                clearTimeout(ownerEstimateTimer);
+            }
+
+            const payload = collectOwnerFormValues({
+                silent: true,
+                requireOwnerIdentity: false,
+                requirePickupSchedule: false
+            });
+            if (!payload) {
+                resetOwnerEstimateDisplay();
+                return;
+            }
+
+            ownerEstimateTimer = setTimeout(() => {
+                calculateOwnerEstimate(true);
+            }, 450);
+        }
+
         async function publishOwnerOrder() {
             const payload = collectOwnerFormValues();
             if (!payload) {
@@ -1848,7 +1897,7 @@
 
             const estimate = await calculateOwnerEstimate(true);
             if (!estimate) {
-                alert("系统估价失败，先点一次“系统估价”再发布。");
+                alert("系统估价失败，请检查提货地址、目的地和货物参数后再发布。");
                 return;
             }
             if (payload.ownerPrice <= 0) {
@@ -1895,6 +1944,7 @@
             );
 
             state.ownerOrders.unshift(newOrder);
+            ownerPanelFilter = "published";
             rebuildAvailableOrders();
             saveAppState();
             renderOrders();
@@ -1912,9 +1962,18 @@
             }
 
             const input = document.getElementById(`owner-quote-${orderId}`);
-            const nextPrice = Number(input?.value || 0);
+            const rawValue = (input?.value || "").trim();
+            if (!rawValue) {
+                alert("请输入新的货主报价。");
+                return;
+            }
+            const nextPrice = Number(rawValue);
             if (nextPrice <= 0) {
                 alert("请输入新的货主报价。");
+                return;
+            }
+            if (Math.abs(nextPrice - Number(order.ownerQuotedPrice || order.price || 0)) < 0.005) {
+                alert("新报价和当前报价一致，还没有更新。");
                 return;
             }
 
@@ -1935,6 +1994,32 @@
                 completed: 2
             };
             return map[status] ?? 9;
+        }
+
+        function filterOwnerOrders(status = "all") {
+            const source = [...state.ownerOrders]
+                .sort((a, b) => {
+                    const rankDelta = ownerLifecycleRank(a.ownerLifecycleStatus) - ownerLifecycleRank(b.ownerLifecycleStatus);
+                    if (rankDelta !== 0) {
+                        return rankDelta;
+                    }
+                    return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+                });
+            if (status === "all") {
+                return source;
+            }
+            return source.filter(order => order.ownerLifecycleStatus === status);
+        }
+
+        function focusOwnerOrders(status = "all") {
+            ownerPanelFilter = status;
+            renderOwnerPanel();
+            const matched = filterOwnerOrders(status);
+            if (matched.length === 1) {
+                openDetail(matched[0].id);
+                return;
+            }
+            document.getElementById("owner-order-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
         }
 
         function renderOwnerOrderCard(order) {
@@ -1964,11 +2049,12 @@
                     ${order.driverAcceptedAt ? `<div class="owner-meta">被抢单时间: ${order.driverAcceptedAt}</div>` : ""}
                     ${order.deliveredAt ? `<div class="owner-meta">完成时间: ${order.deliveredAt}</div>` : ""}
                     ${order.remarks ? `<div class="note-box" style="margin-top:12px;"><b>备注要求：</b>${order.remarks}</div>` : ""}
+                    <button class="btn-outline" style="margin-top:12px;" onclick="openDetail(${order.id})">查看详情</button>
                     ${
                         order.ownerLifecycleStatus === "published"
                             ? `
                                 <div class="owner-edit-row">
-                                    <input id="owner-quote-${order.id}" class="auth-field compact-field" type="number" min="0" step="0.01" value="${Number(order.ownerQuotedPrice || order.price).toFixed(2)}">
+                                    <input id="owner-quote-${order.id}" class="auth-field compact-field" type="number" min="0" step="0.01" placeholder="当前报价 ${Number(order.ownerQuotedPrice || order.price).toFixed(2)}，输入新价格">
                                     <button class="btn-outline" onclick="updateOwnerQuote(${order.id})">调整价格</button>
                                 </div>
                             `
@@ -1985,6 +2071,9 @@
             document.getElementById("owner-open-count").textContent = String(openCount);
             document.getElementById("owner-grabbed-count").textContent = String(grabbedCount);
             document.getElementById("owner-completed-count").textContent = String(completedCount);
+            document.getElementById("owner-open-card").classList.toggle("active", ownerPanelFilter === "published");
+            document.getElementById("owner-grabbed-card").classList.toggle("active", ownerPanelFilter === "grabbed");
+            document.getElementById("owner-completed-card").classList.toggle("active", ownerPanelFilter === "completed");
 
             const list = document.getElementById("owner-order-list");
             if (!state.ownerOrders.length) {
@@ -1997,16 +2086,18 @@
                 return;
             }
 
-            list.innerHTML = [...state.ownerOrders]
-                .sort((a, b) => {
-                    const rankDelta = ownerLifecycleRank(a.ownerLifecycleStatus) - ownerLifecycleRank(b.ownerLifecycleStatus);
-                    if (rankDelta !== 0) {
-                        return rankDelta;
-                    }
-                    return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
-                })
-                .map(renderOwnerOrderCard)
-                .join("");
+            const filteredOrders = filterOwnerOrders(ownerPanelFilter);
+            if (!filteredOrders.length) {
+                list.innerHTML = `
+                    <div class="card empty-card">
+                        <div style="font-size:16px; font-weight:800; color:#344054; margin-bottom:6px;">当前筛选没有订单</div>
+                        <div>换一个统计卡片，或者继续发布新货源。</div>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = filteredOrders.map(renderOwnerOrderCard).join("");
         }
 
         function renderProfile() {
@@ -2176,6 +2267,7 @@
             state.activeOrder = normalizeOrder(
                 {
                     ...order,
+                    ownerLifecycleStatus: order.sourceType === "owner_portal" ? "grabbed" : order.ownerLifecycleStatus,
                     status: "waiting_pickup",
                     scheduledPickupTime: order.time,
                     scheduledPickupLabel: order.pickupTimeLabel || "预计提货时间",
@@ -2294,16 +2386,43 @@
             }
         }
 
+        function findOrderById(orderId) {
+            const numericId = Number(orderId);
+            if (state.activeOrder && Number(state.activeOrder.id) === numericId) {
+                return state.activeOrder;
+            }
+            return state.ownerOrders.find(item => Number(item.id) === numericId)
+                || state.completedOrders.find(item => Number(item.id) === numericId)
+                || state.availableOrders.find(item => Number(item.id) === numericId)
+                || null;
+        }
+
         function openDetail(orderId) {
-            const order = state.completedOrders.find(item => item.id === orderId);
+            const order = findOrderById(orderId);
             if (!order) {
                 return;
             }
 
+            const isOwnerOrder = order.sourceType === "owner_portal";
+            const ownerStatus = ownerLifecycleMeta(order.ownerLifecycleStatus || "published");
+            const detailTitle = isOwnerOrder ? "货主订单详情" : "历史订单详情";
+            const priceLabel = isOwnerOrder ? "货主报价" : "结算运费";
+            const proofBlocks = [
+                ["提货照片", order.pickupPhoto, "提货照片"],
+                ["送达照片", order.deliveryPhoto, "送达照片"],
+                ["客户签字", order.signaturePhoto, "客户签字"]
+            ].map(([label, src, alt]) => `
+                <p style="font-size:13px; font-weight:800; margin-top:${label === "提货照片" ? "0" : "12px"};">${label}：</p>
+                ${src ? `<img class="proof-img" src="${src}" alt="${alt}">` : `<div class="note-box">暂未上传</div>`}
+            `).join("");
+
             document.getElementById("detail-content").innerHTML = `
-                <h3 style="color:var(--primary); margin-bottom:15px; border-bottom:2px solid var(--primary); padding-bottom:10px;">历史订单详情</h3>
+                <h3 style="color:var(--primary); margin-bottom:15px; border-bottom:2px solid var(--primary); padding-bottom:10px;">${detailTitle}</h3>
                 ${order.orderCode ? `<div class="detail-row"><span>入仓号</span><span>${orderCodeLabel(order)}</span></div>` : ""}
-                <div class="detail-row"><span>结算运费</span><span style="color:var(--accent); font-weight:800;">${formatCurrency(order.price)}</span></div>
+                ${isOwnerOrder ? `<div class="detail-row"><span>货主状态</span><span>${ownerStatus.label}</span></div>` : ""}
+                <div class="detail-row"><span>${priceLabel}</span><span style="color:var(--accent); font-weight:800;">${formatCurrency(order.price)}</span></div>
+                ${isOwnerOrder ? `<div class="detail-row"><span>系统参考价</span><span>${formatCurrency(order.systemEstimatedPrice || 0)}</span></div>` : ""}
+                ${isOwnerOrder && (order.ownerName || order.ownerPhone) ? `<div class="detail-row"><span>货主信息</span><span>${[order.ownerName, order.ownerPhone].filter(Boolean).join(" / ")}</span></div>` : ""}
                 <div class="detail-row"><span>实际提货时间</span><span>${order.actualPickupTime || "待更新"}</span></div>
                 <div class="detail-row"><span>${order.scheduledPickupLabel || order.pickupTimeLabel || "预计提货时间"}</span><span style="${order.pickupTimeStatus === "confirmed" ? "color:#2f9e44; font-weight:800;" : "color:#c92a2a; font-weight:800;"}">${order.scheduledPickupTime || order.time || "--"}</span></div>
                 ${order.showClearanceSuffix !== false ? `<div class="detail-row"><span>清关状态</span><span>${order.clearanceStatusLabel || clearanceStatusText(order.clearanceStatus)}</span></div>` : ""}
@@ -2311,14 +2430,11 @@
                 <div class="detail-row"><span>提货地点</span><span>${order.pickupAddress}</span></div>
                 <div class="detail-row"><span>送达地点</span><span>${order.dropoffAddress}</span></div>
                 <div class="detail-row"><span>货物规格</span><span>${order.pallets} Pallets / ${order.weight}</span></div>
+                ${order.quoteAdjustedAt ? `<div class="detail-row"><span>最后调价时间</span><span>${order.quoteAdjustedAt}</span></div>` : ""}
+                ${order.driverAcceptedAt ? `<div class="detail-row"><span>被抢单时间</span><span>${order.driverAcceptedAt}</span></div>` : ""}
                 ${order.remarks ? `<div class="detail-row"><span>备注要求</span><span>${order.remarks}</span></div>` : ""}
                 <div style="margin-top:15px;">
-                    <p style="font-size:13px; font-weight:800;">提货照片：</p>
-                    <img class="proof-img" src="${order.pickupPhoto}" alt="提货照片">
-                    <p style="font-size:13px; font-weight:800; margin-top:12px;">送达照片：</p>
-                    <img class="proof-img" src="${order.deliveryPhoto}" alt="送达照片">
-                    <p style="font-size:13px; font-weight:800; margin-top:12px;">客户签字：</p>
-                    <img class="proof-img" src="${order.signaturePhoto}" alt="客户签字">
+                    ${proofBlocks}
                 </div>
                 <button class="btn-main" onclick="closeDetail()">关闭</button>
             `;
@@ -2346,14 +2462,13 @@
             populateOwnerFormFromProfile();
             updateOwnerPricePreview();
             [
-                "owner-pickup-at",
                 "owner-pickup-address",
                 "owner-dropoff-address",
                 "owner-pieces",
                 "owner-weight-kg",
                 "owner-cbm"
             ].forEach(id => {
-                document.getElementById(id)?.addEventListener("input", resetOwnerEstimateDisplay);
+                document.getElementById(id)?.addEventListener("input", scheduleOwnerEstimate);
             });
             document.getElementById("owner-price")?.addEventListener("input", updateOwnerPricePreview);
             renderOrders();
