@@ -1763,6 +1763,9 @@
             if (pickupAddressInput && !pickupAddressInput.value.trim() && state.ownerProfile.address) {
                 pickupAddressInput.value = state.ownerProfile.address;
             }
+            if (ownerEstimateFieldsReady()) {
+                scheduleOwnerEstimate();
+            }
         }
 
         function updateOwnerPricePreview() {
@@ -1776,12 +1779,21 @@
             estimateVal.textContent = estimate ? formatCurrency(estimate.systemEstimatedPrice) : "--";
             estimateMeta.textContent = estimate
                 ? `${estimate.distanceKm.toFixed(1)} km / ${estimate.pallets} 板 / ${estimate.basis === "osrm" ? "路线里程" : "直线兜底"}`
-                : "录入完整地址和 CBM 后可估价";
+                : "录入提货地址、目的地、重量和 CBM 后自动估价";
         }
 
         function resetOwnerEstimateDisplay() {
             ownerEstimateDraft = null;
             updateOwnerEstimateDisplay(null);
+        }
+
+        function ownerEstimateFieldsReady() {
+            return Boolean(
+                document.getElementById("owner-pickup-address")?.value.trim()
+                && document.getElementById("owner-dropoff-address")?.value.trim()
+                && Number(document.getElementById("owner-weight-kg")?.value || 0) > 0
+                && Number(document.getElementById("owner-cbm")?.value || 0) > 0
+            );
         }
 
         function collectOwnerFormValues({ silent = false, requireOwnerIdentity = true, requirePickupSchedule = true } = {}) {
@@ -1900,6 +1912,25 @@
             ownerEstimateTimer = setTimeout(() => {
                 calculateOwnerEstimate(true);
             }, 450);
+        }
+
+        function bindOwnerEstimateListeners() {
+            [
+                "owner-pickup-address",
+                "owner-dropoff-address",
+                "owner-pieces",
+                "owner-weight-kg",
+                "owner-cbm"
+            ].forEach(id => {
+                const field = document.getElementById(id);
+                if (!field || field.dataset.estimateBound === "yes") {
+                    return;
+                }
+                ["input", "change", "blur"].forEach(eventName => {
+                    field.addEventListener(eventName, scheduleOwnerEstimate);
+                });
+                field.dataset.estimateBound = "yes";
+            });
         }
 
         async function publishOwnerOrder() {
@@ -2154,6 +2185,7 @@
         function openDashboard() {
             if (state.userRole === "owner") {
                 renderOwnerPanel();
+                scheduleOwnerEstimate();
                 showSection("owner");
                 return;
             }
@@ -2225,6 +2257,7 @@
 
             if (role === "owner") {
                 renderOwnerPanel();
+                scheduleOwnerEstimate();
                 showSection("owner");
                 return;
             }
@@ -2472,18 +2505,11 @@
         window.onload = () => {
             hydrateAppState();
             updateNavigation();
+            bindOwnerEstimateListeners();
             populateOwnerFormFromProfile();
             updateOwnerPricePreview();
-            [
-                "owner-pickup-address",
-                "owner-dropoff-address",
-                "owner-pieces",
-                "owner-weight-kg",
-                "owner-cbm"
-            ].forEach(id => {
-                document.getElementById(id)?.addEventListener("input", scheduleOwnerEstimate);
-            });
             document.getElementById("owner-price")?.addEventListener("input", updateOwnerPricePreview);
+            scheduleOwnerEstimate();
             renderOrders();
             renderProfile();
             renderOwnerPanel();
