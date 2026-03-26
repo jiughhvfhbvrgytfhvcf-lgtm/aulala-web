@@ -1567,7 +1567,18 @@
             `).join("");
         }
 
+        function ongoingDisplayStatus(order) {
+            if (!order || !order.pickupPhoto) {
+                return "waiting_pickup";
+            }
+            if (order.deliveryPhoto || order.signaturePhoto) {
+                return "in_transit";
+            }
+            return "picked_up";
+        }
+
         function renderOngoingOrder(order) {
+            const displayStatus = ongoingDisplayStatus(order);
             return `
                 <div class="card">
                     <div class="card-header">
@@ -1584,9 +1595,9 @@
                     </div>
 
                     <div class="flow-bar">
-                        <div class="${flowClass(order.status, 0)}"><strong>等待提货</strong><span>抢单后</span></div>
-                        <div class="${flowClass(order.status, 1)}"><strong>已提货</strong><span>装车并拍照</span></div>
-                        <div class="${flowClass(order.status, 2)}"><strong>派送途中</strong><span>卸货后待回单</span></div>
+                        <div class="${flowClass(displayStatus, 0)}"><strong>等待提货</strong><span>抢单后</span></div>
+                        <div class="${flowClass(displayStatus, 1)}"><strong>已提货</strong><span>装车并拍照</span></div>
+                        <div class="${flowClass(displayStatus, 2)}"><strong>派送途中</strong><span>卸货后待回单</span></div>
                     </div>
 
                     ${renderPickupTimePanel(order, order.scheduledPickupTime)}
@@ -1646,7 +1657,9 @@
         }
 
         function renderActionPanel(order) {
-            if (order.status === "waiting_pickup") {
+            const displayStatus = ongoingDisplayStatus(order);
+
+            if (displayStatus === "waiting_pickup") {
                 return `
                     <div class="note-box">司机抢到单后订单先变成 <b>等待提货</b>。上传提货照片后，会自动记录 <b>实际提货时间</b>，并把上传口切换到送达凭证。</div>
                     <div class="upload-title">提货现场照片</div>
@@ -1658,7 +1671,7 @@
                 `;
             }
 
-            if (order.status === "picked_up") {
+            if (displayStatus === "picked_up") {
                 return `
                     <div class="note-box">提货时间已记录为 <b>${order.actualPickupTime || "待更新"}</b>。现在上传区已经切换为 <b>送达凭证</b>；送达照片和签字未补齐前，后续会显示为 <b>派送途中</b>。</div>
                     <div class="upload-title">送达凭证</div>
