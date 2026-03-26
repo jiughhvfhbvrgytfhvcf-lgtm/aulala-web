@@ -895,13 +895,17 @@
                 </div>
             </div>
 
-            <div class="section-title" id="ongoing-title">进行中的订单 (0)</div>
+            <div class="section-row">
+                <div class="section-title" id="ongoing-title">进行中的订单 (0)</div>
+                <button class="mini-btn" onclick="showSection('orders')">返回抢单大厅</button>
+            </div>
             <div id="ongoing-list"></div>
 
-            <div class="section-title">已完成订单</div>
+            <div class="section-row">
+                <div class="section-title">已完成订单</div>
+                <button class="mini-btn" onclick="showSection('orders')">返回抢单大厅</button>
+            </div>
             <div id="history-list"></div>
-
-            <button class="btn-main" style="background:#667085; margin-top:20px;" onclick="showSection('orders')">返回抢单厅</button>
         </section>
 
         <section id="owner-panel" class="hidden">
@@ -1729,6 +1733,7 @@
         }
 
         function renderHistoryCard(order) {
+            const plannedPickupTime = order.scheduledPickupTime || order.time || "--";
             return `
                 <div class="card">
                     <div class="card-header">
@@ -1737,15 +1742,16 @@
                             <div class="highlight-specs" style="margin-bottom:6px;">
                                 ${sourceChip(order)}
                             </div>
-                            <span style="font-size:14px; color:#667085;">实际提货 ${order.actualPickupTime || "待更新"}</span>
                         </div>
                         <span class="status-chip status-completed">已完成 ${formatCurrency(order.price)}</span>
                     </div>
+                    <div class="history-line">计划提货时间: ${plannedPickupTime}</div>
+                    <div class="history-line">实际提货时间: ${order.actualPickupTime || "待更新"}</div>
+                    <div class="history-line">实际送达时间: ${order.deliveredAt || "--"}</div>
                     <div class="history-line">提货地址: ${pickupAddressText(order)}</div>
                     <div class="history-line">送货地址: ${dropoffAddressText(order)}</div>
                     <div class="history-line">货物规格: ${order.pallets} Pallets / ${order.weight}</div>
                     ${order.remarks ? `<div class="history-line">备注要求: ${order.remarks}</div>` : ""}
-                    <div class="history-line">送达时间: ${order.deliveredAt || "--"}</div>
                     <button class="btn-outline" onclick="openDetail(${order.id})">查看完整详情/回单照片</button>
                 </div>
             `;
@@ -2513,6 +2519,7 @@
             const ownerStatus = ownerLifecycleMeta(order.ownerLifecycleStatus || "published");
             const detailTitle = isOwnerOrder ? "货主订单详情" : "历史订单详情";
             const priceLabel = isOwnerOrder ? "货主报价" : "结算运费";
+            const plannedPickupTime = order.scheduledPickupTime || order.time || "--";
             const proofBlocks = [
                 ["提货照片", order.pickupPhoto, "提货照片"],
                 ["送达照片", order.deliveryPhoto, "送达照片"],
@@ -2529,10 +2536,10 @@
                 <div class="detail-row"><span>${priceLabel}</span><span style="color:var(--accent); font-weight:800;">${formatCurrency(order.price)}</span></div>
                 ${isOwnerOrder ? `<div class="detail-row"><span>系统参考价</span><span>${formatCurrency(order.systemEstimatedPrice || 0)}</span></div>` : ""}
                 ${isOwnerOrder && (order.ownerName || order.ownerPhone) ? `<div class="detail-row"><span>货主信息</span><span>${[order.ownerName, order.ownerPhone].filter(Boolean).join(" / ")}</span></div>` : ""}
+                <div class="detail-row"><span>计划提货时间</span><span>${plannedPickupTime}</span></div>
                 <div class="detail-row"><span>实际提货时间</span><span>${order.actualPickupTime || "待更新"}</span></div>
-                <div class="detail-row"><span>${order.scheduledPickupLabel || order.pickupTimeLabel || "预计提货时间"}</span><span style="${order.pickupTimeStatus === "confirmed" ? "color:#2f9e44; font-weight:800;" : "color:#c92a2a; font-weight:800;"}">${order.scheduledPickupTime || order.time || "--"}</span></div>
+                <div class="detail-row"><span>实际送达时间</span><span>${order.deliveredAt || "--"}</span></div>
                 ${order.showClearanceSuffix !== false ? `<div class="detail-row"><span>清关状态</span><span>${order.clearanceStatusLabel || clearanceStatusText(order.clearanceStatus)}</span></div>` : ""}
-                <div class="detail-row"><span>送达完成时间</span><span>${order.deliveredAt || "--"}</span></div>
                 <div class="detail-row"><span>提货地点</span><span>${order.pickupAddress}</span></div>
                 <div class="detail-row"><span>送达地点</span><span>${order.dropoffAddress}</span></div>
                 <div class="detail-row"><span>货物规格</span><span>${order.pallets} Pallets / ${order.weight}</span></div>
