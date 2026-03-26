@@ -2539,7 +2539,6 @@
                 <div class="detail-row"><span>计划提货时间</span><span>${plannedPickupTime}</span></div>
                 <div class="detail-row"><span>实际提货时间</span><span>${order.actualPickupTime || "待更新"}</span></div>
                 <div class="detail-row"><span>实际送达时间</span><span>${order.deliveredAt || "--"}</span></div>
-                ${order.showClearanceSuffix !== false ? `<div class="detail-row"><span>清关状态</span><span>${order.clearanceStatusLabel || clearanceStatusText(order.clearanceStatus)}</span></div>` : ""}
                 <div class="detail-row"><span>提货地点</span><span>${order.pickupAddress}</span></div>
                 <div class="detail-row"><span>送达地点</span><span>${order.dropoffAddress}</span></div>
                 <div class="detail-row"><span>货物规格</span><span>${order.pallets} Pallets / ${order.weight}</span></div>
