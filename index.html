@@ -458,6 +458,12 @@
             gap: 10px;
         }
 
+        .cargo-spec-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
         .full-span {
             grid-column: 1 / -1;
         }
@@ -494,6 +500,10 @@
             border: 1px solid #e4e7ec;
             border-radius: 14px;
             padding: 14px;
+        }
+
+        .quote-card .auth-field {
+            margin: 10px 0 0;
         }
 
         .quote-card-label {
@@ -787,7 +797,8 @@
             }
 
             .form-grid,
-            .quote-grid {
+            .quote-grid,
+            .cargo-spec-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -918,23 +929,25 @@
                     <input id="owner-pickup-at" class="auth-field compact-field full-span" type="datetime-local">
                     <input id="owner-pickup-address" class="auth-field compact-field full-span" type="text" placeholder="提货地址">
                     <input id="owner-dropoff-address" class="auth-field compact-field full-span" type="text" placeholder="目的地 / 送货地址">
-                    <input id="owner-pieces" class="auth-field compact-field" type="number" min="0" placeholder="件数">
-                    <input id="owner-weight-kg" class="auth-field compact-field" type="number" min="0" step="0.01" placeholder="重量 (kg)">
-                    <input id="owner-cbm" class="auth-field compact-field" type="number" min="0" step="0.01" placeholder="体积 (CBM)">
-                    <input id="owner-price" class="auth-field compact-field" type="number" min="0" step="0.01" placeholder="货主报价 (AUD)">
+                    <div class="cargo-spec-grid full-span">
+                        <input id="owner-pieces" class="auth-field compact-field" type="number" min="0" placeholder="件数">
+                        <input id="owner-weight-kg" class="auth-field compact-field" type="number" min="0" step="0.01" placeholder="重量 (kg)">
+                        <input id="owner-cbm" class="auth-field compact-field" type="number" min="0" step="0.01" placeholder="体积 (CBM)">
+                    </div>
                     <textarea id="owner-remarks" class="auth-field compact-field full-span" placeholder="备注要求，例如到场前电话联系、限高、需尾板、签回单要求等"></textarea>
                 </div>
 
                 <div class="quote-grid">
                     <div class="quote-card">
-                        <span class="quote-card-label">货主当前报价</span>
-                        <strong class="quote-card-value" id="owner-price-preview">--</strong>
-                        <span class="quote-card-sub" id="owner-price-meta">可高于或低于系统参考价，没人抢单时可再调</span>
-                    </div>
-                    <div class="quote-card">
                         <span class="quote-card-label">系统评估参考价</span>
                         <strong class="quote-card-value" id="owner-system-estimate">--</strong>
                         <span class="quote-card-sub" id="owner-estimate-meta">录入提货地址、目的地、重量和 CBM 后自动估价</span>
+                    </div>
+                    <div class="quote-card">
+                        <span class="quote-card-label">货主当前报价</span>
+                        <strong class="quote-card-value" id="owner-price-preview">--</strong>
+                        <input id="owner-price" class="auth-field compact-field" type="number" min="0" step="0.01" placeholder="输入货主报价 (AUD)">
+                        <span class="quote-card-sub" id="owner-price-meta">可高于或低于系统参考价，没人抢单时可再调</span>
                     </div>
                 </div>
 
