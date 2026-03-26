@@ -893,7 +893,7 @@
 
         function orderCodeClass(order) {
             const status = normalizeClearanceStatus(order.clearanceStatus || order.clearanceStatusRaw);
-            return status ? "order-code" : "order-code order-code-pending";
+            return status === "clean" ? "order-code" : "order-code order-code-pending";
         }
 
         function pickupAddressText(order) {
