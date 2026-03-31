@@ -1077,6 +1077,7 @@
             : fallbackOrders;
         const initialOrders = externalOrders.map((order, index) => normalizeOrder(order, index + 1));
         const APP_STORAGE_KEY = "aulala_app_runtime_v1";
+        const ADMIN_STORAGE_KEY = "aulala_admin_runtime_v1";
         const LOGIN_SESSION_KEY = "aulala-login-session";
         const TEST_DRIVER_ACCOUNT = "13888888888";
         const estimateCache = {
@@ -1121,6 +1122,49 @@
             } catch (error) {
                 return fallback;
             }
+        }
+
+        function normalizeOrderCode(value) {
+            return String(value || "").trim().toUpperCase();
+        }
+
+        function loadAdminRuntime() {
+            return safeParse(localStorage.getItem(ADMIN_STORAGE_KEY), {});
+        }
+
+        function collectBlockedExternalOrderCodes() {
+            const blockedCodes = new Set();
+            const addOrderCode = order => {
+                const code = normalizeOrderCode(order?.orderCode || order?.putCode || "");
+                if (code) {
+                    blockedCodes.add(code);
+                }
+            };
+
+            Object.values(state.driverOrderBuckets || {}).forEach(bucket => {
+                if (!bucket) {
+                    return;
+                }
+                addOrderCode(bucket.activeOrder);
+                (bucket.completedOrders || []).forEach(addOrderCode);
+            });
+
+            addOrderCode(state.activeOrder);
+            (state.completedOrders || []).forEach(addOrderCode);
+
+            const adminRuntime = loadAdminRuntime();
+            const orderOps = adminRuntime && typeof adminRuntime.orderOps === "object" ? adminRuntime.orderOps : {};
+            Object.entries(orderOps).forEach(([key, op]) => {
+                const code = key.startsWith("code:") ? normalizeOrderCode(key.slice(5)) : "";
+                if (!code || !op || typeof op !== "object") {
+                    return;
+                }
+                if (op.assignedDriverId || /已完成/.test(String(op.internalStatus || ""))) {
+                    blockedCodes.add(code);
+                }
+            });
+
+            return blockedCodes;
         }
 
         function loadLoginSession() {
@@ -1255,11 +1299,18 @@
         function rebuildAvailableOrders() {
             const consumedIds = new Set((state.consumedExternalOrderIds || []).map(Number));
             const activeId = state.activeOrder ? Number(state.activeOrder.id) : null;
+            const blockedCodes = collectBlockedExternalOrderCodes();
             const ownerPublished = (state.ownerOrders || [])
                 .filter(order => order.ownerLifecycleStatus === "published")
                 .map((order, index) => normalizeOrder(order, 5000 + index));
             const externalAvailable = (state.baseExternalOrders || [])
-                .filter(order => !consumedIds.has(Number(order.id)) && Number(order.id) !== activeId)
+                .filter(order => {
+                    const code = normalizeOrderCode(order.orderCode || order.putCode || "");
+                    if (code && blockedCodes.has(code)) {
+                        return false;
+                    }
+                    return !consumedIds.has(Number(order.id)) && Number(order.id) !== activeId;
+                })
                 .map((order, index) => normalizeOrder(order, index + 1));
             state.availableOrders = [...ownerPublished, ...externalAvailable];
         }
