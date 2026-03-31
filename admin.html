@@ -826,6 +826,7 @@
         const ADMIN_SESSION_KEY = "aulala_admin_session_v1";
         const ADMIN_STORAGE_KEY = "aulala_admin_runtime_v1";
         const APP_STORAGE_KEY = "aulala_app_runtime_v1";
+        const DRIVER_ACCOUNTS_KEY = "aulala_driver_accounts_v1";
         const ADMIN_SESSION_TTL = 1000 * 60 * 60 * 6;
         const DEFAULT_DRIVER_PAYOUT_RATIO = 0.78;
         const DEFAULT_DRIVERS = [
@@ -890,6 +891,10 @@
             return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
         }
 
+        function normalizePhone(value) {
+            return String(value || "").replace(/\s+/g, "");
+        }
+
         function roundMoney(value) {
             const numeric = Number(value || 0);
             return Number.isFinite(numeric) ? Number(numeric.toFixed(2)) : 0;
@@ -948,10 +953,65 @@
             }));
         }
 
+        function nextDriverId(drivers) {
+            const maxId = drivers.reduce((max, driver) => {
+                const match = String(driver.id || "").match(/(\d+)/);
+                return match ? Math.max(max, Number(match[1])) : max;
+            }, 0);
+            return `DRV-${String(maxId + 1).padStart(3, "0")}`;
+        }
+
+        function loadRegisteredDriverAccounts() {
+            const accounts = safeParse(localStorage.getItem(DRIVER_ACCOUNTS_KEY), []);
+            return Array.isArray(accounts) ? accounts : [];
+        }
+
+        function mergeRegisteredDrivers(drivers, registeredAccounts) {
+            const nextDrivers = Array.isArray(drivers) ? drivers.slice() : [];
+            registeredAccounts.forEach(account => {
+                const phone = normalizePhone(account.phone);
+                if (!phone) {
+                    return;
+                }
+                const existingIndex = nextDrivers.findIndex(driver => normalizePhone(driver.phone) === phone);
+                if (existingIndex >= 0) {
+                    const existing = nextDrivers[existingIndex];
+                    nextDrivers.splice(existingIndex, 1, {
+                        ...existing,
+                        name: account.name || existing.name,
+                        phone,
+                        vehicleType: account.vehicleType || existing.vehicleType,
+                        joinedAt: existing.joinedAt || String(account.createdAt || "").slice(0, 10) || nowStamp().slice(0, 10),
+                        notes: existing.notes || "司机在登录页自助注册。"
+                    });
+                    return;
+                }
+                nextDrivers.unshift({
+                    id: nextDriverId(nextDrivers),
+                    name: account.name || "新注册司机",
+                    phone,
+                    vehicleType: account.vehicleType || "Van",
+                    plate: "",
+                    city: "Sydney",
+                    status: "active",
+                    settlementCycle: "周结",
+                    bankTail: "",
+                    payoutRatio: DEFAULT_DRIVER_PAYOUT_RATIO,
+                    joinedAt: String(account.createdAt || "").slice(0, 10) || nowStamp().slice(0, 10),
+                    notes: "司机在登录页自助注册。"
+                });
+            });
+            return nextDrivers;
+        }
+
         function loadAdminData() {
             const saved = safeParse(localStorage.getItem(ADMIN_STORAGE_KEY), {});
+            const drivers = mergeRegisteredDrivers(
+                normalizeDrivers(saved.drivers),
+                loadRegisteredDriverAccounts()
+            );
             return {
-                drivers: normalizeDrivers(saved.drivers),
+                drivers,
                 orderOps: saved.orderOps && typeof saved.orderOps === "object" ? saved.orderOps : {},
                 updatedAt: saved.updatedAt || ""
             };
@@ -1736,6 +1796,7 @@
         }
 
         function refreshData() {
+            state.adminData = loadAdminData();
             state.runtimeData = loadRuntimeData();
             state.orders = buildOrderRecords().map(order => ({
                 ...order,
@@ -2106,6 +2167,16 @@
             if (event.target.id === "modal-shell") {
                 closeModal();
             }
+        });
+        window.addEventListener("storage", event => {
+            if (![ADMIN_STORAGE_KEY, APP_STORAGE_KEY, DRIVER_ACCOUNTS_KEY].includes(event.key)) {
+                return;
+            }
+            if (document.getElementById("admin-shell").classList.contains("hidden")) {
+                return;
+            }
+            refreshData();
+            switchPanel(state.currentPanel);
         });
         document.querySelectorAll(".nav-item").forEach(button => {
             button.addEventListener("click", () => switchPanel(button.dataset.panel));
