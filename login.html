@@ -42,6 +42,10 @@
     </div>
 
     <script>
+        const TEST_DRIVER_ACCOUNT = "13888888888";
+        const TEST_DRIVER_PASSWORD = "123456";
+        const APP_STORAGE_KEY = "aulala_app_runtime_v1";
+
         function switchTab(type) {
             const isLogin = type === 'login';
             document.getElementById('loginForm').style.display = isLogin ? 'block' : 'none';
@@ -50,13 +54,40 @@
             document.getElementById('regTab').className = isLogin ? 'tab' : 'tab active';
         }
 
+        function bootstrapDriverSession(account) {
+            let currentState = {};
+            try {
+                currentState = JSON.parse(localStorage.getItem(APP_STORAGE_KEY) || "{}") || {};
+            } catch (error) {
+                currentState = {};
+            }
+
+            localStorage.setItem(
+                APP_STORAGE_KEY,
+                JSON.stringify({
+                    ...currentState,
+                    loggedIn: true,
+                    userRole: "driver",
+                    authMode: "login"
+                })
+            );
+
+            localStorage.setItem("aulala-login-session", JSON.stringify({
+                account,
+                role: "driver",
+                loggedAt: new Date().toISOString()
+            }));
+        }
+
         function doLogin() {
-            const phone = document.getElementById('phone').value;
-            if(!phone) return alert("请输入手机号");
-            // 这里后期对接 ERP 的登录接口
-            alert("正在通过 ERP (121.196.233.99) 验证身份...");
-            // 登录成功后跳转回首页
-            window.location.href = "index.html";
+            const phone = document.getElementById('phone').value.trim();
+            const password = document.getElementById('pw').value.trim();
+            if (!phone || !password) return alert("请输入手机号和密码");
+            if (phone !== TEST_DRIVER_ACCOUNT || password !== TEST_DRIVER_PASSWORD) {
+                return alert("测试司机账号或密码不正确，请使用 13888888888 / 123456");
+            }
+            bootstrapDriverSession(phone);
+            window.location.href = "app.html";
         }
 
         const urlParams = new URLSearchParams(window.location.search);
