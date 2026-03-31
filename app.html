@@ -1066,7 +1066,9 @@
                 signaturePhoto: order.signaturePhoto || "",
                 createdAt: order.createdAt || "",
                 quoteAdjustedAt: order.quoteAdjustedAt || "",
-                driverAcceptedAt: order.driverAcceptedAt || ""
+                driverAcceptedAt: order.driverAcceptedAt || "",
+                assignedDriverAccount: normalizePhone(order.assignedDriverAccount || ""),
+                assignedDriverName: order.assignedDriverName || ""
             };
         }
 
@@ -1075,6 +1077,8 @@
             : fallbackOrders;
         const initialOrders = externalOrders.map((order, index) => normalizeOrder(order, index + 1));
         const APP_STORAGE_KEY = "aulala_app_runtime_v1";
+        const LOGIN_SESSION_KEY = "aulala-login-session";
+        const TEST_DRIVER_ACCOUNT = "13888888888";
         const estimateCache = {
             geocodes: {},
             routes: {}
@@ -1087,6 +1091,11 @@
             loggedIn: false,
             userRole: "driver",
             authMode: "login",
+            driverProfile: {
+                account: "",
+                name: "",
+                vehicleType: ""
+            },
             ownerProfile: {
                 name: "",
                 phone: "",
@@ -1098,8 +1107,35 @@
             activeOrder: null,
             completedOrders: [],
             ownerOrders: [],
-            consumedExternalOrderIds: []
+            consumedExternalOrderIds: [],
+            driverOrderBuckets: {}
         };
+
+        function normalizePhone(value) {
+            return String(value || "").replace(/\s+/g, "");
+        }
+
+        function safeParse(raw, fallback) {
+            try {
+                return JSON.parse(raw || "");
+            } catch (error) {
+                return fallback;
+            }
+        }
+
+        function loadLoginSession() {
+            return safeParse(localStorage.getItem(LOGIN_SESSION_KEY), null);
+        }
+
+        function currentDriverAccount() {
+            const session = loadLoginSession();
+            return normalizePhone(state.driverProfile.account || session?.account || "");
+        }
+
+        function currentDriverName() {
+            const session = loadLoginSession();
+            return state.driverProfile.name || session?.name || "";
+        }
 
         function createMockImage(label, fill, isSignature = false) {
             const svg = isSignature
@@ -1108,7 +1144,10 @@
             return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
         }
 
-        function getDefaultCompletedOrders() {
+        function getDefaultCompletedOrders(account = "") {
+            if (normalizePhone(account) !== TEST_DRIVER_ACCOUNT) {
+                return [];
+            }
             return [
                 normalizeOrder(
                     {
@@ -1128,14 +1167,70 @@
                         deliveryPhoto: createMockImage("送达照片", "#1c7ed6"),
                         signaturePhoto: createMockImage("客户签字", "#495057", true),
                         showClearanceSuffix: false,
-                        source: "manual_demo"
+                        source: "manual_demo",
+                        assignedDriverAccount: TEST_DRIVER_ACCOUNT,
+                        assignedDriverName: "测试司机"
                     },
                     88
                 )
             ];
         }
 
+        function normalizeDriverBucket(bucket, account) {
+            return {
+                activeOrder: bucket?.activeOrder ? normalizeOrder(bucket.activeOrder, 4000) : null,
+                completedOrders: Array.isArray(bucket?.completedOrders)
+                    ? bucket.completedOrders.map((order, index) => normalizeOrder(order, 7000 + index))
+                    : getDefaultCompletedOrders(account)
+            };
+        }
+
+        function getDriverBucket(account = currentDriverAccount(), createIfMissing = true) {
+            const normalizedAccount = normalizePhone(account);
+            if (!normalizedAccount) {
+                return {
+                    activeOrder: null,
+                    completedOrders: []
+                };
+            }
+            if (!state.driverOrderBuckets[normalizedAccount] && createIfMissing) {
+                state.driverOrderBuckets[normalizedAccount] = normalizeDriverBucket(null, normalizedAccount);
+            }
+            return state.driverOrderBuckets[normalizedAccount] || {
+                activeOrder: null,
+                completedOrders: []
+            };
+        }
+
+        function syncDriverScopedCollections() {
+            if (state.userRole !== "driver") {
+                return;
+            }
+            const bucket = getDriverBucket(currentDriverAccount(), true);
+            state.activeOrder = bucket.activeOrder ? normalizeOrder(bucket.activeOrder, 4000) : null;
+            state.completedOrders = Array.isArray(bucket.completedOrders)
+                ? bucket.completedOrders.map((order, index) => normalizeOrder(order, 7000 + index))
+                : [];
+        }
+
+        function persistCurrentDriverBucket() {
+            if (state.userRole !== "driver") {
+                return;
+            }
+            const account = currentDriverAccount();
+            if (!account) {
+                return;
+            }
+            state.driverOrderBuckets[account] = {
+                activeOrder: state.activeOrder ? normalizeOrder(state.activeOrder, 4000) : null,
+                completedOrders: Array.isArray(state.completedOrders)
+                    ? state.completedOrders.map((order, index) => normalizeOrder(order, 7000 + index))
+                    : []
+            };
+        }
+
         function saveAppState() {
+            persistCurrentDriverBucket();
             try {
                 localStorage.setItem(
                     APP_STORAGE_KEY,
@@ -1143,11 +1238,13 @@
                         loggedIn: state.loggedIn,
                         userRole: state.userRole,
                         authMode: state.authMode,
+                        driverProfile: state.driverProfile,
                         ownerProfile: state.ownerProfile,
                         activeOrder: state.activeOrder,
                         completedOrders: state.completedOrders,
                         ownerOrders: state.ownerOrders,
-                        consumedExternalOrderIds: state.consumedExternalOrderIds
+                        consumedExternalOrderIds: state.consumedExternalOrderIds,
+                        driverOrderBuckets: state.driverOrderBuckets
                     })
                 );
             } catch (error) {
@@ -1174,20 +1271,46 @@
             } catch (error) {
                 saved = {};
             }
+            const loginSession = loadLoginSession();
 
             state.loggedIn = Boolean(saved.loggedIn);
             state.userRole = saved.userRole === "owner" ? "owner" : "driver";
             state.authMode = saved.authMode === "reg" ? "reg" : "login";
+            state.driverProfile = {
+                account: normalizePhone(saved.driverProfile?.account || loginSession?.account || ""),
+                name: saved.driverProfile?.name || loginSession?.name || "",
+                vehicleType: saved.driverProfile?.vehicleType || loginSession?.vehicleType || ""
+            };
             state.ownerProfile = {
                 name: saved.ownerProfile?.name || "",
                 phone: saved.ownerProfile?.phone || "",
                 email: saved.ownerProfile?.email || "",
                 address: saved.ownerProfile?.address || ""
             };
-            state.activeOrder = saved.activeOrder ? normalizeOrder(saved.activeOrder, 4000) : null;
-            state.completedOrders = Array.isArray(saved.completedOrders) && saved.completedOrders.length
-                ? saved.completedOrders.map((order, index) => normalizeOrder(order, 7000 + index))
-                : getDefaultCompletedOrders();
+            const savedBuckets = saved.driverOrderBuckets && typeof saved.driverOrderBuckets === "object"
+                ? saved.driverOrderBuckets
+                : {};
+            state.driverOrderBuckets = {};
+            Object.entries(savedBuckets).forEach(([account, bucket]) => {
+                const normalizedAccount = normalizePhone(account);
+                if (!normalizedAccount) {
+                    return;
+                }
+                state.driverOrderBuckets[normalizedAccount] = normalizeDriverBucket(bucket, normalizedAccount);
+            });
+
+            const legacyAccount = normalizePhone(state.driverProfile.account || loginSession?.account || TEST_DRIVER_ACCOUNT);
+            if (!Object.keys(state.driverOrderBuckets).length && legacyAccount) {
+                state.driverOrderBuckets[legacyAccount] = {
+                    activeOrder: saved.activeOrder ? normalizeOrder(saved.activeOrder, 4000) : null,
+                    completedOrders: Array.isArray(saved.completedOrders) && saved.completedOrders.length
+                        ? saved.completedOrders.map((order, index) => normalizeOrder(order, 7000 + index))
+                        : getDefaultCompletedOrders(legacyAccount)
+                };
+            }
+
+            state.activeOrder = null;
+            state.completedOrders = [];
             state.ownerOrders = Array.isArray(saved.ownerOrders)
                 ? saved.ownerOrders.map((order, index) => normalizeOrder({ ...order, source: "owner_portal" }, 8000 + index))
                 : [];
@@ -1195,6 +1318,7 @@
                 ? saved.consumedExternalOrderIds.map(Number)
                 : [];
 
+            syncDriverScopedCollections();
             rebuildAvailableOrders();
         }
 
@@ -2363,6 +2487,14 @@
 
             state.loggedIn = true;
             state.userRole = role;
+            if (role === "driver") {
+                state.driverProfile = {
+                    account: normalizePhone(phone),
+                    name: state.driverProfile.name || "",
+                    vehicleType: state.driverProfile.vehicleType || ""
+                };
+                syncDriverScopedCollections();
+            }
             state.ownerProfile = {
                 name: (document.getElementById("owner-auth-name")?.value || "").trim() || state.ownerProfile.name || "",
                 phone,
@@ -2386,11 +2518,19 @@
         }
 
         function logout() {
+            persistCurrentDriverBucket();
             state.loggedIn = false;
             state.userRole = "driver";
+            state.driverProfile = {
+                account: "",
+                name: "",
+                vehicleType: ""
+            };
+            state.activeOrder = null;
+            state.completedOrders = [];
             saveAppState();
             try {
-                localStorage.removeItem("aulala-login-session");
+                localStorage.removeItem(LOGIN_SESSION_KEY);
             } catch (error) {
                 console.warn("clear login session failed", error);
             }
@@ -2429,6 +2569,8 @@
                 if (ownerOrder) {
                     ownerOrder.ownerLifecycleStatus = "grabbed";
                     ownerOrder.driverAcceptedAt = nowStamp();
+                    ownerOrder.assignedDriverAccount = currentDriverAccount();
+                    ownerOrder.assignedDriverName = currentDriverName();
                 }
             } else if (!state.consumedExternalOrderIds.includes(order.id)) {
                 state.consumedExternalOrderIds.push(order.id);
@@ -2441,6 +2583,8 @@
                     status: "waiting_pickup",
                     scheduledPickupTime: order.time,
                     scheduledPickupLabel: order.pickupTimeLabel || "预计提货时间",
+                    assignedDriverAccount: currentDriverAccount(),
+                    assignedDriverName: currentDriverName(),
                     actualPickupTime: "",
                     deliveredAt: "",
                     pickupPhoto: "",
