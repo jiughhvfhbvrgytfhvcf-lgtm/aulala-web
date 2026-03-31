@@ -1,0 +1,2129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aulala 管理后台</title>
+    <style>
+        :root {
+            --bg: #f3f6fb;
+            --panel: #ffffff;
+            --primary: #0b3b91;
+            --primary-strong: #07275f;
+            --primary-soft: #eaf1ff;
+            --accent: #f08c00;
+            --success: #1f9d55;
+            --warning: #c27c0e;
+            --danger: #d9485f;
+            --muted: #667085;
+            --text: #17213a;
+            --border: #d9e2f0;
+            --shadow: 0 22px 50px rgba(15, 23, 42, 0.08);
+            --radius: 22px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(240, 140, 0, 0.12), transparent 24%),
+                radial-gradient(circle at bottom right, rgba(11, 59, 145, 0.14), transparent 26%),
+                linear-gradient(180deg, #f9fbff 0%, var(--bg) 100%);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        button,
+        input,
+        select,
+        textarea {
+            font: inherit;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .login-shell {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 28px;
+        }
+
+        .login-card {
+            width: min(460px, 100%);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(11, 59, 145, 0.12);
+            border-radius: 28px;
+            padding: 34px 30px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(12px);
+        }
+
+        .brand-title {
+            font-size: 30px;
+            font-weight: 900;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .brand-copy {
+            color: var(--muted);
+            line-height: 1.8;
+            margin: 0 0 22px;
+        }
+
+        .login-note {
+            margin-bottom: 18px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            background: rgba(11, 59, 145, 0.06);
+            color: var(--primary);
+            border: 1px solid rgba(11, 59, 145, 0.12);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .stack {
+            display: grid;
+            gap: 14px;
+        }
+
+        .field-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .field,
+        .select,
+        .textarea {
+            width: 100%;
+            border: 1px solid var(--border);
+            background: #fff;
+            border-radius: 16px;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .field,
+        .select {
+            height: 50px;
+            padding: 0 14px;
+        }
+
+        .textarea {
+            min-height: 120px;
+            padding: 14px;
+            resize: vertical;
+        }
+
+        .field:focus,
+        .select:focus,
+        .textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(11, 59, 145, 0.08);
+        }
+
+        .btn {
+            border: none;
+            border-radius: 16px;
+            padding: 14px 18px;
+            cursor: pointer;
+            font-weight: 800;
+            transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+            transform: none;
+        }
+
+        .btn-primary {
+            color: #fff;
+            background: linear-gradient(135deg, var(--primary) 0%, #125cdb 100%);
+            box-shadow: 0 16px 30px rgba(11, 59, 145, 0.18);
+        }
+
+        .btn-secondary {
+            color: var(--primary);
+            background: var(--primary-soft);
+            border: 1px solid #c9dafc;
+        }
+
+        .btn-danger {
+            color: #fff;
+            background: linear-gradient(135deg, #d9485f 0%, #f0657c 100%);
+        }
+
+        .status-banner {
+            display: none;
+            margin-top: 16px;
+            padding: 13px 15px;
+            border-radius: 14px;
+            background: #fff4f4;
+            color: var(--danger);
+            border: 1px solid rgba(217, 72, 95, 0.18);
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .status-banner.visible {
+            display: block;
+        }
+
+        .app-shell {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            padding: 24px 18px;
+            background: linear-gradient(180deg, #08285f 0%, #0b3b91 100%);
+            color: #fff;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+        }
+
+        .sidebar-brand {
+            margin-bottom: 26px;
+        }
+
+        .sidebar-brand strong {
+            display: block;
+            font-size: 24px;
+            font-weight: 900;
+        }
+
+        .sidebar-brand span {
+            display: block;
+            margin-top: 8px;
+            color: rgba(255, 255, 255, 0.76);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .nav-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .nav-item {
+            width: 100%;
+            text-align: left;
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.88);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 13px 14px;
+            cursor: pointer;
+            font-weight: 800;
+        }
+
+        .nav-item.active {
+            background: #fff;
+            color: var(--primary);
+            box-shadow: 0 16px 30px rgba(6, 16, 38, 0.18);
+        }
+
+        .sidebar-footer {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.16);
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.72);
+            line-height: 1.7;
+        }
+
+        .main {
+            flex: 1;
+            padding: 26px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .topbar h1 {
+            margin: 0;
+            font-size: 30px;
+            font-weight: 900;
+        }
+
+        .topbar p {
+            margin: 8px 0 0;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid rgba(15, 23, 42, 0.06);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .panel + .panel {
+            margin-top: 18px;
+        }
+
+        .panel-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .panel-title {
+            font-size: 20px;
+            font-weight: 900;
+            color: var(--primary-strong);
+        }
+
+        .panel-subtitle {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .summary-card {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            border: 1px solid #e3ebf6;
+            border-radius: 20px;
+            padding: 18px;
+        }
+
+        .summary-label {
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .summary-value {
+            margin-top: 12px;
+            font-size: 28px;
+            font-weight: 900;
+            color: var(--primary);
+        }
+
+        .summary-hint {
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .quick-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 18px;
+        }
+
+        .list-stack {
+            display: grid;
+            gap: 12px;
+        }
+
+        .mini-card {
+            border: 1px solid #e5edf7;
+            border-radius: 18px;
+            padding: 14px 16px;
+            background: #fff;
+        }
+
+        .mini-card strong {
+            display: block;
+            font-size: 16px;
+            font-weight: 900;
+            color: var(--primary-strong);
+            margin-bottom: 8px;
+        }
+
+        .mini-card p {
+            margin: 4px 0;
+            font-size: 13px;
+            color: #455468;
+            line-height: 1.6;
+        }
+
+        .tag-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 800;
+            background: #eef4ff;
+            color: var(--primary);
+        }
+
+        .tag.success {
+            background: #edf8f2;
+            color: var(--success);
+        }
+
+        .tag.warning {
+            background: #fff7e8;
+            color: var(--warning);
+        }
+
+        .tag.danger {
+            background: #fff1f3;
+            color: var(--danger);
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: 1.2fr repeat(3, minmax(0, 180px));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .table-wrap {
+            overflow: auto;
+            border: 1px solid #e3ebf6;
+            border-radius: 18px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1080px;
+            background: #fff;
+        }
+
+        th,
+        td {
+            padding: 14px 14px;
+            border-bottom: 1px solid #edf2f7;
+            vertical-align: top;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        th {
+            background: #f8fbff;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .cell-title {
+            font-size: 14px;
+            font-weight: 900;
+            color: var(--primary-strong);
+        }
+
+        .cell-sub {
+            margin-top: 6px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .pill.blue {
+            background: #eef4ff;
+            color: var(--primary);
+        }
+
+        .pill.green {
+            background: #edf8f2;
+            color: var(--success);
+        }
+
+        .pill.orange {
+            background: #fff7e8;
+            color: var(--warning);
+        }
+
+        .pill.red {
+            background: #fff1f3;
+            color: var(--danger);
+        }
+
+        .inline-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .inline-select {
+            min-width: 148px;
+            height: 38px;
+            border-radius: 12px;
+            border: 1px solid #d6e0ef;
+            padding: 0 10px;
+            background: #fff;
+        }
+
+        .inline-btn {
+            border: 1px solid #cfe0ff;
+            background: #eef4ff;
+            color: var(--primary);
+            border-radius: 12px;
+            padding: 9px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .driver-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .driver-card {
+            border: 1px solid #e4ecf7;
+            border-radius: 20px;
+            padding: 18px;
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+        }
+
+        .driver-card-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .driver-name {
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--primary-strong);
+        }
+
+        .driver-meta {
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin: 14px 0;
+        }
+
+        .detail-box {
+            border-radius: 16px;
+            padding: 12px;
+            background: #f8fbff;
+            border: 1px solid #e4ecf7;
+        }
+
+        .detail-box span {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .detail-box strong {
+            display: block;
+            margin-top: 8px;
+            color: var(--primary-strong);
+            font-size: 16px;
+            font-weight: 900;
+        }
+
+        .driver-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .empty-state {
+            padding: 28px 22px;
+            text-align: center;
+            color: var(--muted);
+            line-height: 1.8;
+            border: 1px dashed #d3dfef;
+            border-radius: 20px;
+            background: #fbfdff;
+        }
+
+        .modal-shell {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            display: grid;
+            place-items: center;
+            padding: 20px;
+            z-index: 1000;
+        }
+
+        .modal-card {
+            width: min(760px, 100%);
+            max-height: calc(100vh - 40px);
+            overflow: auto;
+            background: #fff;
+            border-radius: 24px;
+            box-shadow: 0 30px 60px rgba(15, 23, 42, 0.24);
+            padding: 24px;
+        }
+
+        .modal-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .modal-head h3 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 900;
+            color: var(--primary-strong);
+        }
+
+        .modal-close {
+            border: none;
+            background: #eef4ff;
+            color: var(--primary);
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 900;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .full-span {
+            grid-column: 1 / -1;
+        }
+
+        .modal-actions {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .finance-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+
+        .finance-card {
+            padding: 18px;
+            border-radius: 20px;
+            border: 1px solid #e4ecf7;
+            background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+        }
+
+        .finance-card strong {
+            display: block;
+            font-size: 28px;
+            font-weight: 900;
+            color: var(--primary);
+            margin-top: 10px;
+        }
+
+        .muted-link {
+            color: var(--muted);
+            font-size: 13px;
+            text-decoration: none;
+        }
+
+        @media (max-width: 1180px) {
+            .summary-grid,
+            .finance-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .quick-grid,
+            .driver-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filters {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 900px) {
+            .app-shell {
+                display: block;
+            }
+
+            .sidebar {
+                width: auto;
+                height: auto;
+                position: static;
+                padding-bottom: 18px;
+            }
+
+            .main {
+                padding: 18px;
+            }
+
+            .topbar,
+            .panel-title-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .form-grid,
+            .detail-grid,
+            .filters,
+            .summary-grid,
+            .finance-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="admin-login-view" class="login-shell">
+        <div class="login-card">
+            <div class="brand-title">Aulala 管理后台</div>
+            <p class="brand-copy">集中处理司机管理、订单调度和财务结算。当前版本优先保证简洁、快速、能直接上线使用。</p>
+            <div class="login-note">安全说明：当前后台是静态站点上的受控入口，数据持久化在浏览器本地。适合先快速跑起来；后续如果你要，我可以继续接成真实服务端后台。</div>
+            <form id="admin-login-form" class="stack">
+                <div>
+                    <label class="field-label" for="admin-account">管理员账号</label>
+                    <input id="admin-account" class="field" type="text" autocomplete="username" placeholder="请输入管理员账号">
+                </div>
+                <div>
+                    <label class="field-label" for="admin-password">管理员密码</label>
+                    <input id="admin-password" class="field" type="password" autocomplete="current-password" placeholder="请输入管理员密码">
+                </div>
+                <button class="btn btn-primary" type="submit">进入后台</button>
+            </form>
+            <div id="admin-login-status" class="status-banner"></div>
+        </div>
+    </div>
+
+    <div id="admin-shell" class="app-shell hidden">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <strong>Aulala Admin</strong>
+                <span>司机管理、订单管理、财务管理三块合一，直接围绕当前抢单大厅数据工作。</span>
+            </div>
+            <div class="nav-list">
+                <button class="nav-item active" data-panel="overview">运营总览</button>
+                <button class="nav-item" data-panel="drivers">司机管理</button>
+                <button class="nav-item" data-panel="orders">订单管理</button>
+                <button class="nav-item" data-panel="finance">财务管理</button>
+            </div>
+            <div class="sidebar-footer">
+                <div>初始口径</div>
+                <div>订单源：ERP 自动单 + 货主发布单</div>
+                <div>状态：直接读取线上 feed 与当前浏览器 runtime</div>
+            </div>
+        </aside>
+
+        <main class="main">
+            <div class="topbar">
+                <div>
+                    <h1>后台管理系统</h1>
+                    <p id="topbar-copy">载入当前订单、司机和财务状态中。</p>
+                </div>
+                <div class="toolbar">
+                    <button class="btn btn-secondary" id="refresh-admin-btn" type="button">刷新数据</button>
+                    <button class="btn btn-secondary" id="export-finance-btn" type="button">导出财务 CSV</button>
+                    <button class="btn btn-danger" id="logout-admin-btn" type="button">退出后台</button>
+                </div>
+            </div>
+
+            <section id="panel-overview" class="panel"></section>
+            <section id="panel-drivers" class="panel hidden"></section>
+            <section id="panel-orders" class="panel hidden"></section>
+            <section id="panel-finance" class="panel hidden"></section>
+        </main>
+    </div>
+
+    <div id="modal-shell" class="modal-shell hidden">
+        <div class="modal-card">
+            <div class="modal-head">
+                <h3 id="modal-title">详情</h3>
+                <button class="modal-close" id="modal-close-btn" type="button">×</button>
+            </div>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script src="./orders-data.js"></script>
+    <script>
+        const ADMIN_ACCOUNT = "admin";
+        const ADMIN_PASSWORD_HASH = "2afadbb9e182f3ddbab530eea2748345eda4cb7f9e0ef9dd50a6324759e7a28e";
+        const ADMIN_SESSION_KEY = "aulala_admin_session_v1";
+        const ADMIN_STORAGE_KEY = "aulala_admin_runtime_v1";
+        const APP_STORAGE_KEY = "aulala_app_runtime_v1";
+        const ADMIN_SESSION_TTL = 1000 * 60 * 60 * 6;
+        const DEFAULT_DRIVER_PAYOUT_RATIO = 0.78;
+        const DEFAULT_DRIVERS = [
+            {
+                id: "DRV-001",
+                name: "测试司机",
+                phone: "13888888888",
+                vehicleType: "Van",
+                plate: "TEST-888",
+                city: "Sydney",
+                status: "active",
+                settlementCycle: "周结",
+                bankTail: "6688",
+                payoutRatio: 0.78,
+                joinedAt: "2026-03-31",
+                notes: "系统预置测试司机，可直接用于当前测试单登录与后台分配。"
+            },
+            {
+                id: "DRV-002",
+                name: "备用司机",
+                phone: "13900000001",
+                vehicleType: "Truck",
+                plate: "AUL-201",
+                city: "Melbourne",
+                status: "inactive",
+                settlementCycle: "月结",
+                bankTail: "5218",
+                payoutRatio: 0.8,
+                joinedAt: "2026-03-31",
+                notes: "备用运力，可在需要时启用。"
+            }
+        ];
+
+        const state = {
+            currentPanel: "overview",
+            adminData: null,
+            runtimeData: null,
+            orders: [],
+            driverFilter: "all",
+            orderFilter: {
+                query: "",
+                flowStatus: "all",
+                sourceType: "all",
+                state: "all"
+            },
+            financeFilter: {
+                settlement: "all"
+            }
+        };
+
+        function safeParse(raw, fallback) {
+            try {
+                return JSON.parse(raw || "");
+            } catch (error) {
+                return fallback;
+            }
+        }
+
+        function nowStamp() {
+            const date = new Date();
+            const pad = value => String(value).padStart(2, "0");
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        }
+
+        function roundMoney(value) {
+            const numeric = Number(value || 0);
+            return Number.isFinite(numeric) ? Number(numeric.toFixed(2)) : 0;
+        }
+
+        function formatCurrency(value) {
+            return `$${roundMoney(value).toFixed(2)}`;
+        }
+
+        function escapeHtml(value) {
+            return String(value || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function shortText(value, maxLength = 48) {
+            const text = String(value || "");
+            return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+        }
+
+        function formatRatio(value) {
+            const numeric = Number(value || 0);
+            return `${Math.round(numeric * 100)}%`;
+        }
+
+        function orderKey(order) {
+            return order.orderCode ? `code:${order.orderCode}` : `id:${order.id}`;
+        }
+
+        function encodeKey(key) {
+            return encodeURIComponent(key);
+        }
+
+        function decodeKey(key) {
+            return decodeURIComponent(key);
+        }
+
+        function normalizeDrivers(drivers) {
+            const source = Array.isArray(drivers) && drivers.length ? drivers : DEFAULT_DRIVERS;
+            return source.map((driver, index) => ({
+                id: driver.id || `DRV-${String(index + 1).padStart(3, "0")}`,
+                name: driver.name || "未命名司机",
+                phone: driver.phone || "",
+                vehicleType: driver.vehicleType || "Van",
+                plate: driver.plate || "",
+                city: driver.city || "Sydney",
+                status: driver.status === "inactive" ? "inactive" : "active",
+                settlementCycle: driver.settlementCycle || "周结",
+                bankTail: driver.bankTail || "",
+                payoutRatio: Number(driver.payoutRatio || DEFAULT_DRIVER_PAYOUT_RATIO),
+                joinedAt: driver.joinedAt || nowStamp().slice(0, 10),
+                notes: driver.notes || ""
+            }));
+        }
+
+        function loadAdminData() {
+            const saved = safeParse(localStorage.getItem(ADMIN_STORAGE_KEY), {});
+            return {
+                drivers: normalizeDrivers(saved.drivers),
+                orderOps: saved.orderOps && typeof saved.orderOps === "object" ? saved.orderOps : {},
+                updatedAt: saved.updatedAt || ""
+            };
+        }
+
+        function saveAdminData() {
+            state.adminData.updatedAt = nowStamp();
+            localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(state.adminData));
+        }
+
+        function loadRuntimeData() {
+            const runtime = safeParse(localStorage.getItem(APP_STORAGE_KEY), {});
+            return {
+                activeOrder: runtime.activeOrder || null,
+                completedOrders: Array.isArray(runtime.completedOrders) ? runtime.completedOrders : [],
+                ownerOrders: Array.isArray(runtime.ownerOrders) ? runtime.ownerOrders : [],
+                consumedExternalOrderIds: Array.isArray(runtime.consumedExternalOrderIds) ? runtime.consumedExternalOrderIds.map(Number) : []
+            };
+        }
+
+        function clearStatusBanner() {
+            const banner = document.getElementById("admin-login-status");
+            banner.textContent = "";
+            banner.classList.remove("visible");
+        }
+
+        function showStatusBanner(message) {
+            const banner = document.getElementById("admin-login-status");
+            banner.textContent = message;
+            banner.classList.add("visible");
+        }
+
+        async function sha256(text) {
+            const bytes = new TextEncoder().encode(text);
+            const digest = await crypto.subtle.digest("SHA-256", bytes);
+            return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, "0")).join("");
+        }
+
+        function hasValidAdminSession() {
+            const session = safeParse(localStorage.getItem(ADMIN_SESSION_KEY), null);
+            return Boolean(session && session.account === ADMIN_ACCOUNT && Number(session.expiresAt) > Date.now());
+        }
+
+        function createAdminSession() {
+            localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
+                account: ADMIN_ACCOUNT,
+                expiresAt: Date.now() + ADMIN_SESSION_TTL
+            }));
+        }
+
+        function clearAdminSession() {
+            localStorage.removeItem(ADMIN_SESSION_KEY);
+        }
+
+        function driverStatusMeta(status) {
+            return status === "inactive"
+                ? { label: "已停用", className: "red" }
+                : { label: "可接单", className: "green" };
+        }
+
+        function flowMeta(flowStatus, order) {
+            if (flowStatus === "in_progress") {
+                const map = {
+                    waiting_pickup: "等待提货",
+                    picked_up: "已提货",
+                    in_transit: "派送途中",
+                    completed: "已完成"
+                };
+                return {
+                    label: map[order.runtimeStatus] || "进行中",
+                    className: order.runtimeStatus === "picked_up" ? "blue" : "orange"
+                };
+            }
+            if (flowStatus === "completed") {
+                return { label: "已完成", className: "green" };
+            }
+            if (flowStatus === "grabbed") {
+                return { label: "已被抢单", className: "blue" };
+            }
+            return { label: "待抢单", className: "orange" };
+        }
+
+        function clearanceMeta(label) {
+            if (label === "已放行") {
+                return { label, className: "green" };
+            }
+            if (label === "查验中") {
+                return { label, className: "red" };
+            }
+            if (label === "待放行") {
+                return { label, className: "red" };
+            }
+            return { label: label || "未同步", className: "blue" };
+        }
+
+        function sourceLabel(sourceType) {
+            return sourceType === "owner_portal" ? "货主发布" : "ERP自动单";
+        }
+
+        function ownerLifecycleToFlow(status) {
+            if (status === "completed") {
+                return "completed";
+            }
+            if (status === "grabbed") {
+                return "grabbed";
+            }
+            return "pending";
+        }
+
+        function baseOrderRecord(order, sourceType) {
+            return {
+                key: orderKey(order),
+                id: order.id || "",
+                orderCode: order.orderCode || "",
+                sourceType,
+                sourceLabel: sourceLabel(sourceType),
+                flowStatus: sourceType === "owner_portal" ? ownerLifecycleToFlow(order.ownerLifecycleStatus) : "pending",
+                runtimeStatus: order.status || "",
+                state: order.state || "",
+                pickup: order.pickup || "",
+                dropoff: order.dropoff || "",
+                pickupAddress: order.pickupAddress || "",
+                dropoffAddress: order.dropoffAddress || "",
+                scheduledPickupTime: order.expectedPickupTime || order.scheduledPickupTime || order.time || "",
+                actualPickupTime: order.actualPickupTime || "",
+                deliveredAt: order.deliveredAt || "",
+                price: roundMoney(order.ownerQuotedPrice || order.price || 0),
+                systemEstimatedPrice: roundMoney(order.systemEstimatedPrice || 0),
+                pallets: Number(order.pallets || 0),
+                pieces: Number(order.pieces || 0),
+                weight: order.weight || "",
+                cbm: Number(order.cbm || 0),
+                clearanceStatusLabel: order.showClearanceSuffix === false ? "" : (order.clearanceStatusLabel || ""),
+                pickupTimeLabel: order.pickupTimeLabel || "",
+                provider: order.provider || "",
+                remarks: order.remarks || "",
+                ownerName: order.ownerName || "",
+                ownerPhone: order.ownerPhone || "",
+                driverAcceptedAt: order.driverAcceptedAt || "",
+                quoteAdjustedAt: order.quoteAdjustedAt || "",
+                createdAt: order.createdAt || "",
+                raw: order
+            };
+        }
+
+        function buildOrderRecords() {
+            const records = new Map();
+            const feedOrders = Array.isArray(window.AULALA_ORDER_FEED?.orders) ? window.AULALA_ORDER_FEED.orders : [];
+            const consumed = new Set(state.runtimeData.consumedExternalOrderIds || []);
+            const activeId = Number(state.runtimeData.activeOrder?.id || 0);
+            const completedIds = new Set((state.runtimeData.completedOrders || []).map(order => Number(order.id)));
+
+            feedOrders.forEach(order => {
+                const numericId = Number(order.id);
+                if (consumed.has(numericId) || completedIds.has(numericId) || numericId === activeId) {
+                    return;
+                }
+                const record = baseOrderRecord(order, "erp_auto");
+                records.set(record.key, record);
+            });
+
+            state.runtimeData.ownerOrders.forEach(order => {
+                const record = baseOrderRecord(order, "owner_portal");
+                records.set(record.key, {
+                    ...(records.get(record.key) || {}),
+                    ...record
+                });
+            });
+
+            if (state.runtimeData.activeOrder) {
+                const activeRecord = baseOrderRecord(
+                    state.runtimeData.activeOrder,
+                    state.runtimeData.activeOrder.sourceType === "owner_portal" ? "owner_portal" : "erp_auto"
+                );
+                activeRecord.flowStatus = "in_progress";
+                records.set(activeRecord.key, {
+                    ...(records.get(activeRecord.key) || {}),
+                    ...activeRecord
+                });
+            }
+
+            state.runtimeData.completedOrders.forEach(order => {
+                const completedRecord = baseOrderRecord(
+                    order,
+                    order.sourceType === "owner_portal" ? "owner_portal" : "erp_auto"
+                );
+                completedRecord.flowStatus = "completed";
+                records.set(completedRecord.key, {
+                    ...(records.get(completedRecord.key) || {}),
+                    ...completedRecord
+                });
+            });
+
+            return Array.from(records.values())
+                .map(record => ({
+                    ...record,
+                    op: getOrderOp(record)
+                }))
+                .sort((a, b) => {
+                    const flowRank = { pending: 0, grabbed: 1, in_progress: 2, completed: 3 };
+                    const rankDelta = (flowRank[a.flowStatus] ?? 9) - (flowRank[b.flowStatus] ?? 9);
+                    if (rankDelta !== 0) {
+                        return rankDelta;
+                    }
+                    return String(b.scheduledPickupTime || "").localeCompare(String(a.scheduledPickupTime || ""));
+                });
+        }
+
+        function defaultInternalStatus(order) {
+            if (order.flowStatus === "completed") {
+                return "已完成";
+            }
+            if (order.flowStatus === "in_progress") {
+                return flowMeta(order.flowStatus, order).label;
+            }
+            if (order.op?.assignedDriverId) {
+                return "已指派";
+            }
+            return "待分配";
+        }
+
+        function defaultDriverPayable(order, assignedDriverId = "") {
+            const driver = state.adminData.drivers.find(item => item.id === assignedDriverId);
+            const ratio = driver ? Number(driver.payoutRatio || DEFAULT_DRIVER_PAYOUT_RATIO) : DEFAULT_DRIVER_PAYOUT_RATIO;
+            return roundMoney(Number(order.price || 0) * ratio);
+        }
+
+        function getOrderOp(order) {
+            const existing = state.adminData.orderOps[order.key] || {};
+            return {
+                assignedDriverId: existing.assignedDriverId || "",
+                internalStatus: existing.internalStatus || "",
+                internalNotes: existing.internalNotes || "",
+                customerReceivable: roundMoney(existing.customerReceivable ?? order.price ?? 0),
+                driverPayable: roundMoney(existing.driverPayable ?? defaultDriverPayable(order, existing.assignedDriverId || "")),
+                receivableStatus: existing.receivableStatus || "待收款",
+                payableStatus: existing.payableStatus || "待结算",
+                updatedAt: existing.updatedAt || ""
+            };
+        }
+
+        function persistOrderOp(orderKeyValue, partial) {
+            const current = state.adminData.orderOps[orderKeyValue] || {};
+            const next = {
+                ...current,
+                ...partial,
+                updatedAt: nowStamp()
+            };
+            state.adminData.orderOps[orderKeyValue] = next;
+            saveAdminData();
+            refreshData();
+        }
+
+        function getDriverOrderStats(orders) {
+            return orders.reduce((acc, order) => {
+                const driverId = order.op.assignedDriverId;
+                if (!driverId) {
+                    return acc;
+                }
+                acc[driverId] = acc[driverId] || { total: 0, active: 0, completed: 0 };
+                acc[driverId].total += 1;
+                if (order.flowStatus === "completed") {
+                    acc[driverId].completed += 1;
+                } else {
+                    acc[driverId].active += 1;
+                }
+                return acc;
+            }, {});
+        }
+
+        function activeDriverCount() {
+            return state.adminData.drivers.filter(driver => driver.status === "active").length;
+        }
+
+        function filteredOrders() {
+            return state.orders.filter(order => {
+                if (state.orderFilter.flowStatus !== "all" && order.flowStatus !== state.orderFilter.flowStatus) {
+                    return false;
+                }
+                if (state.orderFilter.sourceType !== "all" && order.sourceType !== state.orderFilter.sourceType) {
+                    return false;
+                }
+                if (state.orderFilter.state !== "all" && order.state !== state.orderFilter.state) {
+                    return false;
+                }
+                const query = state.orderFilter.query.trim().toLowerCase();
+                if (!query) {
+                    return true;
+                }
+                return [
+                    order.orderCode,
+                    order.pickupAddress,
+                    order.dropoffAddress,
+                    order.pickup,
+                    order.dropoff,
+                    order.ownerName,
+                    order.ownerPhone,
+                    order.op.internalNotes
+                ].join(" ").toLowerCase().includes(query);
+            });
+        }
+
+        function filteredFinanceOrders() {
+            return state.orders.filter(order => {
+                if (state.financeFilter.settlement === "receivable_pending" && order.op.receivableStatus === "已收款") {
+                    return false;
+                }
+                if (state.financeFilter.settlement === "payable_pending" && order.op.payableStatus === "已结算") {
+                    return false;
+                }
+                if (state.financeFilter.settlement === "completed_only" && order.flowStatus !== "completed") {
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        function financeSummary(orders) {
+            const totals = {
+                receivable: 0,
+                payable: 0,
+                collected: 0,
+                settled: 0
+            };
+            orders.forEach(order => {
+                totals.receivable += Number(order.op.customerReceivable || 0);
+                totals.payable += Number(order.op.driverPayable || 0);
+                if (order.op.receivableStatus === "已收款") {
+                    totals.collected += Number(order.op.customerReceivable || 0);
+                }
+                if (order.op.payableStatus === "已结算") {
+                    totals.settled += Number(order.op.driverPayable || 0);
+                }
+            });
+            totals.gross = totals.receivable - totals.payable;
+            totals.pendingReceivable = totals.receivable - totals.collected;
+            totals.pendingPayable = totals.payable - totals.settled;
+            return totals;
+        }
+
+        function driverOptionsHtml(selectedId = "") {
+            const options = [`<option value="">未分配</option>`];
+            state.adminData.drivers.forEach(driver => {
+                const selected = driver.id === selectedId ? "selected" : "";
+                const status = driver.status === "inactive" ? " (停用)" : "";
+                options.push(`<option value="${escapeHtml(driver.id)}" ${selected}>${escapeHtml(driver.name)} / ${escapeHtml(driver.phone)}${status}</option>`);
+            });
+            return options.join("");
+        }
+
+        function renderOverviewPanel() {
+            const orders = state.orders;
+            const finance = financeSummary(orders);
+            const pendingOrders = orders.filter(order => order.flowStatus === "pending").length;
+            const inProgressOrders = orders.filter(order => order.flowStatus === "in_progress").length;
+            const completedOrders = orders.filter(order => order.flowStatus === "completed").length;
+            const unassignedOrders = orders.filter(order => !order.op.assignedDriverId && order.flowStatus !== "completed").slice(0, 5);
+            const financePending = orders.filter(order => order.op.receivableStatus !== "已收款" || order.op.payableStatus !== "已结算").slice(0, 5);
+
+            document.getElementById("panel-overview").innerHTML = `
+                <div class="panel-title-row">
+                    <div>
+                        <div class="panel-title">运营总览</div>
+                        <div class="panel-subtitle">直接汇总当前抢单大厅线上 feed、货主发布 runtime，以及后台自己的司机指派和财务状态。</div>
+                    </div>
+                </div>
+
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <div class="summary-label">可用司机</div>
+                        <div class="summary-value">${activeDriverCount()}</div>
+                        <div class="summary-hint">当前总司机 ${state.adminData.drivers.length} 人</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">待抢单</div>
+                        <div class="summary-value">${pendingOrders}</div>
+                        <div class="summary-hint">进行中 ${inProgressOrders} 单，已完成 ${completedOrders} 单</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">应收总额</div>
+                        <div class="summary-value">${formatCurrency(finance.receivable)}</div>
+                        <div class="summary-hint">已收 ${formatCurrency(finance.collected)}，待收 ${formatCurrency(finance.pendingReceivable)}</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">预计毛利</div>
+                        <div class="summary-value">${formatCurrency(finance.gross)}</div>
+                        <div class="summary-hint">司机应付 ${formatCurrency(finance.payable)}</div>
+                    </div>
+                </div>
+
+                <div class="panel" style="margin-top:18px; padding:0; box-shadow:none; border:none; background:transparent;">
+                    <div class="quick-grid">
+                        <div class="panel">
+                            <div class="panel-title-row">
+                                <div>
+                                    <div class="panel-title">优先处理订单</div>
+                                    <div class="panel-subtitle">这些单还没分配司机，适合先从后台处理。</div>
+                                </div>
+                            </div>
+                            ${
+                                unassignedOrders.length
+                                    ? `<div class="list-stack">${unassignedOrders.map(order => `
+                                        <div class="mini-card">
+                                            <strong>${escapeHtml(order.orderCode)}</strong>
+                                            <p>状态：${flowMeta(order.flowStatus, order).label} / ${escapeHtml(order.sourceLabel)}</p>
+                                            <p>提：${escapeHtml(order.pickupAddress)}</p>
+                                            <p>送：${escapeHtml(order.dropoffAddress)}</p>
+                                            <div class="tag-row">
+                                                <span class="tag">${formatCurrency(order.price)}</span>
+                                                <span class="tag ${clearanceMeta(order.clearanceStatusLabel).className}">${escapeHtml(clearanceMeta(order.clearanceStatusLabel).label)}</span>
+                                            </div>
+                                        </div>
+                                    `).join("")}</div>`
+                                    : `<div class="empty-state">当前没有待分配司机的订单，调度状态很干净。</div>`
+                            }
+                        </div>
+
+                        <div class="panel">
+                            <div class="panel-title-row">
+                                <div>
+                                    <div class="panel-title">财务待办</div>
+                                    <div class="panel-subtitle">先盯待收款和待结算的票，避免回款和司机结算脱节。</div>
+                                </div>
+                            </div>
+                            ${
+                                financePending.length
+                                    ? `<div class="list-stack">${financePending.map(order => `
+                                        <div class="mini-card">
+                                            <strong>${escapeHtml(order.orderCode)}</strong>
+                                            <p>应收：${formatCurrency(order.op.customerReceivable)} / 状态：${escapeHtml(order.op.receivableStatus)}</p>
+                                            <p>应付：${formatCurrency(order.op.driverPayable)} / 状态：${escapeHtml(order.op.payableStatus)}</p>
+                                            <p>毛利：${formatCurrency(order.op.customerReceivable - order.op.driverPayable)}</p>
+                                            <div class="tag-row">
+                                                <span class="tag ${order.op.receivableStatus === "已收款" ? "success" : "warning"}">${escapeHtml(order.op.receivableStatus)}</span>
+                                                <span class="tag ${order.op.payableStatus === "已结算" ? "success" : "danger"}">${escapeHtml(order.op.payableStatus)}</span>
+                                            </div>
+                                        </div>
+                                    `).join("")}</div>`
+                                    : `<div class="empty-state">当前财务状态都已经结清，可以开始看下一批新单。</div>`
+                            }
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDriversPanel() {
+            const stats = getDriverOrderStats(state.orders);
+            const activeDrivers = state.adminData.drivers.filter(driver => driver.status === "active").length;
+            const inactiveDrivers = state.adminData.drivers.length - activeDrivers;
+
+            document.getElementById("panel-drivers").innerHTML = `
+                <div class="panel-title-row">
+                    <div>
+                        <div class="panel-title">司机管理</div>
+                        <div class="panel-subtitle">维护司机基础资料、车辆类型、结算方式和可接单状态。</div>
+                    </div>
+                    <button class="btn btn-primary" type="button" onclick="openDriverModal()">新增司机</button>
+                </div>
+
+                <div class="summary-grid" style="margin-bottom:18px;">
+                    <div class="summary-card">
+                        <div class="summary-label">司机总数</div>
+                        <div class="summary-value">${state.adminData.drivers.length}</div>
+                        <div class="summary-hint">包含当前测试司机和后台新增司机</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">可接单司机</div>
+                        <div class="summary-value">${activeDrivers}</div>
+                        <div class="summary-hint">停用 ${inactiveDrivers} 人</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">当前在跑单</div>
+                        <div class="summary-value">${Object.values(stats).reduce((sum, item) => sum + item.active, 0)}</div>
+                        <div class="summary-hint">按后台已分配司机统计</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">已完成分配</div>
+                        <div class="summary-value">${Object.values(stats).reduce((sum, item) => sum + item.completed, 0)}</div>
+                        <div class="summary-hint">适合作为司机绩效参考</div>
+                    </div>
+                </div>
+
+                ${
+                    state.adminData.drivers.length
+                        ? `<div class="driver-grid">${state.adminData.drivers.map(driver => {
+                            const meta = driverStatusMeta(driver.status);
+                            const driverStats = stats[driver.id] || { total: 0, active: 0, completed: 0 };
+                            return `
+                                <div class="driver-card">
+                                    <div class="driver-card-head">
+                                        <div>
+                                            <div class="driver-name">${escapeHtml(driver.name)}</div>
+                                            <div class="driver-meta">${escapeHtml(driver.phone)} / ${escapeHtml(driver.vehicleType)} / ${escapeHtml(driver.plate)}</div>
+                                        </div>
+                                        <span class="pill ${meta.className}">${escapeHtml(meta.label)}</span>
+                                    </div>
+                                    <div class="detail-grid">
+                                        <div class="detail-box">
+                                            <span>所在城市</span>
+                                            <strong>${escapeHtml(driver.city)}</strong>
+                                        </div>
+                                        <div class="detail-box">
+                                            <span>结算周期</span>
+                                            <strong>${escapeHtml(driver.settlementCycle)}</strong>
+                                        </div>
+                                        <div class="detail-box">
+                                            <span>派付比例</span>
+                                            <strong>${formatRatio(driver.payoutRatio)}</strong>
+                                        </div>
+                                        <div class="detail-box">
+                                            <span>银行卡尾号</span>
+                                            <strong>${escapeHtml(driver.bankTail || "--")}</strong>
+                                        </div>
+                                    </div>
+                                    <div class="tag-row">
+                                        <span class="tag">总派单 ${driverStats.total}</span>
+                                        <span class="tag success">进行中 ${driverStats.active}</span>
+                                        <span class="tag blue">已完成 ${driverStats.completed}</span>
+                                    </div>
+                                    ${driver.notes ? `<div class="driver-meta" style="margin-top:12px;">备注：${escapeHtml(driver.notes)}</div>` : ""}
+                                    <div class="driver-actions">
+                                        <button class="btn btn-secondary" type="button" onclick="openDriverModal('${escapeHtml(driver.id)}')">编辑</button>
+                                        <button class="btn ${driver.status === "active" ? "btn-danger" : "btn-primary"}" type="button" onclick="toggleDriverStatus('${escapeHtml(driver.id)}')">${driver.status === "active" ? "停用" : "启用"}</button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join("")}</div>`
+                        : `<div class="empty-state">还没有司机数据，先新增一个司机即可开始分配订单。</div>`
+                }
+            `;
+        }
+
+        function renderOrdersPanel() {
+            const orders = filteredOrders();
+            const states = Array.from(new Set(state.orders.map(order => order.state).filter(Boolean))).sort();
+
+            document.getElementById("panel-orders").innerHTML = `
+                <div class="panel-title-row">
+                    <div>
+                        <div class="panel-title">订单管理</div>
+                        <div class="panel-subtitle">统一查看 ERP 自动单、货主发布单、进行中与已完成状态，并在这里指派司机与补内部备注。</div>
+                    </div>
+                </div>
+
+                <div class="filters">
+                    <input id="order-filter-query" class="field" type="text" placeholder="搜索入仓号 / 地址 / 备注" value="${escapeHtml(state.orderFilter.query)}">
+                    <select id="order-filter-status" class="select">
+                        <option value="all">全部状态</option>
+                        <option value="pending" ${state.orderFilter.flowStatus === "pending" ? "selected" : ""}>待抢单</option>
+                        <option value="grabbed" ${state.orderFilter.flowStatus === "grabbed" ? "selected" : ""}>已被抢单</option>
+                        <option value="in_progress" ${state.orderFilter.flowStatus === "in_progress" ? "selected" : ""}>进行中</option>
+                        <option value="completed" ${state.orderFilter.flowStatus === "completed" ? "selected" : ""}>已完成</option>
+                    </select>
+                    <select id="order-filter-source" class="select">
+                        <option value="all">全部来源</option>
+                        <option value="erp_auto" ${state.orderFilter.sourceType === "erp_auto" ? "selected" : ""}>ERP 自动单</option>
+                        <option value="owner_portal" ${state.orderFilter.sourceType === "owner_portal" ? "selected" : ""}>货主发布单</option>
+                    </select>
+                    <select id="order-filter-state" class="select">
+                        <option value="all">全部州</option>
+                        ${states.map(item => `<option value="${escapeHtml(item)}" ${state.orderFilter.state === item ? "selected" : ""}>${escapeHtml(item)}</option>`).join("")}
+                    </select>
+                </div>
+
+                ${
+                    orders.length
+                        ? `
+                            <div class="table-wrap">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>订单</th>
+                                            <th>状态</th>
+                                            <th>提送信息</th>
+                                            <th>金额</th>
+                                            <th>指派司机</th>
+                                            <th>清关</th>
+                                            <th>内部状态</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${orders.map(order => {
+                                            const flow = flowMeta(order.flowStatus, order);
+                                            const clearance = clearanceMeta(order.clearanceStatusLabel);
+                                            const assignedDriver = state.adminData.drivers.find(driver => driver.id === order.op.assignedDriverId);
+                                            return `
+                                                <tr>
+                                                    <td>
+                                                        <div class="cell-title">${escapeHtml(order.orderCode || order.key)}</div>
+                                                        <div class="cell-sub">${escapeHtml(order.sourceLabel)} / ${escapeHtml(order.state || "--")}</div>
+                                                        ${order.remarks ? `<div class="cell-sub">备注：${escapeHtml(shortText(order.remarks, 34))}</div>` : ""}
+                                                    </td>
+                                                    <td>
+                                                        <span class="pill ${flow.className}">${escapeHtml(flow.label)}</span>
+                                                        ${order.driverAcceptedAt ? `<div class="cell-sub">抢单时间：${escapeHtml(order.driverAcceptedAt)}</div>` : ""}
+                                                    </td>
+                                                    <td>
+                                                        <div class="cell-sub">提：${escapeHtml(shortText(order.pickupAddress, 42))}</div>
+                                                        <div class="cell-sub">送：${escapeHtml(shortText(order.dropoffAddress, 42))}</div>
+                                                        <div class="cell-sub">计划提货：${escapeHtml(order.scheduledPickupTime || "--")}</div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="cell-title">${formatCurrency(order.price)}</div>
+                                                        <div class="cell-sub">${order.pallets || 0} 板 / ${escapeHtml(order.weight || "--")}${order.cbm ? ` / ${Number(order.cbm).toFixed(2)} CBM` : ""}</div>
+                                                    </td>
+                                                    <td>
+                                                        <select class="inline-select" onchange="assignDriverInline('${encodeKey(order.key)}', this.value)">
+                                                            ${driverOptionsHtml(order.op.assignedDriverId)}
+                                                        </select>
+                                                        <div class="cell-sub">${assignedDriver ? `当前：${escapeHtml(assignedDriver.name)}` : "未分配"}</div>
+                                                    </td>
+                                                    <td>
+                                                        <span class="pill ${clearance.className}">${escapeHtml(clearance.label)}</span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="pill blue">${escapeHtml(order.op.internalStatus || defaultInternalStatus(order))}</span>
+                                                        ${order.op.updatedAt ? `<div class="cell-sub">更新：${escapeHtml(order.op.updatedAt)}</div>` : ""}
+                                                    </td>
+                                                    <td>
+                                                        <div class="inline-actions">
+                                                            <button class="inline-btn" type="button" onclick="openOrderModal('${encodeKey(order.key)}')">详情</button>
+                                                            <button class="inline-btn" type="button" onclick="quickToggleReceivable('${encodeKey(order.key)}')">${order.op.receivableStatus === "已收款" ? "改回待收" : "标记已收"}</button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            `;
+                                        }).join("")}
+                                    </tbody>
+                                </table>
+                            </div>
+                        `
+                        : `<div class="empty-state">当前筛选条件下没有订单，换个筛选试试。</div>`
+                }
+            `;
+
+            document.getElementById("order-filter-query").addEventListener("input", event => {
+                state.orderFilter.query = event.target.value;
+                renderOrdersPanel();
+            });
+            document.getElementById("order-filter-status").addEventListener("change", event => {
+                state.orderFilter.flowStatus = event.target.value;
+                renderOrdersPanel();
+            });
+            document.getElementById("order-filter-source").addEventListener("change", event => {
+                state.orderFilter.sourceType = event.target.value;
+                renderOrdersPanel();
+            });
+            document.getElementById("order-filter-state").addEventListener("change", event => {
+                state.orderFilter.state = event.target.value;
+                renderOrdersPanel();
+            });
+        }
+
+        function renderFinancePanel() {
+            const orders = filteredFinanceOrders();
+            const totals = financeSummary(orders);
+
+            document.getElementById("panel-finance").innerHTML = `
+                <div class="panel-title-row">
+                    <div>
+                        <div class="panel-title">财务管理</div>
+                        <div class="panel-subtitle">统一看应收、应付、毛利和结算状态。需要调整金额时，直接点订单详情即可修改。</div>
+                    </div>
+                    <select id="finance-filter-select" class="select" style="max-width:220px;">
+                        <option value="all">全部财务状态</option>
+                        <option value="receivable_pending" ${state.financeFilter.settlement === "receivable_pending" ? "selected" : ""}>仅看待收款</option>
+                        <option value="payable_pending" ${state.financeFilter.settlement === "payable_pending" ? "selected" : ""}>仅看待结算</option>
+                        <option value="completed_only" ${state.financeFilter.settlement === "completed_only" ? "selected" : ""}>仅看已完成订单</option>
+                    </select>
+                </div>
+
+                <div class="finance-grid">
+                    <div class="finance-card">
+                        <div class="summary-label">应收总额</div>
+                        <strong>${formatCurrency(totals.receivable)}</strong>
+                        <div class="summary-hint">已收 ${formatCurrency(totals.collected)}</div>
+                    </div>
+                    <div class="finance-card">
+                        <div class="summary-label">待收款</div>
+                        <strong>${formatCurrency(totals.pendingReceivable)}</strong>
+                        <div class="summary-hint">适合优先回款跟进</div>
+                    </div>
+                    <div class="finance-card">
+                        <div class="summary-label">司机应付</div>
+                        <strong>${formatCurrency(totals.payable)}</strong>
+                        <div class="summary-hint">已结 ${formatCurrency(totals.settled)}</div>
+                    </div>
+                    <div class="finance-card">
+                        <div class="summary-label">预计毛利</div>
+                        <strong>${formatCurrency(totals.gross)}</strong>
+                        <div class="summary-hint">待结算 ${formatCurrency(totals.pendingPayable)}</div>
+                    </div>
+                </div>
+
+                ${
+                    orders.length
+                        ? `
+                            <div class="table-wrap">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>订单</th>
+                                            <th>司机</th>
+                                            <th>应收</th>
+                                            <th>收款状态</th>
+                                            <th>应付</th>
+                                            <th>结算状态</th>
+                                            <th>毛利</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${orders.map(order => {
+                                            const driver = state.adminData.drivers.find(item => item.id === order.op.assignedDriverId);
+                                            return `
+                                                <tr>
+                                                    <td>
+                                                        <div class="cell-title">${escapeHtml(order.orderCode || order.key)}</div>
+                                                        <div class="cell-sub">${escapeHtml(order.sourceLabel)} / ${escapeHtml(flowMeta(order.flowStatus, order).label)}</div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="cell-sub">${driver ? `${escapeHtml(driver.name)} / ${escapeHtml(driver.phone)}` : "未分配"}</div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="cell-title">${formatCurrency(order.op.customerReceivable)}</div>
+                                                    </td>
+                                                    <td>
+                                                        <span class="pill ${order.op.receivableStatus === "已收款" ? "green" : "orange"}">${escapeHtml(order.op.receivableStatus)}</span>
+                                                    </td>
+                                                    <td>
+                                                        <div class="cell-title">${formatCurrency(order.op.driverPayable)}</div>
+                                                    </td>
+                                                    <td>
+                                                        <span class="pill ${order.op.payableStatus === "已结算" ? "green" : "red"}">${escapeHtml(order.op.payableStatus)}</span>
+                                                    </td>
+                                                    <td>
+                                                        <div class="cell-title">${formatCurrency(order.op.customerReceivable - order.op.driverPayable)}</div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="inline-actions">
+                                                            <button class="inline-btn" type="button" onclick="openOrderModal('${encodeKey(order.key)}')">调金额</button>
+                                                            <button class="inline-btn" type="button" onclick="quickTogglePayable('${encodeKey(order.key)}')">${order.op.payableStatus === "已结算" ? "改回待结" : "标记已结"}</button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            `;
+                                        }).join("")}
+                                    </tbody>
+                                </table>
+                            </div>
+                        `
+                        : `<div class="empty-state">当前没有财务记录，先分配或完成一些订单后，这里就会形成台账。</div>`
+                }
+            `;
+
+            document.getElementById("finance-filter-select").addEventListener("change", event => {
+                state.financeFilter.settlement = event.target.value;
+                renderFinancePanel();
+            });
+        }
+
+        function renderAllPanels() {
+            const generatedAt = window.AULALA_ORDER_FEED?.generatedAt || "--";
+            const updatedAt = state.adminData.updatedAt || "刚初始化";
+            document.getElementById("topbar-copy").textContent = `当前订单 ${state.orders.length} 单，ERP 生成时间 ${generatedAt}，后台最后更新 ${updatedAt}。`;
+            renderOverviewPanel();
+            renderDriversPanel();
+            renderOrdersPanel();
+            renderFinancePanel();
+        }
+
+        function switchPanel(panelId) {
+            state.currentPanel = panelId;
+            ["overview", "drivers", "orders", "finance"].forEach(id => {
+                document.getElementById(`panel-${id}`).classList.toggle("hidden", id !== panelId);
+            });
+            document.querySelectorAll(".nav-item").forEach(button => {
+                button.classList.toggle("active", button.dataset.panel === panelId);
+            });
+        }
+
+        function refreshData() {
+            state.runtimeData = loadRuntimeData();
+            state.orders = buildOrderRecords().map(order => ({
+                ...order,
+                op: {
+                    ...order.op,
+                    internalStatus: order.op.internalStatus || defaultInternalStatus(order)
+                }
+            }));
+            renderAllPanels();
+        }
+
+        function openModal(title, bodyHtml) {
+            document.getElementById("modal-title").textContent = title;
+            document.getElementById("modal-body").innerHTML = bodyHtml;
+            document.getElementById("modal-shell").classList.remove("hidden");
+        }
+
+        function closeModal() {
+            document.getElementById("modal-shell").classList.add("hidden");
+        }
+
+        function openDriverModal(driverId = "") {
+            const driver = state.adminData.drivers.find(item => item.id === driverId) || {
+                id: "",
+                name: "",
+                phone: "",
+                vehicleType: "Van",
+                plate: "",
+                city: "Sydney",
+                status: "active",
+                settlementCycle: "周结",
+                bankTail: "",
+                payoutRatio: DEFAULT_DRIVER_PAYOUT_RATIO,
+                joinedAt: nowStamp().slice(0, 10),
+                notes: ""
+            };
+
+            openModal("司机资料", `
+                <div class="form-grid">
+                    <div>
+                        <label class="field-label">司机编号</label>
+                        <input id="driver-id" class="field" type="text" value="${escapeHtml(driver.id)}" placeholder="例如 DRV-003">
+                    </div>
+                    <div>
+                        <label class="field-label">司机姓名</label>
+                        <input id="driver-name" class="field" type="text" value="${escapeHtml(driver.name)}" placeholder="请输入司机姓名">
+                    </div>
+                    <div>
+                        <label class="field-label">手机号</label>
+                        <input id="driver-phone" class="field" type="text" value="${escapeHtml(driver.phone)}" placeholder="请输入司机手机号">
+                    </div>
+                    <div>
+                        <label class="field-label">车辆类型</label>
+                        <select id="driver-vehicle" class="select">
+                            <option value="Van" ${driver.vehicleType === "Van" ? "selected" : ""}>Van</option>
+                            <option value="Truck" ${driver.vehicleType === "Truck" ? "selected" : ""}>Truck</option>
+                            <option value="Ute" ${driver.vehicleType === "Ute" ? "selected" : ""}>Ute</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label">车牌号</label>
+                        <input id="driver-plate" class="field" type="text" value="${escapeHtml(driver.plate)}" placeholder="请输入车牌号">
+                    </div>
+                    <div>
+                        <label class="field-label">所在城市</label>
+                        <input id="driver-city" class="field" type="text" value="${escapeHtml(driver.city)}" placeholder="Sydney / Melbourne / Brisbane">
+                    </div>
+                    <div>
+                        <label class="field-label">司机状态</label>
+                        <select id="driver-status" class="select">
+                            <option value="active" ${driver.status === "active" ? "selected" : ""}>可接单</option>
+                            <option value="inactive" ${driver.status === "inactive" ? "selected" : ""}>已停用</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label">结算周期</label>
+                        <select id="driver-settlement" class="select">
+                            <option value="周结" ${driver.settlementCycle === "周结" ? "selected" : ""}>周结</option>
+                            <option value="半月结" ${driver.settlementCycle === "半月结" ? "selected" : ""}>半月结</option>
+                            <option value="月结" ${driver.settlementCycle === "月结" ? "selected" : ""}>月结</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label">银行卡尾号</label>
+                        <input id="driver-bank-tail" class="field" type="text" value="${escapeHtml(driver.bankTail)}" placeholder="最后 4 位">
+                    </div>
+                    <div>
+                        <label class="field-label">派付比例</label>
+                        <input id="driver-payout-ratio" class="field" type="number" min="0" max="1" step="0.01" value="${Number(driver.payoutRatio || DEFAULT_DRIVER_PAYOUT_RATIO).toFixed(2)}">
+                    </div>
+                    <div class="full-span">
+                        <label class="field-label">备注</label>
+                        <textarea id="driver-notes" class="textarea" placeholder="例如常跑区域、特殊结算约定等">${escapeHtml(driver.notes)}</textarea>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" type="button" onclick="closeModal()">取消</button>
+                    <button class="btn btn-primary" type="button" onclick="saveDriverModal('${escapeHtml(driverId)}')">保存司机</button>
+                </div>
+            `);
+        }
+
+        function saveDriverModal(existingId = "") {
+            const nextDriver = {
+                id: document.getElementById("driver-id").value.trim() || existingId || `DRV-${String(state.adminData.drivers.length + 1).padStart(3, "0")}`,
+                name: document.getElementById("driver-name").value.trim(),
+                phone: document.getElementById("driver-phone").value.trim(),
+                vehicleType: document.getElementById("driver-vehicle").value,
+                plate: document.getElementById("driver-plate").value.trim(),
+                city: document.getElementById("driver-city").value.trim() || "Sydney",
+                status: document.getElementById("driver-status").value,
+                settlementCycle: document.getElementById("driver-settlement").value,
+                bankTail: document.getElementById("driver-bank-tail").value.trim(),
+                payoutRatio: Number(document.getElementById("driver-payout-ratio").value || DEFAULT_DRIVER_PAYOUT_RATIO),
+                joinedAt: nowStamp().slice(0, 10),
+                notes: document.getElementById("driver-notes").value.trim()
+            };
+
+            if (!nextDriver.name || !nextDriver.phone) {
+                alert("请至少填写司机姓名和手机号。");
+                return;
+            }
+
+            const duplicate = state.adminData.drivers.find(driver => driver.id === nextDriver.id && driver.id !== existingId);
+            if (duplicate) {
+                alert("司机编号已存在，请换一个编号。");
+                return;
+            }
+
+            const existingIndex = state.adminData.drivers.findIndex(driver => driver.id === existingId || driver.id === nextDriver.id);
+            if (existingIndex >= 0) {
+                state.adminData.drivers.splice(existingIndex, 1, nextDriver);
+            } else {
+                state.adminData.drivers.unshift(nextDriver);
+            }
+
+            saveAdminData();
+            refreshData();
+            closeModal();
+        }
+
+        function toggleDriverStatus(driverId) {
+            const driver = state.adminData.drivers.find(item => item.id === driverId);
+            if (!driver) {
+                return;
+            }
+            driver.status = driver.status === "active" ? "inactive" : "active";
+            saveAdminData();
+            refreshData();
+        }
+
+        function assignDriverInline(encodedOrderKey, driverId) {
+            const key = decodeKey(encodedOrderKey);
+            const order = state.orders.find(item => item.key === key);
+            if (!order) {
+                return;
+            }
+            const nextPayable = state.adminData.orderOps[key]?.driverPayable ?? defaultDriverPayable(order, driverId);
+            persistOrderOp(key, {
+                assignedDriverId: driverId,
+                driverPayable: roundMoney(nextPayable),
+                internalStatus: driverId ? "已指派" : "待分配"
+            });
+        }
+
+        function quickToggleReceivable(encodedOrderKey) {
+            const key = decodeKey(encodedOrderKey);
+            const order = state.orders.find(item => item.key === key);
+            if (!order) {
+                return;
+            }
+            persistOrderOp(key, {
+                receivableStatus: order.op.receivableStatus === "已收款" ? "待收款" : "已收款"
+            });
+        }
+
+        function quickTogglePayable(encodedOrderKey) {
+            const key = decodeKey(encodedOrderKey);
+            const order = state.orders.find(item => item.key === key);
+            if (!order) {
+                return;
+            }
+            persistOrderOp(key, {
+                payableStatus: order.op.payableStatus === "已结算" ? "待结算" : "已结算"
+            });
+        }
+
+        function openOrderModal(encodedOrderKey) {
+            const key = decodeKey(encodedOrderKey);
+            const order = state.orders.find(item => item.key === key);
+            if (!order) {
+                return;
+            }
+            const flow = flowMeta(order.flowStatus, order);
+            const clearance = clearanceMeta(order.clearanceStatusLabel);
+            openModal("订单详情与调度", `
+                <div class="form-grid">
+                    <div>
+                        <label class="field-label">订单号</label>
+                        <input class="field" type="text" value="${escapeHtml(order.orderCode || order.key)}" disabled>
+                    </div>
+                    <div>
+                        <label class="field-label">订单来源</label>
+                        <input class="field" type="text" value="${escapeHtml(order.sourceLabel)}" disabled>
+                    </div>
+                    <div>
+                        <label class="field-label">业务状态</label>
+                        <input class="field" type="text" value="${escapeHtml(flow.label)}" disabled>
+                    </div>
+                    <div>
+                        <label class="field-label">清关状态</label>
+                        <input class="field" type="text" value="${escapeHtml(clearance.label)}" disabled>
+                    </div>
+                    <div class="full-span">
+                        <label class="field-label">提货地址</label>
+                        <input class="field" type="text" value="${escapeHtml(order.pickupAddress)}" disabled>
+                    </div>
+                    <div class="full-span">
+                        <label class="field-label">送货地址</label>
+                        <input class="field" type="text" value="${escapeHtml(order.dropoffAddress)}" disabled>
+                    </div>
+                    <div>
+                        <label class="field-label">计划提货时间</label>
+                        <input class="field" type="text" value="${escapeHtml(order.scheduledPickupTime || "--")}" disabled>
+                    </div>
+                    <div>
+                        <label class="field-label">实际送达时间</label>
+                        <input class="field" type="text" value="${escapeHtml(order.deliveredAt || "--")}" disabled>
+                    </div>
+                    <div>
+                        <label class="field-label">指派司机</label>
+                        <select id="order-modal-driver" class="select">${driverOptionsHtml(order.op.assignedDriverId)}</select>
+                    </div>
+                    <div>
+                        <label class="field-label">内部状态</label>
+                        <select id="order-modal-internal-status" class="select">
+                            ${["待分配", "已指派", "等待提货", "已提货", "派送途中", "已完成", "异常待处理"].map(option => `<option value="${option}" ${order.op.internalStatus === option ? "selected" : ""}>${option}</option>`).join("")}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label">客户应收</label>
+                        <input id="order-modal-receivable" class="field" type="number" min="0" step="0.01" value="${roundMoney(order.op.customerReceivable)}">
+                    </div>
+                    <div>
+                        <label class="field-label">司机应付</label>
+                        <input id="order-modal-payable" class="field" type="number" min="0" step="0.01" value="${roundMoney(order.op.driverPayable)}">
+                    </div>
+                    <div>
+                        <label class="field-label">收款状态</label>
+                        <select id="order-modal-receivable-status" class="select">
+                            <option value="待收款" ${order.op.receivableStatus === "待收款" ? "selected" : ""}>待收款</option>
+                            <option value="已收款" ${order.op.receivableStatus === "已收款" ? "selected" : ""}>已收款</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label">司机结算状态</label>
+                        <select id="order-modal-payable-status" class="select">
+                            <option value="待结算" ${order.op.payableStatus === "待结算" ? "selected" : ""}>待结算</option>
+                            <option value="已结算" ${order.op.payableStatus === "已结算" ? "selected" : ""}>已结算</option>
+                        </select>
+                    </div>
+                    <div class="full-span">
+                        <label class="field-label">内部备注</label>
+                        <textarea id="order-modal-notes" class="textarea" placeholder="例如预约要求、异常说明、客户回款情况等">${escapeHtml(order.op.internalNotes || order.remarks || "")}</textarea>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" type="button" onclick="closeModal()">取消</button>
+                    <button class="btn btn-primary" type="button" onclick="saveOrderModal('${encodeKey(order.key)}')">保存订单</button>
+                </div>
+            `);
+        }
+
+        function saveOrderModal(encodedOrderKey) {
+            const key = decodeKey(encodedOrderKey);
+            const order = state.orders.find(item => item.key === key);
+            if (!order) {
+                return;
+            }
+            const driverId = document.getElementById("order-modal-driver").value;
+            persistOrderOp(key, {
+                assignedDriverId: driverId,
+                internalStatus: document.getElementById("order-modal-internal-status").value,
+                customerReceivable: roundMoney(document.getElementById("order-modal-receivable").value),
+                driverPayable: roundMoney(document.getElementById("order-modal-payable").value),
+                receivableStatus: document.getElementById("order-modal-receivable-status").value,
+                payableStatus: document.getElementById("order-modal-payable-status").value,
+                internalNotes: document.getElementById("order-modal-notes").value.trim()
+            });
+            closeModal();
+        }
+
+        function exportFinanceCsv() {
+            const rows = [
+                ["订单号", "来源", "状态", "司机", "客户应收", "收款状态", "司机应付", "结算状态", "毛利", "提货地址", "送货地址"]
+            ];
+            filteredFinanceOrders().forEach(order => {
+                const driver = state.adminData.drivers.find(item => item.id === order.op.assignedDriverId);
+                rows.push([
+                    order.orderCode || order.key,
+                    order.sourceLabel,
+                    flowMeta(order.flowStatus, order).label,
+                    driver ? `${driver.name} ${driver.phone}` : "未分配",
+                    order.op.customerReceivable,
+                    order.op.receivableStatus,
+                    order.op.driverPayable,
+                    order.op.payableStatus,
+                    roundMoney(order.op.customerReceivable - order.op.driverPayable),
+                    order.pickupAddress,
+                    order.dropoffAddress
+                ]);
+            });
+
+            const csv = rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+            const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement("a");
+            anchor.href = url;
+            anchor.download = `aulala-finance-${Date.now()}.csv`;
+            anchor.click();
+            URL.revokeObjectURL(url);
+        }
+
+        async function handleAdminLogin(event) {
+            event.preventDefault();
+            clearStatusBanner();
+            const account = document.getElementById("admin-account").value.trim();
+            const password = document.getElementById("admin-password").value;
+
+            if (!account || !password) {
+                showStatusBanner("请输入管理员账号和密码。");
+                return;
+            }
+
+            const passwordHash = await sha256(password);
+            if (account !== ADMIN_ACCOUNT || passwordHash !== ADMIN_PASSWORD_HASH) {
+                showStatusBanner("管理员账号或密码不正确。");
+                return;
+            }
+
+            createAdminSession();
+            bootstrapAdmin();
+        }
+
+        function bootstrapAdmin() {
+            state.adminData = loadAdminData();
+            state.runtimeData = loadRuntimeData();
+            document.getElementById("admin-login-view").classList.add("hidden");
+            document.getElementById("admin-shell").classList.remove("hidden");
+            refreshData();
+            switchPanel(state.currentPanel);
+        }
+
+        function logoutAdmin() {
+            clearAdminSession();
+            document.getElementById("admin-shell").classList.add("hidden");
+            document.getElementById("admin-login-view").classList.remove("hidden");
+            document.getElementById("admin-login-form").reset();
+            clearStatusBanner();
+        }
+
+        document.getElementById("admin-login-form").addEventListener("submit", handleAdminLogin);
+        document.getElementById("refresh-admin-btn").addEventListener("click", refreshData);
+        document.getElementById("export-finance-btn").addEventListener("click", exportFinanceCsv);
+        document.getElementById("logout-admin-btn").addEventListener("click", logoutAdmin);
+        document.getElementById("modal-close-btn").addEventListener("click", closeModal);
+        document.getElementById("modal-shell").addEventListener("click", event => {
+            if (event.target.id === "modal-shell") {
+                closeModal();
+            }
+        });
+        document.querySelectorAll(".nav-item").forEach(button => {
+            button.addEventListener("click", () => switchPanel(button.dataset.panel));
+        });
+
+        if (hasValidAdminSession()) {
+            bootstrapAdmin();
+        }
+
+        window.openDriverModal = openDriverModal;
+        window.toggleDriverStatus = toggleDriverStatus;
+        window.assignDriverInline = assignDriverInline;
+        window.quickToggleReceivable = quickToggleReceivable;
+        window.quickTogglePayable = quickTogglePayable;
+        window.openOrderModal = openOrderModal;
+        window.saveDriverModal = saveDriverModal;
+        window.saveOrderModal = saveOrderModal;
+        window.closeModal = closeModal;
+    </script>
+</body>
+</html>
