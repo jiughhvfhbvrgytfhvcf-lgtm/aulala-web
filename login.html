@@ -58,6 +58,10 @@
             // 登录成功后跳转回首页
             window.location.href = "index.html";
         }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const initialMode = urlParams.get('mode') === 'reg' || window.location.hash === '#reg' ? 'reg' : 'login';
+        switchTab(initialMode);
     </script>
 </body>
 </html>

@@ -164,6 +164,22 @@
       box-shadow: 0 20px 34px rgba(0, 43, 127, 0.18);
     }
 
+    .helper-row {
+      margin-top: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .helper-link {
+      color: var(--brand-primary);
+      font-weight: 800;
+      text-decoration: none;
+    }
+
     .back-link {
       margin-top: 18px;
       display: inline-block;
@@ -215,6 +231,11 @@
       </div>
       <button class="submit-btn" type="submit">登录</button>
     </form>
+
+    <div class="helper-row">
+      <span>还没有账号？</span>
+      <a class="helper-link" href="login.html?mode=reg">注册账号</a>
+    </div>
 
     <a class="back-link" href="https://ai-express.cn">返回官网</a>
   </main>
