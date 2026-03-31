@@ -180,32 +180,29 @@
       text-decoration: none;
     }
 
-    .muted-link {
-      color: var(--text-muted);
-      font-size: 13px;
-      font-weight: 700;
-      text-decoration: none;
-    }
-
-    .test-note {
-      margin-top: 16px;
-      padding: 14px 16px;
-      border-radius: 16px;
-      background: rgba(0, 43, 127, 0.06);
-      border: 1px solid rgba(0, 43, 127, 0.12);
-      color: var(--brand-primary);
-      font-size: 13px;
-      line-height: 1.7;
-      font-weight: 700;
-    }
-
-    .back-link {
+    .action-links {
       margin-top: 18px;
-      display: inline-block;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .action-link {
+      min-width: 144px;
+      height: 44px;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      padding: 0 18px;
+      border-radius: 14px;
+      border: 1px solid rgba(0, 43, 127, 0.12);
+      background: rgba(0, 43, 127, 0.05);
       color: var(--brand-primary);
       text-decoration: none;
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 800;
     }
 
     @media (max-width: 640px) {
@@ -251,18 +248,15 @@
       <button class="submit-btn" type="submit">登录</button>
     </form>
 
-    <div class="test-note">测试司机账号：13888888888<br>测试密码：123456</div>
-
     <div class="helper-row">
       <span>还没有账号？</span>
       <a class="helper-link" href="login.html?mode=reg">注册账号</a>
     </div>
 
-    <div class="helper-row">
-      <a class="muted-link" href="admin.html">进入管理后台</a>
+    <div class="action-links">
+      <a class="action-link" href="https://ai-express.cn">返回官网</a>
+      <a class="action-link" href="admin.html">进入管理后台</a>
     </div>
-
-    <a class="back-link" href="https://ai-express.cn">返回官网</a>
   </main>
 
   <script>
