@@ -55,6 +55,7 @@
         const ADMIN_STORAGE_KEY = "aulala_admin_runtime_v1";
         const DRIVER_ACCOUNTS_KEY = "aulala_driver_accounts_v1";
         const DEFAULT_DRIVER_PAYOUT_RATIO = 0.78;
+        const DRIVER_API_BASES = ["https://api.ai-express.cn:8443", "https://api.ai-express.cn"];
         const statusBanner = document.getElementById("statusBanner");
 
         function safeParse(raw, fallback) {
@@ -105,6 +106,32 @@
 
         function saveRegisteredDrivers(drivers) {
             localStorage.setItem(DRIVER_ACCOUNTS_KEY, JSON.stringify(drivers));
+        }
+
+        async function requestDriverApi(path, options = {}) {
+            let lastError = null;
+            for (const base of DRIVER_API_BASES) {
+                try {
+                    const response = await fetch(`${base}${path}`, {
+                        method: options.method || "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                            ...(options.headers || {})
+                        },
+                        body: options.body ? JSON.stringify(options.body) : undefined
+                    });
+                    const payload = await response.json().catch(() => ({}));
+                    if (!response.ok || payload?.ok === false) {
+                        const error = new Error(payload?.error?.message || `request failed: ${response.status}`);
+                        error.code = payload?.error?.code || `HTTP_${response.status}`;
+                        throw error;
+                    }
+                    return payload;
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+            throw lastError || new Error("driver api unavailable");
         }
 
         function seedAdminDrivers() {
@@ -223,6 +250,32 @@
                     return;
                 }
 
+                try {
+                    const remote = await requestDriverApi("/api/aulala/driver-login", {
+                        method: "POST",
+                        body: { phone, password }
+                    });
+                    const driver = remote.driver || {};
+                    const drivers = loadRegisteredDrivers();
+                    if (!drivers.find(item => normalizePhone(item.phone) === phone)) {
+                        drivers.unshift({
+                            phone,
+                            name: driver.name || "",
+                            vehicleType: driver.vehicleType || "",
+                            passwordHash: await sha256(password),
+                            createdAt: driver.createdAt || nowStamp()
+                        });
+                        saveRegisteredDrivers(drivers);
+                    }
+                    bootstrapDriverSession(phone, driver);
+                    window.location.href = "app.html";
+                    return;
+                } catch (error) {
+                    if (!["DRIVER_NOT_FOUND", "INVALID_DRIVER_PASSWORD", "HTTP_404", "HTTP_401"].includes(error.code || "")) {
+                        console.warn("remote driver login failed, fallback to local", error);
+                    }
+                }
+
                 const drivers = loadRegisteredDrivers();
                 const account = drivers.find(item => normalizePhone(item.phone) === phone);
                 if (!account) {
@@ -281,6 +334,22 @@
                     passwordHash: await sha256(password),
                     createdAt: nowStamp()
                 };
+                try {
+                    const remote = await requestDriverApi("/api/aulala/driver-register", {
+                        method: "POST",
+                        body: { phone, name, vehicleType, password }
+                    });
+                    if (remote?.driver) {
+                        newAccount.createdAt = remote.driver.createdAt || newAccount.createdAt;
+                    }
+                } catch (error) {
+                    if (error.code === "DUPLICATE_DRIVER" || error.code === "HTTP_409") {
+                        showStatus("这个手机号已经注册过了，请直接登录。");
+                        return;
+                    }
+                    console.warn("remote driver register failed, fallback to local", error);
+                }
+
                 drivers.unshift(newAccount);
                 saveRegisteredDrivers(drivers);
                 syncDriverToAdmin(newAccount);

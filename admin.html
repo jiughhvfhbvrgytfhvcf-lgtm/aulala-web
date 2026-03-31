@@ -827,6 +827,7 @@
         const ADMIN_STORAGE_KEY = "aulala_admin_runtime_v1";
         const APP_STORAGE_KEY = "aulala_app_runtime_v1";
         const DRIVER_ACCOUNTS_KEY = "aulala_driver_accounts_v1";
+        const DRIVER_API_BASES = ["https://api.ai-express.cn:8443", "https://api.ai-express.cn"];
         const ADMIN_SESSION_TTL = 1000 * 60 * 60 * 6;
         const DEFAULT_DRIVER_PAYOUT_RATIO = 0.78;
         const DEFAULT_DRIVERS = [
@@ -964,6 +965,25 @@
         function loadRegisteredDriverAccounts() {
             const accounts = safeParse(localStorage.getItem(DRIVER_ACCOUNTS_KEY), []);
             return Array.isArray(accounts) ? accounts : [];
+        }
+
+        async function fetchRemoteDrivers() {
+            let lastError = null;
+            for (const base of DRIVER_API_BASES) {
+                try {
+                    const response = await fetch(`${base}/api/aulala/drivers`);
+                    const payload = await response.json().catch(() => ({}));
+                    if (!response.ok || payload?.ok === false) {
+                        const error = new Error(payload?.error?.message || `request failed: ${response.status}`);
+                        error.code = payload?.error?.code || `HTTP_${response.status}`;
+                        throw error;
+                    }
+                    return Array.isArray(payload?.drivers) ? payload.drivers : [];
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+            throw lastError || new Error("remote drivers unavailable");
         }
 
         function mergeRegisteredDrivers(drivers, registeredAccounts) {
@@ -1806,6 +1826,16 @@
                 }
             }));
             renderAllPanels();
+            fetchRemoteDrivers()
+                .then(remoteDrivers => {
+                    state.adminData.drivers = mergeRegisteredDrivers(state.adminData.drivers, remoteDrivers);
+                    saveAdminData();
+                    renderOverviewPanel();
+                    renderDriversPanel();
+                })
+                .catch(error => {
+                    console.warn("fetch remote drivers failed", error);
+                });
         }
 
         function openModal(title, bodyHtml) {
