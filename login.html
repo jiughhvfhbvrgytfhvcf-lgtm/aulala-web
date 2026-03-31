@@ -12,6 +12,10 @@
         .tab.active { color: #002b7f; border-bottom: 2px solid #002b7f; }
         input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; outline: none; box-sizing: border-box; }
         .btn-main { width: 100%; background: #002b7f; color: white; border: none; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .status-banner { display: none; margin-bottom: 16px; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(0, 43, 127, 0.12); background: rgba(0, 43, 127, 0.06); color: #002b7f; font-size: 13px; line-height: 1.6; font-weight: 700; }
+        .status-banner.visible { display: block; }
+        .status-banner.error { color: #c83e33; background: #fff2f2; border-color: rgba(200, 62, 51, 0.15); }
+        .status-banner.success { color: #127245; background: #edf9f1; border-color: rgba(18, 114, 69, 0.18); }
         .footer-link { text-align: center; margin-top: 15px; font-size: 13px; color: #666; }
         .footer-link a { color: #002b7f; text-decoration: none; font-weight: 700; }
     </style>
@@ -23,18 +27,20 @@
             <div class="tab" id="regTab" onclick="switchTab('reg')">注册账号</div>
         </div>
 
+        <div id="statusBanner" class="status-banner"></div>
+
         <div id="loginForm">
             <input type="text" id="phone" placeholder="请输入手机号">
             <input type="password" id="pw" placeholder="请输入密码">
-            <button class="btn-main" onclick="doLogin()">立即登录</button>
+            <button class="btn-main" type="button" onclick="doLogin()">立即登录</button>
         </div>
 
         <div id="regForm" style="display: none;">
-            <input type="text" placeholder="手机号">
-            <input type="text" placeholder="姓名">
-            <input type="text" placeholder="车型 (如：丰田 HiAce)">
-            <input type="password" placeholder="设置密码">
-            <button class="btn-main">提交注册</button>
+            <input type="text" id="reg-phone" placeholder="手机号">
+            <input type="text" id="reg-name" placeholder="姓名">
+            <input type="text" id="reg-vehicle" placeholder="车型 (如：丰田 HiAce)">
+            <input type="password" id="reg-pass" placeholder="设置密码">
+            <button class="btn-main" type="button" onclick="doRegister()">提交注册</button>
         </div>
         
         <div class="footer-link">
@@ -46,16 +52,133 @@
         const TEST_DRIVER_ACCOUNT = "13888888888";
         const TEST_DRIVER_PASSWORD = "123456";
         const APP_STORAGE_KEY = "aulala_app_runtime_v1";
+        const ADMIN_STORAGE_KEY = "aulala_admin_runtime_v1";
+        const DRIVER_ACCOUNTS_KEY = "aulala_driver_accounts_v1";
+        const DEFAULT_DRIVER_PAYOUT_RATIO = 0.78;
+        const statusBanner = document.getElementById("statusBanner");
+
+        function safeParse(raw, fallback) {
+            try {
+                return JSON.parse(raw || "");
+            } catch (error) {
+                return fallback;
+            }
+        }
+
+        function nowStamp() {
+            const date = new Date();
+            const pad = value => String(value).padStart(2, "0");
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        }
+
+        function normalizePhone(value) {
+            return String(value || "").replace(/\s+/g, "");
+        }
+
+        function showStatus(message, type = "error") {
+            statusBanner.textContent = message;
+            statusBanner.className = `status-banner visible ${type === "success" ? "success" : "error"}`;
+        }
+
+        function clearStatus() {
+            statusBanner.textContent = "";
+            statusBanner.className = "status-banner";
+        }
+
+        async function sha256(text) {
+            if (!window.crypto || !window.crypto.subtle) {
+                return `plain:${text}`;
+            }
+            try {
+                const bytes = new TextEncoder().encode(text);
+                const digest = await crypto.subtle.digest("SHA-256", bytes);
+                return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, "0")).join("");
+            } catch (error) {
+                return `plain:${text}`;
+            }
+        }
+
+        function loadRegisteredDrivers() {
+            const drivers = safeParse(localStorage.getItem(DRIVER_ACCOUNTS_KEY), []);
+            return Array.isArray(drivers) ? drivers : [];
+        }
+
+        function saveRegisteredDrivers(drivers) {
+            localStorage.setItem(DRIVER_ACCOUNTS_KEY, JSON.stringify(drivers));
+        }
+
+        function seedAdminDrivers() {
+            return [
+                {
+                    id: "DRV-001",
+                    name: "测试司机",
+                    phone: TEST_DRIVER_ACCOUNT,
+                    vehicleType: "Van",
+                    plate: "TEST-888",
+                    city: "Sydney",
+                    status: "active",
+                    settlementCycle: "周结",
+                    bankTail: "6688",
+                    payoutRatio: DEFAULT_DRIVER_PAYOUT_RATIO,
+                    joinedAt: nowStamp().slice(0, 10),
+                    notes: "系统预置测试司机，可直接用于当前测试单登录与后台分配。"
+                },
+                {
+                    id: "DRV-002",
+                    name: "备用司机",
+                    phone: "13900000001",
+                    vehicleType: "Truck",
+                    plate: "AUL-201",
+                    city: "Melbourne",
+                    status: "inactive",
+                    settlementCycle: "月结",
+                    bankTail: "5218",
+                    payoutRatio: 0.8,
+                    joinedAt: nowStamp().slice(0, 10),
+                    notes: "备用运力，可在需要时启用。"
+                }
+            ];
+        }
+
+        function syncDriverToAdmin(driverAccount) {
+            const saved = safeParse(localStorage.getItem(ADMIN_STORAGE_KEY), {});
+            const drivers = Array.isArray(saved.drivers) && saved.drivers.length ? saved.drivers.slice() : seedAdminDrivers();
+            const existingIndex = drivers.findIndex(driver => normalizePhone(driver.phone) === normalizePhone(driverAccount.phone));
+            const existing = existingIndex >= 0 ? drivers[existingIndex] : null;
+            const nextDriver = {
+                id: existing?.id || `DRV-${String(drivers.length + 1).padStart(3, "0")}`,
+                name: driverAccount.name || existing?.name || "新注册司机",
+                phone: driverAccount.phone,
+                vehicleType: driverAccount.vehicleType || existing?.vehicleType || "Van",
+                plate: existing?.plate || "",
+                city: existing?.city || "Sydney",
+                status: "active",
+                settlementCycle: existing?.settlementCycle || "周结",
+                bankTail: existing?.bankTail || "",
+                payoutRatio: Number(existing?.payoutRatio || DEFAULT_DRIVER_PAYOUT_RATIO),
+                joinedAt: existing?.joinedAt || nowStamp().slice(0, 10),
+                notes: existing?.notes || "司机在登录页自助注册。"
+            };
+            if (existingIndex >= 0) {
+                drivers.splice(existingIndex, 1, nextDriver);
+            } else {
+                drivers.unshift(nextDriver);
+            }
+            saved.drivers = drivers;
+            saved.updatedAt = nowStamp();
+            localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(saved));
+        }
 
         function switchTab(type) {
             const isLogin = type === 'login';
+            clearStatus();
             document.getElementById('loginForm').style.display = isLogin ? 'block' : 'none';
             document.getElementById('regForm').style.display = isLogin ? 'none' : 'block';
             document.getElementById('loginTab').className = isLogin ? 'tab active' : 'tab';
             document.getElementById('regTab').className = isLogin ? 'tab' : 'tab active';
         }
 
-        function bootstrapDriverSession(account) {
+        function bootstrapDriverSession(account, profile = {}) {
             let currentState = {};
             try {
                 currentState = JSON.parse(localStorage.getItem(APP_STORAGE_KEY) || "{}") || {};
@@ -69,7 +192,12 @@
                     ...currentState,
                     loggedIn: true,
                     userRole: "driver",
-                    authMode: "login"
+                    authMode: "login",
+                    driverProfile: {
+                        account,
+                        name: profile.name || "",
+                        vehicleType: profile.vehicleType || ""
+                    }
                 })
             );
 
@@ -80,15 +208,91 @@
             }));
         }
 
-        function doLogin() {
-            const phone = document.getElementById('phone').value.trim();
-            const password = document.getElementById('pw').value.trim();
-            if (!phone || !password) return alert("请输入手机号和密码");
-            if (phone !== TEST_DRIVER_ACCOUNT || password !== TEST_DRIVER_PASSWORD) {
-                return alert("测试司机账号或密码不正确，请使用 13888888888 / 123456");
+        async function doLogin() {
+            try {
+                const phone = normalizePhone(document.getElementById('phone').value.trim());
+                const password = document.getElementById('pw').value.trim();
+                clearStatus();
+                if (!phone || !password) {
+                    showStatus("请输入手机号和密码。");
+                    return;
+                }
+                if (phone === TEST_DRIVER_ACCOUNT && password === TEST_DRIVER_PASSWORD) {
+                    bootstrapDriverSession(phone, { name: "测试司机", vehicleType: "Van" });
+                    window.location.href = "app.html";
+                    return;
+                }
+
+                const drivers = loadRegisteredDrivers();
+                const account = drivers.find(item => normalizePhone(item.phone) === phone);
+                if (!account) {
+                    showStatus("账号不存在，请先注册司机账号。");
+                    return;
+                }
+                const passwordHash = await sha256(password);
+                if (passwordHash !== account.passwordHash) {
+                    showStatus("密码不正确，请重新输入。");
+                    return;
+                }
+                bootstrapDriverSession(phone, account);
+                window.location.href = "app.html";
+            } catch (error) {
+                console.error("driver login failed", error);
+                showStatus("登录失败，请刷新页面后重试。");
             }
-            bootstrapDriverSession(phone);
-            window.location.href = "app.html";
+        }
+
+        async function doRegister() {
+            try {
+                const phone = normalizePhone(document.getElementById("reg-phone").value.trim());
+                const name = document.getElementById("reg-name").value.trim();
+                const vehicleType = document.getElementById("reg-vehicle").value.trim();
+                const password = document.getElementById("reg-pass").value.trim();
+                clearStatus();
+
+                if (!phone || !name || !vehicleType || !password) {
+                    showStatus("请完整填写手机号、姓名、车型和密码。");
+                    return;
+                }
+                if (phone.length < 6) {
+                    showStatus("手机号格式不正确，请重新输入。");
+                    return;
+                }
+                if (normalizePhone(phone) === TEST_DRIVER_ACCOUNT) {
+                    showStatus("这个手机号已被系统测试司机占用，请换一个手机号注册。");
+                    return;
+                }
+                if (password.length < 6) {
+                    showStatus("密码至少需要 6 位。");
+                    return;
+                }
+
+                const drivers = loadRegisteredDrivers();
+                const duplicate = drivers.find(item => normalizePhone(item.phone) === phone);
+                if (duplicate) {
+                    showStatus("这个手机号已经注册过了，请直接登录。");
+                    return;
+                }
+
+                const newAccount = {
+                    phone,
+                    name,
+                    vehicleType,
+                    passwordHash: await sha256(password),
+                    createdAt: nowStamp()
+                };
+                drivers.unshift(newAccount);
+                saveRegisteredDrivers(drivers);
+                syncDriverToAdmin(newAccount);
+                showStatus("注册成功，正在进入司机后台。", "success");
+                bootstrapDriverSession(phone, newAccount);
+                setTimeout(() => {
+                    window.location.href = "app.html";
+                }, 250);
+            } catch (error) {
+                console.error("driver register failed", error);
+                showStatus("注册失败，请刷新页面后再试。");
+            }
         }
 
         const urlParams = new URLSearchParams(window.location.search);
