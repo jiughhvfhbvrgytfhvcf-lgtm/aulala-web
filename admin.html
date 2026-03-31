@@ -1111,6 +1111,9 @@
             if (flowStatus === "grabbed") {
                 return { label: "已被抢单", className: "blue" };
             }
+            if (flowStatus === "assigned") {
+                return { label: "已指派", className: "blue" };
+            }
             return { label: "待抢单", className: "orange" };
         }
 
@@ -1137,6 +1140,22 @@
             }
             if (status === "grabbed") {
                 return "grabbed";
+            }
+            return "pending";
+        }
+
+        function effectiveFlowStatus(order) {
+            if (order.flowStatus === "completed") {
+                return "completed";
+            }
+            if (order.flowStatus === "in_progress") {
+                return "in_progress";
+            }
+            if (order.flowStatus === "grabbed") {
+                return "grabbed";
+            }
+            if (order.op?.assignedDriverId) {
+                return "assigned";
             }
             return "pending";
         }
@@ -1231,8 +1250,8 @@
                     op: getOrderOp(record)
                 }))
                 .sort((a, b) => {
-                    const flowRank = { pending: 0, grabbed: 1, in_progress: 2, completed: 3 };
-                    const rankDelta = (flowRank[a.flowStatus] ?? 9) - (flowRank[b.flowStatus] ?? 9);
+                    const flowRank = { pending: 0, assigned: 1, grabbed: 2, in_progress: 3, completed: 4 };
+                    const rankDelta = (flowRank[effectiveFlowStatus(a)] ?? 9) - (flowRank[effectiveFlowStatus(b)] ?? 9);
                     if (rankDelta !== 0) {
                         return rankDelta;
                     }
@@ -1241,13 +1260,14 @@
         }
 
         function defaultInternalStatus(order) {
-            if (order.flowStatus === "completed") {
+            const flowStatus = effectiveFlowStatus(order);
+            if (flowStatus === "completed") {
                 return "已完成";
             }
-            if (order.flowStatus === "in_progress") {
-                return flowMeta(order.flowStatus, order).label;
+            if (flowStatus === "in_progress") {
+                return flowMeta(flowStatus, order).label;
             }
-            if (order.op?.assignedDriverId) {
+            if (flowStatus === "assigned") {
                 return "已指派";
             }
             return "待分配";
@@ -1308,7 +1328,8 @@
 
         function filteredOrders() {
             return state.orders.filter(order => {
-                if (state.orderFilter.flowStatus !== "all" && order.flowStatus !== state.orderFilter.flowStatus) {
+                const flowStatus = effectiveFlowStatus(order);
+                if (state.orderFilter.flowStatus !== "all" && flowStatus !== state.orderFilter.flowStatus) {
                     return false;
                 }
                 if (state.orderFilter.sourceType !== "all" && order.sourceType !== state.orderFilter.sourceType) {
@@ -1342,7 +1363,7 @@
                 if (state.financeFilter.settlement === "payable_pending" && order.op.payableStatus === "已结算") {
                     return false;
                 }
-                if (state.financeFilter.settlement === "completed_only" && order.flowStatus !== "completed") {
+                if (state.financeFilter.settlement === "completed_only" && effectiveFlowStatus(order) !== "completed") {
                     return false;
                 }
                 return true;
@@ -1385,9 +1406,10 @@
         function renderOverviewPanel() {
             const orders = state.orders;
             const finance = financeSummary(orders);
-            const pendingOrders = orders.filter(order => order.flowStatus === "pending").length;
-            const inProgressOrders = orders.filter(order => order.flowStatus === "in_progress").length;
-            const completedOrders = orders.filter(order => order.flowStatus === "completed").length;
+            const pendingOrders = orders.filter(order => effectiveFlowStatus(order) === "pending").length;
+            const assignedOrders = orders.filter(order => effectiveFlowStatus(order) === "assigned").length;
+            const inProgressOrders = orders.filter(order => effectiveFlowStatus(order) === "in_progress").length;
+            const completedOrders = orders.filter(order => effectiveFlowStatus(order) === "completed").length;
             const unassignedOrders = orders.filter(order => !order.op.assignedDriverId && order.flowStatus !== "completed").slice(0, 5);
             const financePending = orders.filter(order => order.op.receivableStatus !== "已收款" || order.op.payableStatus !== "已结算").slice(0, 5);
 
@@ -1408,7 +1430,7 @@
                     <div class="summary-card">
                         <div class="summary-label">待抢单</div>
                         <div class="summary-value">${pendingOrders}</div>
-                        <div class="summary-hint">进行中 ${inProgressOrders} 单，已完成 ${completedOrders} 单</div>
+                        <div class="summary-hint">已指派 ${assignedOrders} 单，进行中 ${inProgressOrders} 单</div>
                     </div>
                     <div class="summary-card">
                         <div class="summary-label">应收总额</div>
@@ -1436,7 +1458,7 @@
                                     ? `<div class="list-stack">${unassignedOrders.map(order => `
                                         <div class="mini-card">
                                             <strong>${escapeHtml(order.orderCode)}</strong>
-                                            <p>状态：${flowMeta(order.flowStatus, order).label} / ${escapeHtml(order.sourceLabel)}</p>
+                                            <p>状态：${flowMeta(effectiveFlowStatus(order), order).label} / ${escapeHtml(order.sourceLabel)}</p>
                                             <p>提：${escapeHtml(order.pickupAddress)}</p>
                                             <p>送：${escapeHtml(order.dropoffAddress)}</p>
                                             <div class="tag-row">
@@ -1582,6 +1604,7 @@
                     <select id="order-filter-status" class="select">
                         <option value="all">全部状态</option>
                         <option value="pending" ${state.orderFilter.flowStatus === "pending" ? "selected" : ""}>待抢单</option>
+                        <option value="assigned" ${state.orderFilter.flowStatus === "assigned" ? "selected" : ""}>已指派</option>
                         <option value="grabbed" ${state.orderFilter.flowStatus === "grabbed" ? "selected" : ""}>已被抢单</option>
                         <option value="in_progress" ${state.orderFilter.flowStatus === "in_progress" ? "selected" : ""}>进行中</option>
                         <option value="completed" ${state.orderFilter.flowStatus === "completed" ? "selected" : ""}>已完成</option>
@@ -1616,7 +1639,7 @@
                                     </thead>
                                     <tbody>
                                         ${orders.map(order => {
-                                            const flow = flowMeta(order.flowStatus, order);
+                                            const flow = flowMeta(effectiveFlowStatus(order), order);
                                             const clearance = clearanceMeta(order.clearanceStatusLabel);
                                             const assignedDriver = state.adminData.drivers.find(driver => driver.id === order.op.assignedDriverId);
                                             return `
@@ -2020,7 +2043,7 @@
             if (!order) {
                 return;
             }
-            const flow = flowMeta(order.flowStatus, order);
+            const flow = flowMeta(effectiveFlowStatus(order), order);
             const clearance = clearanceMeta(order.clearanceStatusLabel);
             openModal("订单详情与调度", `
                 <div class="form-grid">
@@ -2128,7 +2151,7 @@
                 rows.push([
                     order.orderCode || order.key,
                     order.sourceLabel,
-                    flowMeta(order.flowStatus, order).label,
+                    flowMeta(effectiveFlowStatus(order), order).label,
                     driver ? `${driver.name} ${driver.phone}` : "未分配",
                     order.op.customerReceivable,
                     order.op.receivableStatus,
