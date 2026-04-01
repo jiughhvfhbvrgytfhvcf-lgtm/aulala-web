@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aulala 登录</title>
+  <title>Aulala | 抢单大厅</title>
+  <meta http-equiv="refresh" content="0; url=app.html">
   <style>
     :root {
-      --brand-primary: #002b7f;
-      --brand-secondary: #ffb800;
-      --text-main: #17213a;
-      --text-muted: #6d7688;
+      --primary: #002b7f;
       --border: rgba(0, 43, 127, 0.14);
-      --card-bg: rgba(255, 255, 255, 0.94);
-      --shadow: 0 28px 60px rgba(22, 33, 60, 0.12);
-      --error-bg: #fff2f2;
-      --error-border: rgba(207, 63, 54, 0.18);
-      --error-text: #c83e33;
+      --card: rgba(255, 255, 255, 0.96);
+      --text: #17213a;
+      --muted: #667085;
+      --bg:
+        radial-gradient(circle at top left, rgba(255, 184, 0, 0.18), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(0, 43, 127, 0.18), transparent 30%),
+        linear-gradient(180deg, #fbfcff 0%, #eff4fb 100%);
     }
 
     * {
@@ -31,300 +31,78 @@
       justify-content: center;
       padding: 24px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-      color: var(--text-main);
-      background:
-        radial-gradient(circle at top left, rgba(255, 184, 0, 0.18), transparent 28%),
-        radial-gradient(circle at bottom right, rgba(0, 43, 127, 0.18), transparent 30%),
-        linear-gradient(180deg, #fbfcff 0%, #eff4fb 100%);
+      background: var(--bg);
+      color: var(--text);
     }
 
-    .login-shell {
+    .shell {
       width: min(420px, 100%);
-      border-radius: 28px;
+      padding: 28px 24px;
+      border-radius: 24px;
       border: 1px solid var(--border);
-      background: var(--card-bg);
-      box-shadow: var(--shadow);
-      padding: 32px 28px;
-      backdrop-filter: blur(12px);
+      background: var(--card);
+      box-shadow: 0 28px 60px rgba(22, 33, 60, 0.12);
+      text-align: center;
     }
 
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 28px;
-    }
-
-    .brand-logo {
-      width: 54px;
-      height: 54px;
-      border-radius: 18px;
-      background: linear-gradient(135deg, var(--brand-primary) 0%, #0f66ed 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 18px 36px rgba(0, 43, 127, 0.18);
-    }
-
-    .brand-logo svg {
-      width: 34px;
-      height: 34px;
-      display: block;
-    }
-
-    .brand-text strong {
-      display: block;
-      font-size: 26px;
+    h1 {
+      color: var(--primary);
+      font-size: 28px;
       font-weight: 900;
-      line-height: 1.1;
     }
 
-    .brand-text span {
-      display: block;
-      margin-top: 6px;
-      color: var(--text-muted);
-      font-size: 13px;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-    }
-
-    .login-title {
-      font-size: 26px;
-      font-weight: 900;
-      color: var(--brand-primary);
-    }
-
-    .login-copy {
-      margin-top: 10px;
-      color: var(--text-muted);
+    p {
+      margin-top: 12px;
+      color: var(--muted);
       font-size: 14px;
       line-height: 1.8;
     }
 
-    .status-banner {
-      display: none;
-      margin-top: 18px;
-      padding: 14px 16px;
-      border-radius: 16px;
-      background: var(--error-bg);
-      border: 1px solid var(--error-border);
-      color: var(--error-text);
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .status-banner.is-visible {
-      display: block;
-    }
-
-    .login-form {
-      margin-top: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .field-label {
-      display: block;
-      margin-bottom: 8px;
-      color: #6b7284;
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .field-input {
-      width: 100%;
-      height: 54px;
-      border-radius: 16px;
-      border: 1px solid #d7dfef;
-      padding: 0 16px;
-      background: #fff;
-      font-size: 15px;
-      outline: none;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .field-input:focus {
-      border-color: var(--brand-primary);
-      box-shadow: 0 0 0 4px rgba(0, 43, 127, 0.08);
-    }
-
-    .submit-btn {
-      margin-top: 4px;
-      height: 56px;
-      border: none;
-      border-radius: 18px;
-      background: linear-gradient(135deg, var(--brand-primary) 0%, #0f66ed 100%);
-      color: #fff;
-      font-size: 16px;
-      font-weight: 800;
-      cursor: pointer;
-      box-shadow: 0 20px 34px rgba(0, 43, 127, 0.18);
-    }
-
-    .helper-row {
-      margin-top: 16px;
+    .actions {
+      margin-top: 20px;
       display: flex;
       justify-content: center;
-      align-items: center;
-      gap: 6px;
-      font-size: 14px;
-      color: var(--text-muted);
-    }
-
-    .helper-link {
-      color: var(--brand-primary);
-      font-weight: 800;
-      text-decoration: none;
-    }
-
-    .action-links {
-      margin-top: 18px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
       gap: 12px;
       flex-wrap: wrap;
     }
 
-    .action-link {
-      min-width: 144px;
-      height: 44px;
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
+    .btn {
+      min-width: 148px;
+      height: 46px;
       padding: 0 18px;
       border-radius: 14px;
       border: 1px solid rgba(0, 43, 127, 0.12);
-      background: rgba(0, 43, 127, 0.05);
-      color: var(--brand-primary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       text-decoration: none;
       font-size: 14px;
       font-weight: 800;
     }
 
-    @media (max-width: 640px) {
-      .login-shell {
-        padding: 24px 20px;
-        border-radius: 24px;
-      }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, #0f66ed 100%);
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .btn-secondary {
+      background: rgba(0, 43, 127, 0.05);
+      color: var(--primary);
     }
   </style>
 </head>
 <body>
-  <main class="login-shell">
-    <div class="brand">
-      <div class="brand-logo" aria-hidden="true">
-        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="15" cy="13" r="4" fill="#FFCF56"/>
-          <circle cx="30" cy="12" r="4" fill="#8AD7FF"/>
-          <circle cx="35" cy="28" r="4" fill="#FFFFFF"/>
-          <path d="M15 13L30 12L35 28" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M12 30C15.8 24.8 21 22 27.6 22C33.2 22 37.1 24.3 39 29" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round"/>
-        </svg>
-      </div>
-      <div class="brand-text">
-        <strong>Aulala</strong>
-        <span>Login</span>
-      </div>
-    </div>
-
-    <h1 class="login-title">账号登录</h1>
-    <p class="login-copy">请输入账号和密码。</p>
-
-    <div id="statusBanner" class="status-banner"></div>
-
-    <form id="loginForm" class="login-form">
-      <div>
-        <label class="field-label" for="accountInput">账号</label>
-        <input id="accountInput" class="field-input" type="text" placeholder="请输入账号">
-      </div>
-      <div>
-        <label class="field-label" for="passwordInput">密码</label>
-        <input id="passwordInput" class="field-input" type="password" placeholder="请输入密码">
-      </div>
-      <button class="submit-btn" type="submit">登录</button>
-    </form>
-
-    <div class="helper-row">
-      <span>还没有账号？</span>
-      <a class="helper-link" href="login.html?mode=reg">注册账号</a>
-    </div>
-
-    <div class="action-links">
-      <a class="action-link" href="https://ai-express.cn">返回官网</a>
-      <a class="action-link" href="admin.html">进入管理后台</a>
+  <main class="shell">
+    <h1>Aulala 抢单大厅</h1>
+    <p>正在进入抢单大厅。现在首页默认先看抢单，开始抢单时再登录司机账号。</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="app.html">进入抢单大厅</a>
+      <a class="btn btn-secondary" href="login.html">司机登录 / 注册</a>
     </div>
   </main>
-
   <script>
-    const TEST_DRIVER_ACCOUNT = "13888888888";
-    const TEST_DRIVER_PASSWORD = "123456";
-    const APP_STORAGE_KEY = "aulala_app_runtime_v1";
-    const form = document.getElementById("loginForm");
-    const statusBanner = document.getElementById("statusBanner");
-    const accountInput = document.getElementById("accountInput");
-    const passwordInput = document.getElementById("passwordInput");
-
-    function bootstrapDriverSession(account) {
-      let currentState = {};
-      try {
-        currentState = JSON.parse(localStorage.getItem(APP_STORAGE_KEY) || "{}") || {};
-      } catch (error) {
-        currentState = {};
-      }
-
-      localStorage.setItem(
-        APP_STORAGE_KEY,
-        JSON.stringify({
-          ...currentState,
-          loggedIn: true,
-          userRole: "driver",
-          authMode: "login"
-        })
-      );
-
-      localStorage.setItem("aulala-login-session", JSON.stringify({
-        account,
-        role: "driver",
-        loggedAt: new Date().toISOString()
-      }));
-    }
-
-    form.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const account = accountInput.value.trim();
-      const password = passwordInput.value.trim();
-
-      if (!account || !password) {
-        showStatus("请先填写账号和密码。");
-        return;
-      }
-
-      if (account !== TEST_DRIVER_ACCOUNT || password !== TEST_DRIVER_PASSWORD) {
-        showStatus("测试司机账号或密码不正确，请使用 13888888888 / 123456。");
-        return;
-      }
-
-      bootstrapDriverSession(account);
-      window.location.href = "app.html";
-    });
-
-    function showStatus(message) {
-      statusBanner.textContent = message;
-      statusBanner.classList.add("is-visible");
-    }
-
-    try {
-      const appState = JSON.parse(localStorage.getItem(APP_STORAGE_KEY) || "{}") || {};
-      if (appState.loggedIn && appState.userRole === "driver") {
-        window.location.replace("app.html");
-      }
-    } catch (error) {
-      console.warn("restore session failed", error);
-    }
+    window.location.replace("app.html");
   </script>
 </body>
 </html>
