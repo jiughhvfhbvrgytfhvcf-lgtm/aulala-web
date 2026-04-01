@@ -1133,6 +1133,9 @@
         }
 
         function collectBlockedExternalOrderCodes() {
+            if (!state.loggedIn || state.userRole !== "driver") {
+                return new Set();
+            }
             const blockedCodes = new Set();
             const addOrderCode = order => {
                 const code = normalizeOrderCode(order?.orderCode || order?.putCode || "");
@@ -2832,7 +2835,6 @@
             populateOwnerFormFromProfile();
             updateOwnerPricePreview();
             document.getElementById("owner-price")?.addEventListener("input", updateOwnerPricePreview);
-            scheduleOwnerEstimate();
             renderOrders();
             renderProfile();
             renderOwnerPanel();
