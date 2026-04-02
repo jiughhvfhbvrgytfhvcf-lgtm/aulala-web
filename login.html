@@ -163,6 +163,20 @@
                     payoutRatio: 0.8,
                     joinedAt: nowStamp().slice(0, 10),
                     notes: "备用运力，可在需要时启用。"
+                },
+                {
+                    id: "DRV-003",
+                    name: "kevin",
+                    phone: "0450440830",
+                    vehicleType: "Isuzu",
+                    plate: "",
+                    city: "Sydney",
+                    status: "active",
+                    settlementCycle: "周结",
+                    bankTail: "",
+                    payoutRatio: DEFAULT_DRIVER_PAYOUT_RATIO,
+                    joinedAt: nowStamp().slice(0, 10),
+                    notes: "预置司机，用于后台固定指派单。"
                 }
             ];
         }
@@ -246,7 +260,7 @@
                 }
                 if (phone === TEST_DRIVER_ACCOUNT && password === TEST_DRIVER_PASSWORD) {
                     bootstrapDriverSession(phone, { name: "测试司机", vehicleType: "Van" });
-                    window.location.href = "app.html";
+                    window.location.href = "app.html?view=profile";
                     return;
                 }
 
@@ -268,7 +282,7 @@
                         saveRegisteredDrivers(drivers);
                     }
                     bootstrapDriverSession(phone, driver);
-                    window.location.href = "app.html";
+                    window.location.href = "app.html?view=profile";
                     return;
                 } catch (error) {
                     if (!["DRIVER_NOT_FOUND", "INVALID_DRIVER_PASSWORD", "HTTP_404", "HTTP_401"].includes(error.code || "")) {
@@ -288,7 +302,7 @@
                     return;
                 }
                 bootstrapDriverSession(phone, account);
-                window.location.href = "app.html";
+                window.location.href = "app.html?view=profile";
             } catch (error) {
                 console.error("driver login failed", error);
                 showStatus("登录失败，请刷新页面后重试。");
@@ -356,7 +370,7 @@
                 showStatus("注册成功，正在进入司机后台。", "success");
                 bootstrapDriverSession(phone, newAccount);
                 setTimeout(() => {
-                    window.location.href = "app.html";
+                    window.location.href = "app.html?view=profile";
                 }, 250);
             } catch (error) {
                 console.error("driver register failed", error);
