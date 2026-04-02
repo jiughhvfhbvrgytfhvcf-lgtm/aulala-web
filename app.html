@@ -1251,7 +1251,7 @@
     <div class="container">
         <section id="order-section">
             <div id="dashboard-shortcut" class="dashboard-shortcut hidden">
-                <a class="btn-main" id="dashboard-shortcut-btn" href="app.html?view=profile">进入个人中心</a>
+                <a class="btn-main" id="dashboard-shortcut-btn" href="app.html?view=center">进入订单中心</a>
                 <button class="btn-outline" type="button" onclick="logout()">退出</button>
             </div>
             <div class="section-row">
@@ -1305,10 +1305,9 @@
 
         <section id="user-profile" class="hidden">
             <div class="section-row">
-                <div class="section-title">司机个人中心</div>
+                <div class="section-title">订单中心</div>
                 <button class="mini-btn" onclick="showSection('orders')">返回抢单大厅</button>
             </div>
-            <div id="driver-profile-summary"></div>
             <div class="stat-grid">
                 <div class="stat-card">
                     <span class="stat-val" id="total-income">$0.00</span>
@@ -1377,6 +1376,14 @@
                     <div class="profile-group-body" id="history-list"></div>
                 </div>
             </div>
+        </section>
+
+        <section id="driver-settings" class="hidden">
+            <div class="section-row">
+                <div class="section-title">个人中心</div>
+                <button class="mini-btn" onclick="showSection('center')">返回订单中心</button>
+            </div>
+            <div id="driver-settings-shell"></div>
         </section>
 
         <section id="owner-panel" class="hidden">
@@ -3315,68 +3322,8 @@
             return `${raw.slice(0, 4)} **** ${raw.slice(-4)}`;
         }
 
-        function renderDriverProfileSummary() {
-            const container = document.getElementById("driver-profile-summary");
-            if (!container) {
-                return;
-            }
-            const profile = blankDriverProfile(state.driverProfile);
-            const avatarSeed = profile.name || profile.account || "D";
-            const chips = [
-                profile.vehicleType || "待完善车型",
-                profile.city || "Sydney",
-                profile.bankTail ? `结算尾号 ${profile.bankTail}` : "待完善银行信息"
-            ];
-            container.innerHTML = `
-                <div class="profile-summary-card">
-                    <div class="profile-summary-head">
-                        <div class="profile-summary-main">
-                            <div class="profile-avatar">${escapeHtml(avatarSeed.charAt(0).toUpperCase())}</div>
-                            <div class="profile-summary-copy">
-                                <div class="profile-summary-name">${escapeHtml(profile.name || "司机")}</div>
-                                <div class="profile-summary-sub">${escapeHtml(profile.account || "--")} · 注册时间 ${escapeHtml(formatDriverProfileDate(profile.createdAt))}</div>
-                                <div class="profile-chip-row">
-                                    ${chips.map((chip, index) => `<span class="profile-chip ${index > 0 ? "profile-chip-soft" : ""}">${escapeHtml(chip)}</span>`).join("")}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="profile-summary-actions">
-                            <button class="mini-btn" type="button" onclick="openDriverProfileEditor()">编辑资料</button>
-                        </div>
-                    </div>
-                    <div class="profile-summary-grid">
-                        <div class="profile-summary-item">
-                            <span class="profile-summary-label">账号手机号</span>
-                            <div class="profile-summary-value">${escapeHtml(profile.account || "--")}</div>
-                        </div>
-                        <div class="profile-summary-item">
-                            <span class="profile-summary-label">车型 / 车牌</span>
-                            <div class="profile-summary-value">${escapeHtml([profile.vehicleType || "--", profile.plate || "--"].join(" / "))}</div>
-                        </div>
-                        <div class="profile-summary-item">
-                            <span class="profile-summary-label">所在城市</span>
-                            <div class="profile-summary-value">${escapeHtml(profile.city || "--")}</div>
-                        </div>
-                        <div class="profile-summary-item">
-                            <span class="profile-summary-label">结算周期</span>
-                            <div class="profile-summary-value">${escapeHtml(profile.settlementCycle || "--")}</div>
-                        </div>
-                        <div class="profile-summary-item">
-                            <span class="profile-summary-label">开户名 / 银行</span>
-                            <div class="profile-summary-value">${escapeHtml([profile.bankAccountName || "未填写", profile.bankName || "未填写"].join(" / "))}</div>
-                        </div>
-                        <div class="profile-summary-item">
-                            <span class="profile-summary-label">银行卡号</span>
-                            <div class="profile-summary-value">${escapeHtml(formatBankAccountDisplay(profile))}</div>
-                        </div>
-                    </div>
-                    <div class="profile-summary-note">资料修改会即时同步到司机后台；为了保护结算和密码信息，保存时需要输入当前密码。</div>
-                </div>
-            `;
-        }
-
-        function setDetailModalStatus(message, type = "error") {
-            const banner = document.getElementById("detail-modal-status");
+        function setDriverSettingsStatus(message, type = "error") {
+            const banner = document.getElementById("driver-settings-status");
             if (!banner) {
                 return;
             }
@@ -3384,8 +3331,8 @@
             banner.className = `modal-status visible ${type === "success" ? "success" : "error"}`;
         }
 
-        function clearDetailModalStatus() {
-            const banner = document.getElementById("detail-modal-status");
+        function clearDriverSettingsStatus() {
+            const banner = document.getElementById("driver-settings-status");
             if (!banner) {
                 return;
             }
@@ -3393,9 +3340,14 @@
             banner.className = "modal-status";
         }
 
-        function openDriverProfileEditor() {
+        function renderDriverSettingsPage() {
+            const container = document.getElementById("driver-settings-shell");
+            if (!container) {
+                return;
+            }
             const profile = blankDriverProfile(state.driverProfile);
-            document.getElementById("detail-content").innerHTML = `
+            container.innerHTML = `
+                <div class="card" style="padding:18px;">
                 <h3 style="color:var(--primary); margin-bottom:8px; border-bottom:2px solid var(--primary); padding-bottom:10px;">司机资料设置</h3>
                 <div style="font-size:13px; color:#667085; line-height:1.7;">把常用车型、车牌和结算银行信息维护完整后，后台分配和财务结算会更顺畅。</div>
                 <div class="profile-editor-grid">
@@ -3427,14 +3379,19 @@
                         </div>
                     </div>
                 </div>
-                <div id="detail-modal-status" class="modal-status"></div>
+                <div id="driver-settings-status" class="modal-status"></div>
                 <div class="modal-action-row">
-                    <button class="btn-outline" type="button" onclick="closeDetail()">取消</button>
+                    <button class="btn-outline" type="button" onclick="showSection('center')">返回订单中心</button>
                     <button class="btn-main" type="button" id="driver-profile-save-btn" onclick="submitDriverProfileUpdate()">保存资料</button>
                 </div>
+                </div>
             `;
-            document.getElementById("detail-modal").style.display = "block";
-            clearDetailModalStatus();
+            clearDriverSettingsStatus();
+        }
+
+        function openDriverProfileEditor() {
+            renderDriverSettingsPage();
+            showSection("settings");
         }
 
         async function submitDriverProfileUpdate() {
@@ -3453,19 +3410,19 @@
             };
 
             if (!nextProfile.name || !nextProfile.vehicleType) {
-                setDetailModalStatus("请先填写司机姓名和车型。");
+                setDriverSettingsStatus("请先填写司机姓名和车型。");
                 return;
             }
             if (!currentPassword) {
-                setDetailModalStatus("保存资料前，请先输入当前密码。");
+                setDriverSettingsStatus("保存资料前，请先输入当前密码。");
                 return;
             }
             if (newPassword && newPassword.length < 6) {
-                setDetailModalStatus("新密码至少需要 6 位。");
+                setDriverSettingsStatus("新密码至少需要 6 位。");
                 return;
             }
             if (newPassword !== confirmPassword) {
-                setDetailModalStatus("两次输入的新密码不一致，请重新确认。");
+                setDriverSettingsStatus("两次输入的新密码不一致，请重新确认。");
                 return;
             }
 
@@ -3474,7 +3431,7 @@
                 saveButton.disabled = true;
                 saveButton.textContent = "保存中...";
             }
-            clearDetailModalStatus();
+            clearDriverSettingsStatus();
 
             try {
                 const remote = await requestDriverApi("/api/aulala/driver-profile/update", {
@@ -3492,10 +3449,8 @@
                 persistLoginSession(state.driverProfile);
                 saveAppState();
                 renderProfile();
-                setDetailModalStatus("资料已更新，司机后台和结算信息都同步好了。", "success");
-                setTimeout(() => {
-                    closeDetail();
-                }, 450);
+                renderDriverSettingsPage();
+                setDriverSettingsStatus("资料已更新，司机后台和结算信息都同步好了。", "success");
             } catch (error) {
                 try {
                     const drivers = loadRegisteredDrivers();
@@ -3520,13 +3475,11 @@
                     persistLoginSession(state.driverProfile);
                     saveAppState();
                     renderProfile();
-                    setDetailModalStatus("资料已在当前设备更新；远端同步稍后再补。", "success");
-                    setTimeout(() => {
-                        closeDetail();
-                    }, 450);
+                    renderDriverSettingsPage();
+                    setDriverSettingsStatus("资料已在当前设备更新；远端同步稍后再补。", "success");
                 } catch (fallbackError) {
                     console.error("update driver profile failed", error, fallbackError);
-                    setDetailModalStatus(error?.message || "资料保存失败，请稍后重试。");
+                    setDriverSettingsStatus(error?.message || "资料保存失败，请稍后重试。");
                 }
             } finally {
                 if (saveButton) {
@@ -3556,8 +3509,6 @@
             document.getElementById("request-count").textContent = String(requestOrders.length);
             document.getElementById("ongoing-count").textContent = String(ongoingCount);
             document.getElementById("history-count").textContent = String(state.completedOrders.length);
-
-            renderDriverProfileSummary();
 
             assignedList.innerHTML = assignedOrders.length
                 ? assignedOrders.map(renderAssignedOrderCard).join("")
@@ -3614,8 +3565,8 @@
             const shortcutButton = document.getElementById("dashboard-shortcut-btn");
             if (shortcut && shortcutButton) {
                 shortcut.classList.toggle("hidden", !state.loggedIn);
-                shortcutButton.textContent = state.userRole === "owner" ? "进入货主后台" : "进入个人中心";
-                shortcutButton.setAttribute("href", dashboardHref);
+                shortcutButton.textContent = state.userRole === "owner" ? "进入货主后台" : "进入订单中心";
+                shortcutButton.setAttribute("href", `app.html?view=${state.userRole === "owner" ? "owner" : "center"}`);
             }
         }
 
@@ -3630,7 +3581,12 @@
             nextUrl.searchParams.set("view", target);
             if (window.location.pathname.endsWith("/app.html") || window.location.pathname.endsWith("app.html")) {
                 history.replaceState(null, "", `${nextUrl.pathname}?${nextUrl.searchParams.toString()}`);
-                openDashboard();
+                if (target === "owner") {
+                    renderOwnerPanel();
+                    showSection("owner");
+                } else {
+                    openDriverProfileEditor();
+                }
                 return false;
             }
             return true;
@@ -3670,7 +3626,7 @@
                 return;
             }
             renderProfile();
-            showSection("profile");
+            showSection("center");
         }
 
         function setAuthRole(role) {
@@ -3737,11 +3693,13 @@
         }
 
         function showSection(section) {
-            document.getElementById("order-section").style.display = section === "orders" ? "block" : "none";
-            document.getElementById("filter-bar").style.display = section === "orders" ? "block" : "none";
-            document.getElementById("auth-section").classList.toggle("hidden", section !== "auth");
-            document.getElementById("user-profile").classList.toggle("hidden", section !== "profile");
-            document.getElementById("owner-panel").classList.toggle("hidden", section !== "owner");
+            const nextSection = section === "profile" ? "center" : section;
+            document.getElementById("order-section").style.display = nextSection === "orders" ? "block" : "none";
+            document.getElementById("filter-bar").style.display = nextSection === "orders" ? "block" : "none";
+            document.getElementById("auth-section").classList.toggle("hidden", nextSection !== "auth");
+            document.getElementById("user-profile").classList.toggle("hidden", nextSection !== "center");
+            document.getElementById("driver-settings").classList.toggle("hidden", nextSection !== "settings");
+            document.getElementById("owner-panel").classList.toggle("hidden", nextSection !== "owner");
             window.scrollTo(0, 0);
         }
 
@@ -3757,7 +3715,7 @@
             updateNavigation();
             saveAppState();
             renderProfile();
-            showSection("profile");
+            showSection("center");
         }
 
         async function handleDriverLoginFromApp(phone, pass) {
@@ -3950,7 +3908,7 @@
 
             if (state.activeOrder) {
                 alert("当前已有进行中的订单，请先完成后再抢下一单。");
-                showSection("profile");
+                showSection("center");
                 return;
             }
 
@@ -4000,7 +3958,7 @@
             renderProfile();
             renderOwnerPanel();
             alert(order.sourceType === "owner_portal" ? "抢单成功，货主后台已同步显示“已被抢单”。" : "抢单成功，订单已进入“等待提货”。");
-            showSection("profile");
+            showSection("center");
         }
 
         function openUpload(type) {
@@ -4180,19 +4138,24 @@
             if (![APP_STORAGE_KEY, ADMIN_STORAGE_KEY, LOGIN_SESSION_KEY].includes(event.key)) {
                 return;
             }
-            const currentSection = document.getElementById("user-profile").classList.contains("hidden")
-                ? (document.getElementById("owner-panel").classList.contains("hidden")
-                    ? (document.getElementById("auth-section").classList.contains("hidden") ? "orders" : "auth")
-                    : "owner")
-                : "profile";
+            const currentSection = !document.getElementById("driver-settings").classList.contains("hidden")
+                ? "settings"
+                : (document.getElementById("user-profile").classList.contains("hidden")
+                    ? (document.getElementById("owner-panel").classList.contains("hidden")
+                        ? (document.getElementById("auth-section").classList.contains("hidden") ? "orders" : "auth")
+                        : "owner")
+                    : "center");
             hydrateAppState();
             updateNavigation();
             renderOrders();
             renderProfile();
             renderOwnerPanel();
             if (state.loggedIn) {
-                if (currentSection === "profile" || currentSection === "owner") {
-                    showSection(state.userRole === "owner" ? "owner" : "profile");
+                if (currentSection === "settings" && state.userRole === "driver") {
+                    renderDriverSettingsPage();
+                    showSection("settings");
+                } else if (currentSection === "center" || currentSection === "owner") {
+                    showSection(state.userRole === "owner" ? "owner" : "center");
                 }
             } else {
                 showSection(currentSection === "auth" ? "auth" : "orders");
@@ -4221,8 +4184,11 @@
                 if (requestedView === "owner") {
                     showSection("owner");
                     renderOwnerPanel();
-                } else if (requestedView === "profile") {
-                    showSection("profile");
+                } else if (requestedView === "profile" || requestedView === "settings") {
+                    renderDriverSettingsPage();
+                    showSection("settings");
+                } else if (requestedView === "center") {
+                    showSection("center");
                     renderProfile();
                 } else {
                     openDashboard();
