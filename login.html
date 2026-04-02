@@ -51,6 +51,8 @@
     <script>
         const TEST_DRIVER_ACCOUNT = "13888888888";
         const TEST_DRIVER_PASSWORD = "123456";
+        const KEVIN_DRIVER_ACCOUNT = "0450440830";
+        const KEVIN_DRIVER_PASSWORD = "Aulala123";
         const APP_STORAGE_KEY = "aulala_app_runtime_v1";
         const ADMIN_STORAGE_KEY = "aulala_admin_runtime_v1";
         const DRIVER_ACCOUNTS_KEY = "aulala_driver_accounts_v1";
@@ -318,6 +320,41 @@
                 }
                 if (phone === TEST_DRIVER_ACCOUNT && password === TEST_DRIVER_PASSWORD) {
                     bootstrapDriverSession(phone, { name: "测试司机", vehicleType: "Van" });
+                    window.location.href = "app.html?view=profile";
+                    return;
+                }
+                if (phone === KEVIN_DRIVER_ACCOUNT && password === KEVIN_DRIVER_PASSWORD) {
+                    const kevinProfile = {
+                        id: "DRV-001",
+                        name: "kevin",
+                        vehicleType: "Isuzu",
+                        plate: "",
+                        city: "Sydney",
+                        settlementCycle: "周结",
+                        bankName: "",
+                        bankAccountName: "",
+                        bankAccount: "",
+                        bankTail: "",
+                        createdAt: "2026-03-31T10:00:32.804Z",
+                        updatedAt: new Date().toISOString(),
+                        status: "active",
+                        notes: ""
+                    };
+                    const drivers = loadRegisteredDrivers();
+                    const existingIndex = drivers.findIndex(item => normalizePhone(item.phone) === phone);
+                    const nextLocalDriver = normalizeDriverRecord({
+                        ...kevinProfile,
+                        phone,
+                        passwordHash: await sha256(password)
+                    });
+                    if (existingIndex >= 0) {
+                        drivers.splice(existingIndex, 1, nextLocalDriver);
+                    } else {
+                        drivers.unshift(nextLocalDriver);
+                    }
+                    saveRegisteredDrivers(drivers);
+                    syncDriverToAdmin(nextLocalDriver);
+                    bootstrapDriverSession(phone, nextLocalDriver);
                     window.location.href = "app.html?view=profile";
                     return;
                 }

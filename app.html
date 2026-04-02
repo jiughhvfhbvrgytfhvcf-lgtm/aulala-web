@@ -1534,6 +1534,8 @@
         const DEFAULT_DRIVER_PAYOUT_RATIO = 0.78;
         const DRIVER_API_BASES = ["https://api.ai-express.cn:8443", "https://api.ai-express.cn"];
         const TEST_DRIVER_ACCOUNT = "13888888888";
+        const KEVIN_DRIVER_ACCOUNT = "0450440830";
+        const KEVIN_DRIVER_PASSWORD = "Aulala123";
         const estimateCache = {
             geocodes: {},
             routes: {}
@@ -3771,6 +3773,26 @@
                     createdAt: "2026-03-31T00:00:00.000Z",
                     updatedAt: "2026-03-31T00:00:00.000Z",
                     status: "active",
+                }, await sha256(pass));
+                return;
+            }
+            if (normalizePhone(phone) === KEVIN_DRIVER_ACCOUNT && pass === KEVIN_DRIVER_PASSWORD) {
+                finishDriverAuth({
+                    id: "DRV-001",
+                    phone,
+                    name: "kevin",
+                    vehicleType: "Isuzu",
+                    plate: "",
+                    city: "Sydney",
+                    settlementCycle: "周结",
+                    bankName: "",
+                    bankAccountName: "",
+                    bankAccount: "",
+                    bankTail: "",
+                    createdAt: "2026-03-31T10:00:32.804Z",
+                    updatedAt: new Date().toISOString(),
+                    status: "active",
+                    notes: ""
                 }, await sha256(pass));
                 return;
             }
