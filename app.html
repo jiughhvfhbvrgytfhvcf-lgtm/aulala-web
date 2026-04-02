@@ -2647,6 +2647,7 @@
                     vehicleType: state.driverProfile.vehicleType || ""
                 };
                 syncDriverScopedCollections();
+                rebuildAvailableOrders();
             }
             state.ownerProfile = {
                 name: (document.getElementById("owner-auth-name")?.value || "").trim() || state.ownerProfile.name || "",
@@ -2654,6 +2655,9 @@
                 email: (document.getElementById("owner-auth-email")?.value || "").trim() || state.ownerProfile.email || "",
                 address: (document.getElementById("owner-auth-address")?.value || "").trim() || state.ownerProfile.address || ""
             };
+            if (role === "owner") {
+                rebuildAvailableOrders();
+            }
 
             updateNavigation();
             populateOwnerFormFromProfile();
