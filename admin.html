@@ -1050,6 +1050,76 @@
             throw lastError || new Error("remote drivers unavailable");
         }
 
+        function normalizeRemoteAdminRuntime(payload = {}) {
+            const runtime = payload && typeof payload === "object" ? payload : {};
+            const orderOps = {};
+            const rawOrderOps = runtime.orderOps && typeof runtime.orderOps === "object" ? runtime.orderOps : {};
+            Object.entries(rawOrderOps).forEach(([key, raw]) => {
+                const normalizedKey = String(key || "").trim();
+                if (!normalizedKey) {
+                    return;
+                }
+                orderOps[normalizedKey] = {
+                    ...raw,
+                    driverRequestedPrice: Number(raw.driverRequestedPrice || 0),
+                    agreedDriverPrice: roundMoney(raw.agreedDriverPrice || 0),
+                    forceUnassigned: Boolean(raw.forceUnassigned),
+                    customerReceivable: roundMoney(raw.customerReceivable || 0),
+                    driverPayable: roundMoney(raw.driverPayable || 0),
+                    driverQuoteStatus: raw.driverQuoteStatus || (Number(raw.driverRequestedPrice || 0) > 0 ? "pending" : "")
+                };
+            });
+            return {
+                drivers: normalizeDrivers(runtime.drivers),
+                orderOps,
+                updatedAt: runtime.updatedAt || ""
+            };
+        }
+
+        async function fetchRemoteAdminRuntime() {
+            let lastError = null;
+            for (const base of DRIVER_API_BASES) {
+                try {
+                    const response = await fetch(`${base}/api/aulala/admin-runtime`);
+                    const payload = await response.json().catch(() => ({}));
+                    if (!response.ok || payload?.ok === false) {
+                        const error = new Error(payload?.error?.message || `request failed: ${response.status}`);
+                        error.code = payload?.error?.code || `HTTP_${response.status}`;
+                        throw error;
+                    }
+                    return normalizeRemoteAdminRuntime(payload.runtime || {});
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+            throw lastError || new Error("remote admin runtime unavailable");
+        }
+
+        async function pushRemoteAdminRuntime(runtime) {
+            let lastError = null;
+            for (const base of DRIVER_API_BASES) {
+                try {
+                    const response = await fetch(`${base}/api/aulala/admin-runtime`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ runtime })
+                    });
+                    const payload = await response.json().catch(() => ({}));
+                    if (!response.ok || payload?.ok === false) {
+                        const error = new Error(payload?.error?.message || `request failed: ${response.status}`);
+                        error.code = payload?.error?.code || `HTTP_${response.status}`;
+                        throw error;
+                    }
+                    return normalizeRemoteAdminRuntime(payload.runtime || {});
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+            throw lastError || new Error("push remote admin runtime failed");
+        }
+
         function mergeRegisteredDrivers(drivers, registeredAccounts) {
             const nextDrivers = Array.isArray(drivers) ? drivers.slice() : [];
             registeredAccounts.forEach(account => {
@@ -1108,6 +1178,24 @@
         function saveAdminData() {
             state.adminData.updatedAt = nowStamp();
             localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(state.adminData));
+        }
+
+        function applyRemoteAdminRuntime(remoteRuntime, remoteDrivers = null) {
+            const baseDrivers = Array.isArray(remoteRuntime?.drivers) && remoteRuntime.drivers.length
+                ? remoteRuntime.drivers
+                : state.adminData.drivers;
+            const mergedDrivers = mergeRegisteredDrivers(
+                Array.isArray(remoteDrivers) && remoteDrivers.length
+                    ? mergeRegisteredDrivers(baseDrivers, remoteDrivers)
+                    : baseDrivers,
+                loadRegisteredDriverAccounts()
+            );
+            state.adminData = {
+                drivers: mergedDrivers,
+                orderOps: remoteRuntime?.orderOps && typeof remoteRuntime.orderOps === "object" ? remoteRuntime.orderOps : {},
+                updatedAt: remoteRuntime?.updatedAt || state.adminData.updatedAt || ""
+            };
+            saveAdminData();
         }
 
         function loadRuntimeData() {
@@ -1414,7 +1502,7 @@
             };
         }
 
-        function persistOrderOp(orderKeyValue, partial) {
+        async function persistOrderOp(orderKeyValue, partial) {
             const current = state.adminData.orderOps[orderKeyValue] || {};
             const next = {
                 ...current,
@@ -1423,7 +1511,14 @@
             };
             state.adminData.orderOps[orderKeyValue] = next;
             saveAdminData();
-            refreshData();
+            try {
+                const remoteRuntime = await pushRemoteAdminRuntime(state.adminData);
+                applyRemoteAdminRuntime(remoteRuntime);
+                refreshData();
+            } catch (error) {
+                console.error("persist order op failed", error);
+                throw new Error(error?.message || "订单状态同步到服务器失败。");
+            }
         }
 
         function getDriverOrderStats(orders) {
@@ -2074,15 +2169,31 @@
                 }
             }));
             renderAllPanels();
-            fetchRemoteDrivers()
-                .then(remoteDrivers => {
-                    state.adminData.drivers = mergeRegisteredDrivers(state.adminData.drivers, remoteDrivers);
-                    saveAdminData();
-                    renderOverviewPanel();
-                    renderDriversPanel();
+            Promise.allSettled([fetchRemoteDrivers(), fetchRemoteAdminRuntime()])
+                .then(([driversResult, runtimeResult]) => {
+                    const remoteDrivers = driversResult.status === "fulfilled" ? driversResult.value : null;
+                    const remoteRuntime = runtimeResult.status === "fulfilled" ? runtimeResult.value : null;
+                    if (remoteRuntime || remoteDrivers) {
+                        applyRemoteAdminRuntime(remoteRuntime || state.adminData, remoteDrivers);
+                        state.runtimeData = loadRuntimeData();
+                        state.orders = buildOrderRecords().map(order => ({
+                            ...order,
+                            op: {
+                                ...order.op,
+                                internalStatus: order.op.internalStatus || defaultInternalStatus(order)
+                            }
+                        }));
+                        renderAllPanels();
+                    }
+                    if (driversResult.status === "rejected") {
+                        console.warn("fetch remote drivers failed", driversResult.reason);
+                    }
+                    if (runtimeResult.status === "rejected") {
+                        console.warn("fetch remote admin runtime failed", runtimeResult.reason);
+                    }
                 })
                 .catch(error => {
-                    console.warn("fetch remote drivers failed", error);
+                    console.warn("refresh admin remote state failed", error);
                 });
         }
 
@@ -2177,7 +2288,7 @@
             `);
         }
 
-        function saveDriverModal(existingId = "") {
+        async function saveDriverModal(existingId = "") {
             const nextDriver = {
                 id: document.getElementById("driver-id").value.trim() || existingId || `DRV-${String(state.adminData.drivers.length + 1).padStart(3, "0")}`,
                 name: document.getElementById("driver-name").value.trim(),
@@ -2212,96 +2323,130 @@
             }
 
             saveAdminData();
-            refreshData();
-            closeModal();
+            try {
+                const remoteRuntime = await pushRemoteAdminRuntime(state.adminData);
+                applyRemoteAdminRuntime(remoteRuntime);
+                refreshData();
+                closeModal();
+            } catch (error) {
+                console.error("save driver modal failed", error);
+                alert(error?.message || "司机资料同步到服务器失败。");
+            }
         }
 
-        function toggleDriverStatus(driverId) {
+        async function toggleDriverStatus(driverId) {
             const driver = state.adminData.drivers.find(item => item.id === driverId);
             if (!driver) {
                 return;
             }
             driver.status = driver.status === "active" ? "inactive" : "active";
             saveAdminData();
-            refreshData();
+            try {
+                const remoteRuntime = await pushRemoteAdminRuntime(state.adminData);
+                applyRemoteAdminRuntime(remoteRuntime);
+                refreshData();
+            } catch (error) {
+                console.error("toggle driver status failed", error);
+                alert(error?.message || "司机状态同步到服务器失败。");
+            }
         }
 
-        function assignDriverInline(encodedOrderKey, driverId) {
+        async function assignDriverInline(encodedOrderKey, driverId) {
             const key = decodeKey(encodedOrderKey);
             const order = state.orders.find(item => item.key === key);
             if (!order) {
                 return;
             }
             const nextPayable = state.adminData.orderOps[key]?.driverPayable ?? defaultDriverPayable(order, driverId);
-            persistOrderOp(key, {
-                assignedDriverId: driverId,
-                driverPayable: roundMoney(nextPayable),
-                internalStatus: driverId ? "已指派" : "待分配",
-                forceUnassigned: false
-            });
+            try {
+                await persistOrderOp(key, {
+                    assignedDriverId: driverId,
+                    driverPayable: roundMoney(nextPayable),
+                    internalStatus: driverId ? "已指派" : "待分配",
+                    forceUnassigned: false
+                });
+            } catch (error) {
+                alert(error?.message || "指派司机失败，请稍后重试。");
+            }
         }
 
-        function quickToggleReceivable(encodedOrderKey) {
+        async function quickToggleReceivable(encodedOrderKey) {
             const key = decodeKey(encodedOrderKey);
             const order = state.orders.find(item => item.key === key);
             if (!order) {
                 return;
             }
-            persistOrderOp(key, {
-                receivableStatus: order.op.receivableStatus === "已收款" ? "待收款" : "已收款"
-            });
+            try {
+                await persistOrderOp(key, {
+                    receivableStatus: order.op.receivableStatus === "已收款" ? "待收款" : "已收款"
+                });
+            } catch (error) {
+                alert(error?.message || "收款状态同步失败，请稍后重试。");
+            }
         }
 
-        function quickTogglePayable(encodedOrderKey) {
+        async function quickTogglePayable(encodedOrderKey) {
             const key = decodeKey(encodedOrderKey);
             const order = state.orders.find(item => item.key === key);
             if (!order) {
                 return;
             }
-            persistOrderOp(key, {
-                payableStatus: order.op.payableStatus === "已结算" ? "待结算" : "已结算"
-            });
+            try {
+                await persistOrderOp(key, {
+                    payableStatus: order.op.payableStatus === "已结算" ? "待结算" : "已结算"
+                });
+            } catch (error) {
+                alert(error?.message || "结算状态同步失败，请稍后重试。");
+            }
         }
 
-        function approveDriverQuote(encodedOrderKey) {
+        async function approveDriverQuote(encodedOrderKey) {
             const key = decodeKey(encodedOrderKey);
             const order = state.orders.find(item => item.key === key);
             if (!order || !hasPendingDriverPriceRequest(order)) {
                 return;
             }
             const requested = roundMoney(order.op.driverRequestedPrice);
-            persistOrderOp(key, {
-                driverPayable: requested,
-                agreedDriverPrice: requested,
-                driverQuoteStatus: "approved",
-                driverRequestedPrice: 0,
-                driverQuoteReason: "",
-                driverQuoteRequestedAt: "",
-                forceUnassigned: false,
-                internalStatus: order.op.assignedDriverId ? "已指派" : "待分配",
-                internalNotes: appendInternalNote(order.op.internalNotes, `已同意司机调价申请，确认运费 ${formatCurrency(requested)}。`)
-            });
+            try {
+                await persistOrderOp(key, {
+                    driverPayable: requested,
+                    agreedDriverPrice: requested,
+                    driverQuoteStatus: "approved",
+                    driverRequestedPrice: 0,
+                    driverQuoteReason: "",
+                    driverQuoteRequestedAt: "",
+                    forceUnassigned: false,
+                    internalStatus: order.op.assignedDriverId ? "已指派" : "待分配",
+                    internalNotes: appendInternalNote(order.op.internalNotes, `已同意司机调价申请，确认运费 ${formatCurrency(requested)}。`)
+                });
+            } catch (error) {
+                alert(error?.message || "批准调价失败，请稍后重试。");
+            }
         }
 
-        function rejectDriverQuote(encodedOrderKey) {
+        async function rejectDriverQuote(encodedOrderKey) {
             const key = decodeKey(encodedOrderKey);
             const order = state.orders.find(item => item.key === key);
             if (!order || !hasPendingDriverPriceRequest(order)) {
                 return;
             }
             const note = `已驳回司机调价申请，订单退回抢单大厅。原申请 ${formatCurrency(order.op.driverRequestedPrice)}，原因：${order.op.driverQuoteReason || "--"}`;
-            persistOrderOp(key, {
-                assignedDriverId: "",
-                driverPayable: roundMoney(defaultDriverPayable(order, "")),
-                agreedDriverPrice: 0,
-                driverQuoteStatus: "rejected",
-                driverRequestedPrice: 0,
-                driverQuoteReason: "",
-                driverQuoteRequestedAt: "",
-                forceUnassigned: true,
-                internalStatus: "待分配",
-                internalNotes: appendInternalNote(order.op.internalNotes, note)
-            });
+            try {
+                await persistOrderOp(key, {
+                    assignedDriverId: "",
+                    driverPayable: roundMoney(defaultDriverPayable(order, "")),
+                    agreedDriverPrice: 0,
+                    driverQuoteStatus: "rejected",
+                    driverRequestedPrice: 0,
+                    driverQuoteReason: "",
+                    driverQuoteRequestedAt: "",
+                    forceUnassigned: true,
+                    internalStatus: "待分配",
+                    internalNotes: appendInternalNote(order.op.internalNotes, note)
+                });
+            } catch (error) {
+                alert(error?.message || "驳回调价失败，请稍后重试。");
+            }
         }
 
         function openOrderModal(encodedOrderKey) {
@@ -2432,24 +2577,28 @@
             `);
         }
 
-        function saveOrderModal(encodedOrderKey) {
+        async function saveOrderModal(encodedOrderKey) {
             const key = decodeKey(encodedOrderKey);
             const order = state.orders.find(item => item.key === key);
             if (!order) {
                 return;
             }
             const driverId = document.getElementById("order-modal-driver").value;
-            persistOrderOp(key, {
-                assignedDriverId: driverId,
-                internalStatus: document.getElementById("order-modal-internal-status").value,
-                customerReceivable: roundMoney(document.getElementById("order-modal-receivable").value),
-                driverPayable: roundMoney(document.getElementById("order-modal-payable").value),
-                receivableStatus: document.getElementById("order-modal-receivable-status").value,
-                payableStatus: document.getElementById("order-modal-payable-status").value,
-                internalNotes: document.getElementById("order-modal-notes").value.trim(),
-                forceUnassigned: driverId ? false : order.op.forceUnassigned
-            });
-            closeModal();
+            try {
+                await persistOrderOp(key, {
+                    assignedDriverId: driverId,
+                    internalStatus: document.getElementById("order-modal-internal-status").value,
+                    customerReceivable: roundMoney(document.getElementById("order-modal-receivable").value),
+                    driverPayable: roundMoney(document.getElementById("order-modal-payable").value),
+                    receivableStatus: document.getElementById("order-modal-receivable-status").value,
+                    payableStatus: document.getElementById("order-modal-payable-status").value,
+                    internalNotes: document.getElementById("order-modal-notes").value.trim(),
+                    forceUnassigned: driverId ? false : order.op.forceUnassigned
+                });
+                closeModal();
+            } catch (error) {
+                alert(error?.message || "保存订单失败，请稍后重试。");
+            }
         }
 
         function exportFinanceCsv() {

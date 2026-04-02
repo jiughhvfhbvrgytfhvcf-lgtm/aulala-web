@@ -1750,12 +1750,73 @@
             return safeParse(localStorage.getItem(ADMIN_STORAGE_KEY), {});
         }
 
+        function normalizeAdminRuntimePayload(payload = {}) {
+            const runtime = payload && typeof payload === "object" ? payload : {};
+            const orderOps = {};
+            const rawOrderOps = runtime.orderOps && typeof runtime.orderOps === "object" ? runtime.orderOps : {};
+            Object.entries(rawOrderOps).forEach(([key, raw]) => {
+                const normalizedKey = String(key || "").trim();
+                if (!normalizedKey) {
+                    return;
+                }
+                orderOps[normalizedKey] = {
+                    ...raw,
+                    driverRequestedPrice: Number(raw.driverRequestedPrice || 0),
+                    agreedDriverPrice: Number(raw.agreedDriverPrice || 0),
+                    forceUnassigned: Boolean(raw.forceUnassigned),
+                    customerReceivable: Number(raw.customerReceivable || 0),
+                    driverPayable: Number(raw.driverPayable || 0),
+                    driverQuoteStatus: raw.driverQuoteStatus || (Number(raw.driverRequestedPrice || 0) > 0 ? "pending" : "")
+                };
+            });
+            return {
+                drivers: Array.isArray(runtime.drivers) ? runtime.drivers : [],
+                orderOps,
+                updatedAt: String(runtime.updatedAt || "")
+            };
+        }
+
         function saveAdminRuntime(runtime) {
             try {
                 localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(runtime));
             } catch (error) {
                 console.warn("save admin runtime failed", error);
             }
+        }
+
+        async function fetchRemoteAdminRuntime() {
+            const payload = await requestDriverApi("/api/aulala/admin-runtime");
+            return normalizeAdminRuntimePayload(payload.runtime || {});
+        }
+
+        async function upsertRemoteOrderOp(orderKey, partial) {
+            const payload = await requestDriverApi("/api/aulala/order-op/upsert", {
+                method: "POST",
+                body: {
+                    orderKey,
+                    partial
+                }
+            });
+            return normalizeAdminRuntimePayload(payload.runtime || {});
+        }
+
+        async function syncAdminRuntimeFromRemote(options = {}) {
+            const { rerender = true } = options;
+            const remoteRuntime = await fetchRemoteAdminRuntime();
+            const localRuntime = normalizeAdminRuntimePayload(loadAdminRuntime());
+            const nextRuntime = {
+                ...localRuntime,
+                orderOps: remoteRuntime.orderOps,
+                updatedAt: remoteRuntime.updatedAt || localRuntime.updatedAt || ""
+            };
+            saveAdminRuntime(nextRuntime);
+            if (rerender) {
+                rebuildAvailableOrders();
+                renderOrders();
+                renderProfile();
+                renderOwnerPanel();
+            }
+            return nextRuntime;
         }
 
         function getAdminOrderOp(order) {
@@ -1781,15 +1842,15 @@
             return op.agreedDriverPrice > 0 ? op.agreedDriverPrice : Number(order.price || 0);
         }
 
-        function persistDriverAdjustmentRequest(order, requestedPrice, reason) {
-            const runtime = loadAdminRuntime();
-            const orderOps = runtime && typeof runtime.orderOps === "object" ? runtime.orderOps : {};
+        async function persistDriverAdjustmentRequest(order, requestedPrice, reason) {
+            const runtime = normalizeAdminRuntimePayload(loadAdminRuntime());
+            const orderOps = runtime.orderOps || {};
             const key = orderStorageKey(order);
             const current = orderOps[key] || {};
             const who = [currentDriverName(), currentDriverAccount()].filter(Boolean).join(" / ") || "司机";
             const noteLine = `司机申请调价：${who}，期望运费 ${formatCurrency(requestedPrice)}，原因：${reason}`;
             const notes = [String(current.internalNotes || "").trim(), noteLine].filter(Boolean).join("\n");
-            orderOps[key] = {
+            const nextOp = {
                 ...current,
                 internalStatus: "司机申请调价",
                 driverRequestedPrice: Number(requestedPrice),
@@ -1800,9 +1861,12 @@
                 internalNotes: notes,
                 updatedAt: nowStamp()
             };
-            runtime.orderOps = orderOps;
-            runtime.updatedAt = nowStamp();
-            saveAdminRuntime(runtime);
+            const remoteRuntime = await upsertRemoteOrderOp(key, nextOp);
+            saveAdminRuntime({
+                ...runtime,
+                orderOps: remoteRuntime.orderOps,
+                updatedAt: remoteRuntime.updatedAt || nowStamp()
+            });
         }
 
         function collectBlockedExternalOrderCodes() {
@@ -3157,7 +3221,7 @@
             document.getElementById("detail-modal").style.display = "block";
         }
 
-        function submitAssignedPriceRequest(orderId) {
+        async function submitAssignedPriceRequest(orderId) {
             const order = findOrderById(orderId);
             if (!order) {
                 return;
@@ -3172,12 +3236,18 @@
                 alert("请填写调价原因。");
                 return;
             }
-            persistDriverAdjustmentRequest(order, requestedPrice, reason);
-            state.profilePanels.requests = true;
-            state.profilePanels.assigned = false;
-            renderProfile();
-            closeDetail();
-            alert("调价申请已记录。");
+            try {
+                await persistDriverAdjustmentRequest(order, requestedPrice, reason);
+                state.profilePanels.requests = true;
+                state.profilePanels.assigned = false;
+                rebuildAvailableOrders();
+                renderProfile();
+                closeDetail();
+                alert("调价申请已同步到服务器。");
+            } catch (error) {
+                console.error("submit price request failed", error);
+                alert(error?.message || "调价申请同步失败，请稍后重试。");
+            }
         }
 
         function ownerLifecycleRank(status) {
@@ -4198,6 +4268,9 @@
             } else {
                 showSection("orders");
             }
+            syncAdminRuntimeFromRemote().catch(error => {
+                console.warn("sync admin runtime from remote failed", error);
+            });
         };
 
         window.toggleProfilePanel = toggleProfilePanel;
