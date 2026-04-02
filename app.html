@@ -57,13 +57,18 @@
             gap: 6px;
         }
 
-        .nav-btns a {
+        .nav-btns a,
+        .nav-btns button {
             color: white;
             text-decoration: none;
             font-size: 12px;
             border: 1px solid rgba(255, 255, 255, 0.35);
             padding: 5px 10px;
             border-radius: 16px;
+            background: transparent;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
         }
 
         .auth-switch-row {
@@ -839,8 +844,8 @@
                 <a href="javascript:void(0)" onclick="openOwnerEntry()">货主发货</a>
             </span>
             <span id="user-nav" class="hidden">
-                <a href="javascript:void(0)" id="dashboard-link" onclick="openDashboard()">个人中心</a>
-                <a href="javascript:void(0)" onclick="logout()">退出</a>
+                <button type="button" id="dashboard-link" onclick="openDashboard()">个人中心</button>
+                <button type="button" onclick="logout()">退出</button>
             </span>
         </div>
     </header>
@@ -1139,8 +1144,48 @@
             return String(value || "").trim().toUpperCase();
         }
 
+        function orderStorageKey(order) {
+            return order?.orderCode ? `code:${normalizeOrderCode(order.orderCode)}` : `id:${Number(order?.id || 0)}`;
+        }
+
         function loadAdminRuntime() {
             return safeParse(localStorage.getItem(ADMIN_STORAGE_KEY), {});
+        }
+
+        function saveAdminRuntime(runtime) {
+            try {
+                localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(runtime));
+            } catch (error) {
+                console.warn("save admin runtime failed", error);
+            }
+        }
+
+        function getAdminOrderOp(order) {
+            const runtime = loadAdminRuntime();
+            const ops = runtime && typeof runtime.orderOps === "object" ? runtime.orderOps : {};
+            return ops[orderStorageKey(order)] || {};
+        }
+
+        function persistDriverAdjustmentRequest(order, requestedPrice, reason) {
+            const runtime = loadAdminRuntime();
+            const orderOps = runtime && typeof runtime.orderOps === "object" ? runtime.orderOps : {};
+            const key = orderStorageKey(order);
+            const current = orderOps[key] || {};
+            const who = [currentDriverName(), currentDriverAccount()].filter(Boolean).join(" / ") || "司机";
+            const noteLine = `司机申请调价：${who}，期望运费 ${formatCurrency(requestedPrice)}，原因：${reason}`;
+            const notes = [String(current.internalNotes || "").trim(), noteLine].filter(Boolean).join("\n");
+            orderOps[key] = {
+                ...current,
+                internalStatus: "司机申请调价",
+                driverRequestedPrice: Number(requestedPrice),
+                driverQuoteReason: reason,
+                driverQuoteRequestedAt: nowStamp(),
+                internalNotes: notes,
+                updatedAt: nowStamp()
+            };
+            runtime.orderOps = orderOps;
+            runtime.updatedAt = nowStamp();
+            saveAdminRuntime(runtime);
         }
 
         function collectBlockedExternalOrderCodes() {
@@ -1876,6 +1921,10 @@
         }
 
         function renderAssignedOrderCard(order) {
+            const adminOp = getAdminOrderOp(order);
+            const adjustmentRequest = adminOp.driverRequestedPrice
+                ? `<div class="note-box" style="margin-top:12px;"><b>已申请调价：</b>${formatCurrency(adminOp.driverRequestedPrice)}${adminOp.driverQuoteReason ? `；原因：${adminOp.driverQuoteReason}` : ""}</div>`
+                : "";
             return `
                 <div class="card">
                     <div class="card-header">
@@ -1907,8 +1956,12 @@
                     </div>
 
                     ${renderOrderRemark(order)}
+                    ${adjustmentRequest}
 
-                    <button class="btn-main" onclick="tryAccept(${order.id})">接收指派订单</button>
+                    <div class="action-row" style="margin-top:12px;">
+                        <button class="btn-outline" onclick="openAssignedPriceModal(${order.id})">申请调价</button>
+                        <button class="btn-main" onclick="tryAccept(${order.id})">接收指派订单</button>
+                    </div>
                 </div>
             `;
         }
@@ -2386,6 +2439,57 @@
             document.getElementById("detail-modal").style.display = "block";
         }
 
+        function openAssignedPriceModal(orderId) {
+            const order = findOrderById(orderId);
+            if (!order) {
+                return;
+            }
+            const plannedPickupTime = order.scheduledPickupTime || order.expectedPickupTime || order.time || "--";
+            const adminOp = getAdminOrderOp(order);
+            document.getElementById("detail-content").innerHTML = `
+                <h3 style="color:var(--primary); margin-bottom:15px; border-bottom:2px solid var(--primary); padding-bottom:10px;">申请调价</h3>
+                <div class="detail-row"><span>订单号</span><span>${orderCodeLabel(order) || order.orderCode}</span></div>
+                ${order.isMergedOrder ? `<div class="detail-row"><span>合并派送</span><span>${order.mergeLabel || `共${order.mergedOrderCount}票`}</span></div>` : ""}
+                ${order.isMergedOrder ? `<div class="detail-row"><span>子单号</span><span>${(order.mergedOrderCodes || []).join("、")}</span></div>` : ""}
+                <div class="detail-row"><span>当前运费</span><span style="color:var(--accent); font-weight:800;">${formatCurrency(order.price)}</span></div>
+                <div class="detail-row"><span>计划提货时间</span><span>${plannedPickupTime}</span></div>
+                <div class="detail-row"><span>提货地址</span><span>${pickupAddressText(order)}</span></div>
+                <div class="detail-row"><span>送货地址</span><span>${dropoffAddressText(order)}</span></div>
+                <div class="detail-row"><span>货物规格</span><span>${order.pallets} Pallets / ${order.weight}${order.cbm ? ` / ${Number(order.cbm).toFixed(2)} CBM` : ""}</span></div>
+                ${adminOp.driverQuoteRequestedAt ? `<div class="detail-row"><span>上次申请</span><span>${adminOp.driverQuoteRequestedAt}</span></div>` : ""}
+                <div style="margin-top:16px;">
+                    <input id="driver-request-price" class="auth-field" type="number" min="0" step="0.01" placeholder="请输入期望运费 (AUD)" value="${adminOp.driverRequestedPrice || ''}">
+                    <textarea id="driver-request-reason" class="textarea" placeholder="请写明调价原因，例如距离远、重量大、需预约、送仓排队等">${adminOp.driverQuoteReason || ""}</textarea>
+                </div>
+                <div class="action-row" style="margin-top:14px;">
+                    <button class="btn-outline" onclick="closeDetail()">取消</button>
+                    <button class="btn-main" onclick="submitAssignedPriceRequest(${order.id})">提交调价申请</button>
+                </div>
+            `;
+            document.getElementById("detail-modal").style.display = "block";
+        }
+
+        function submitAssignedPriceRequest(orderId) {
+            const order = findOrderById(orderId);
+            if (!order) {
+                return;
+            }
+            const requestedPrice = Number(document.getElementById("driver-request-price").value || 0);
+            const reason = document.getElementById("driver-request-reason").value.trim();
+            if (!requestedPrice || requestedPrice <= 0) {
+                alert("请输入期望运费。");
+                return;
+            }
+            if (!reason) {
+                alert("请填写调价原因。");
+                return;
+            }
+            persistDriverAdjustmentRequest(order, requestedPrice, reason);
+            renderProfile();
+            closeDetail();
+            alert("调价申请已记录。");
+        }
+
         function ownerLifecycleRank(status) {
             const map = {
                 published: 0,
@@ -2547,6 +2651,10 @@
         }
 
         function openDashboard() {
+            if (!state.loggedIn) {
+                openLoginEntry("driver");
+                return;
+            }
             if (state.userRole === "owner") {
                 renderOwnerPanel();
                 scheduleOwnerEstimate();

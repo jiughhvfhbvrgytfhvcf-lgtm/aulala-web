@@ -1327,6 +1327,9 @@
                 assignedDriverId: feedAssignedDriverId,
                 internalStatus: existing.internalStatus || "",
                 internalNotes: existing.internalNotes || "",
+                driverRequestedPrice: Number(existing.driverRequestedPrice || 0),
+                driverQuoteReason: existing.driverQuoteReason || "",
+                driverQuoteRequestedAt: existing.driverQuoteRequestedAt || "",
                 customerReceivable: roundMoney(existing.customerReceivable ?? order.price ?? 0),
                 driverPayable: roundMoney(existing.driverPayable ?? defaultDriverPayable(order, feedAssignedDriverId)),
                 receivableStatus: existing.receivableStatus || "待收款",
@@ -1727,6 +1730,7 @@
                                                     </td>
                                                     <td>
                                                         <span class="pill blue">${escapeHtml(order.op.internalStatus || defaultInternalStatus(order))}</span>
+                                                        ${order.op.driverRequestedPrice ? `<div class="cell-sub">司机申请：${formatCurrency(order.op.driverRequestedPrice)}</div>` : ""}
                                                         ${order.op.updatedAt ? `<div class="cell-sub">更新：${escapeHtml(order.op.updatedAt)}</div>` : ""}
                                                     </td>
                                                     <td>
@@ -2175,6 +2179,20 @@
                             <option value="已结算" ${order.op.payableStatus === "已结算" ? "selected" : ""}>已结算</option>
                         </select>
                     </div>
+                    ${order.op.driverRequestedPrice ? `
+                    <div>
+                        <label class="field-label">司机申请运费</label>
+                        <input class="field" type="text" value="${escapeHtml(formatCurrency(order.op.driverRequestedPrice))}" disabled>
+                    </div>
+                    <div>
+                        <label class="field-label">申请时间</label>
+                        <input class="field" type="text" value="${escapeHtml(order.op.driverQuoteRequestedAt || "--")}" disabled>
+                    </div>
+                    <div class="full-span">
+                        <label class="field-label">调价原因</label>
+                        <textarea class="textarea" disabled>${escapeHtml(order.op.driverQuoteReason || "--")}</textarea>
+                    </div>
+                    ` : ""}
                     <div class="full-span">
                         <label class="field-label">内部备注</label>
                         <textarea id="order-modal-notes" class="textarea" placeholder="例如预约要求、异常说明、客户回款情况等">${escapeHtml(order.op.internalNotes || order.remarks || "")}</textarea>
