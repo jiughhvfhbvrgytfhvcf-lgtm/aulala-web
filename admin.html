@@ -351,7 +351,7 @@
 
         .quick-grid {
             display: grid;
-            grid-template-columns: 1.2fr 1fr;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 18px;
         }
 
@@ -1536,6 +1536,10 @@
             const inProgressOrders = orders.filter(order => effectiveFlowStatus(order) === "in_progress").length;
             const completedOrders = orders.filter(order => effectiveFlowStatus(order) === "completed").length;
             const driverRequestOrders = orders.filter(order => hasPendingDriverPriceRequest(order)).length;
+            const requestQueueOrders = orders
+                .filter(order => hasPendingDriverPriceRequest(order))
+                .sort((left, right) => String(left.scheduledPickupTime || "").localeCompare(String(right.scheduledPickupTime || "")))
+                .slice(0, 5);
             const unassignedOrders = orders.filter(order => !order.op.assignedDriverId && order.flowStatus !== "completed").slice(0, 5);
             const financePending = orders.filter(order => order.op.receivableStatus !== "已收款" || order.op.payableStatus !== "已结算").slice(0, 5);
 
@@ -1559,11 +1563,6 @@
                         <div class="summary-hint">已指派 ${assignedOrders} 单，进行中 ${inProgressOrders} 单</div>
                     </div>
                     <div class="summary-card">
-                        <div class="summary-label">调价申请</div>
-                        <div class="summary-value">${driverRequestOrders}</div>
-                        <div class="summary-hint">司机申请调价的单会优先在订单管理中处理</div>
-                    </div>
-                    <div class="summary-card">
                         <div class="summary-label">应收总额</div>
                         <div class="summary-value">${formatCurrency(finance.receivable)}</div>
                         <div class="summary-hint">已收 ${formatCurrency(finance.collected)}，待收 ${formatCurrency(finance.pendingReceivable)}</div>
@@ -1573,10 +1572,51 @@
                         <div class="summary-value">${formatCurrency(finance.gross)}</div>
                         <div class="summary-hint">司机应付 ${formatCurrency(finance.payable)}</div>
                     </div>
+                    <div class="summary-card">
+                        <div class="summary-label">调价申请</div>
+                        <div class="summary-value">${driverRequestOrders}</div>
+                        <div class="summary-hint">总览区第一栏会优先放司机申请调价单</div>
+                    </div>
                 </div>
 
                 <div class="panel" style="margin-top:18px; padding:0; box-shadow:none; border:none; background:transparent;">
                     <div class="quick-grid">
+                        <div class="panel">
+                            <div class="panel-title-row">
+                                <div>
+                                    <div class="panel-title">调价申请</div>
+                                    <div class="panel-subtitle">司机申请调价后先看这里，和优先处理订单一样直接展开详情，并可快速批准或驳回。</div>
+                                </div>
+                            </div>
+                            ${
+                                requestQueueOrders.length
+                                    ? `<div class="list-stack">${requestQueueOrders.map(order => {
+                                        const driver = state.adminData.drivers.find(item => item.id === order.op.assignedDriverId);
+                                        return `
+                                            <div class="mini-card">
+                                                <strong>${escapeHtml(order.orderCode)}</strong>
+                                                <p>司机：${driver ? `${escapeHtml(driver.name)} / ${escapeHtml(driver.phone)}` : "未识别"}</p>
+                                                <p>计划提货：${escapeHtml(order.scheduledPickupTime || "--")}</p>
+                                                <p>提：${escapeHtml(order.pickupAddress)}</p>
+                                                <p>送：${escapeHtml(order.dropoffAddress)}</p>
+                                                <p>申请运费：${formatCurrency(order.op.driverRequestedPrice)}</p>
+                                                <p>申请原因：${escapeHtml(order.op.driverQuoteReason || "--")}</p>
+                                                <div class="tag-row">
+                                                    <span class="tag danger">待处理</span>
+                                                    <span class="tag">${escapeHtml(order.sourceLabel)}</span>
+                                                </div>
+                                                <div class="request-card-actions">
+                                                    <button class="inline-btn" type="button" onclick="openOrderModal('${encodeKey(order.key)}')">查看详情</button>
+                                                    <button class="inline-btn" type="button" onclick="approveDriverQuote('${encodeKey(order.key)}')">批准</button>
+                                                    <button class="inline-btn" type="button" onclick="rejectDriverQuote('${encodeKey(order.key)}')">驳回</button>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join("")}</div>`
+                                    : `<div class="empty-state">当前没有待处理的调价申请。</div>`
+                            }
+                        </div>
+
                         <div class="panel">
                             <div class="panel-title-row">
                                 <div>
