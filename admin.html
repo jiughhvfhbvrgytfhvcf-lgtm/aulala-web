@@ -1023,7 +1023,12 @@
 
         function loadRegisteredDriverAccounts() {
             const accounts = safeParse(localStorage.getItem(DRIVER_ACCOUNTS_KEY), []);
-            return Array.isArray(accounts) ? accounts : [];
+            return Array.isArray(accounts)
+                ? accounts.map(account => ({
+                    ...account,
+                    phone: account.phone || account.account || ""
+                }))
+                : [];
         }
 
         async function fetchRemoteDrivers() {
@@ -1060,6 +1065,10 @@
                         name: account.name || existing.name,
                         phone,
                         vehicleType: account.vehicleType || existing.vehicleType,
+                        plate: account.plate || existing.plate,
+                        city: account.city || existing.city,
+                        settlementCycle: account.settlementCycle || existing.settlementCycle,
+                        bankTail: account.bankTail || existing.bankTail,
                         joinedAt: existing.joinedAt || String(account.createdAt || "").slice(0, 10) || nowStamp().slice(0, 10),
                         notes: existing.notes || "司机在登录页自助注册。"
                     });
@@ -1070,11 +1079,11 @@
                     name: account.name || "新注册司机",
                     phone,
                     vehicleType: account.vehicleType || "Van",
-                    plate: "",
-                    city: "Sydney",
+                    plate: account.plate || "",
+                    city: account.city || "Sydney",
                     status: "active",
-                    settlementCycle: "周结",
-                    bankTail: "",
+                    settlementCycle: account.settlementCycle || "周结",
+                    bankTail: account.bankTail || "",
                     payoutRatio: DEFAULT_DRIVER_PAYOUT_RATIO,
                     joinedAt: String(account.createdAt || "").slice(0, 10) || nowStamp().slice(0, 10),
                     notes: "司机在登录页自助注册。"

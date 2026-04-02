@@ -76,6 +76,37 @@
             return String(value || "").replace(/\s+/g, "");
         }
 
+        function extractBankTail(value) {
+            const digits = String(value || "").replace(/\D+/g, "");
+            if (digits.length >= 4) {
+                return digits.slice(-4);
+            }
+            const compact = String(value || "").replace(/\s+/g, "").trim();
+            return compact ? compact.slice(-4) : "";
+        }
+
+        function normalizeDriverRecord(driver = {}) {
+            const bankAccount = String(driver.bankAccount || "").trim();
+            return {
+                id: String(driver.id || "").trim(),
+                phone: normalizePhone(driver.phone || driver.account || ""),
+                name: String(driver.name || "").trim(),
+                vehicleType: String(driver.vehicleType || "").trim(),
+                plate: String(driver.plate || "").trim(),
+                city: String(driver.city || "").trim() || "Sydney",
+                settlementCycle: String(driver.settlementCycle || "").trim() || "周结",
+                bankName: String(driver.bankName || "").trim(),
+                bankAccountName: String(driver.bankAccountName || "").trim(),
+                bankAccount,
+                bankTail: String(driver.bankTail || "").trim() || extractBankTail(bankAccount),
+                createdAt: String(driver.createdAt || "").trim(),
+                updatedAt: String(driver.updatedAt || "").trim(),
+                status: String(driver.status || "active").trim() || "active",
+                notes: String(driver.notes || "").trim(),
+                passwordHash: String(driver.passwordHash || "").trim()
+            };
+        }
+
         function showStatus(message, type = "error") {
             statusBanner.textContent = message;
             statusBanner.className = `status-banner visible ${type === "success" ? "success" : "error"}`;
@@ -101,7 +132,7 @@
 
         function loadRegisteredDrivers() {
             const drivers = safeParse(localStorage.getItem(DRIVER_ACCOUNTS_KEY), []);
-            return Array.isArray(drivers) ? drivers : [];
+            return Array.isArray(drivers) ? drivers.map(normalizeDriverRecord).filter(driver => driver.phone) : [];
         }
 
         function saveRegisteredDrivers(drivers) {
@@ -182,23 +213,24 @@
         }
 
         function syncDriverToAdmin(driverAccount) {
+            const normalized = normalizeDriverRecord(driverAccount);
             const saved = safeParse(localStorage.getItem(ADMIN_STORAGE_KEY), {});
             const drivers = Array.isArray(saved.drivers) && saved.drivers.length ? saved.drivers.slice() : seedAdminDrivers();
-            const existingIndex = drivers.findIndex(driver => normalizePhone(driver.phone) === normalizePhone(driverAccount.phone));
+            const existingIndex = drivers.findIndex(driver => normalizePhone(driver.phone) === normalized.phone);
             const existing = existingIndex >= 0 ? drivers[existingIndex] : null;
             const nextDriver = {
                 id: existing?.id || `DRV-${String(drivers.length + 1).padStart(3, "0")}`,
-                name: driverAccount.name || existing?.name || "新注册司机",
-                phone: driverAccount.phone,
-                vehicleType: driverAccount.vehicleType || existing?.vehicleType || "Van",
-                plate: existing?.plate || "",
-                city: existing?.city || "Sydney",
+                name: normalized.name || existing?.name || "新注册司机",
+                phone: normalized.phone,
+                vehicleType: normalized.vehicleType || existing?.vehicleType || "Van",
+                plate: normalized.plate || existing?.plate || "",
+                city: normalized.city || existing?.city || "Sydney",
                 status: "active",
-                settlementCycle: existing?.settlementCycle || "周结",
-                bankTail: existing?.bankTail || "",
+                settlementCycle: normalized.settlementCycle || existing?.settlementCycle || "周结",
+                bankTail: normalized.bankTail || existing?.bankTail || "",
                 payoutRatio: Number(existing?.payoutRatio || DEFAULT_DRIVER_PAYOUT_RATIO),
-                joinedAt: existing?.joinedAt || nowStamp().slice(0, 10),
-                notes: existing?.notes || "司机在登录页自助注册。"
+                joinedAt: existing?.joinedAt || normalized.createdAt?.slice(0, 10) || nowStamp().slice(0, 10),
+                notes: normalized.notes || existing?.notes || "司机在登录页自助注册。"
             };
             if (existingIndex >= 0) {
                 drivers.splice(existingIndex, 1, nextDriver);
@@ -220,6 +252,7 @@
         }
 
         function bootstrapDriverSession(account, profile = {}) {
+            const normalized = normalizeDriverRecord({ ...profile, phone: account });
             let currentState = {};
             try {
                 currentState = JSON.parse(localStorage.getItem(APP_STORAGE_KEY) || "{}") || {};
@@ -235,17 +268,42 @@
                     userRole: "driver",
                     authMode: "login",
                     driverProfile: {
-                        account,
-                        name: profile.name || "",
-                        vehicleType: profile.vehicleType || ""
+                        id: normalized.id,
+                        account: normalized.phone,
+                        name: normalized.name,
+                        vehicleType: normalized.vehicleType,
+                        plate: normalized.plate,
+                        city: normalized.city,
+                        settlementCycle: normalized.settlementCycle,
+                        bankName: normalized.bankName,
+                        bankAccountName: normalized.bankAccountName,
+                        bankAccount: normalized.bankAccount,
+                        bankTail: normalized.bankTail,
+                        createdAt: normalized.createdAt,
+                        updatedAt: normalized.updatedAt,
+                        status: normalized.status,
+                        notes: normalized.notes
                     }
                 })
             );
 
             localStorage.setItem("aulala-login-session", JSON.stringify({
-                account,
+                account: normalized.phone,
                 role: "driver",
-                loggedAt: new Date().toISOString()
+                loggedAt: new Date().toISOString(),
+                name: normalized.name,
+                vehicleType: normalized.vehicleType,
+                plate: normalized.plate,
+                city: normalized.city,
+                settlementCycle: normalized.settlementCycle,
+                bankName: normalized.bankName,
+                bankAccountName: normalized.bankAccountName,
+                bankAccount: normalized.bankAccount,
+                bankTail: normalized.bankTail,
+                createdAt: normalized.createdAt,
+                updatedAt: normalized.updatedAt,
+                status: normalized.status,
+                notes: normalized.notes
             }));
         }
 
@@ -269,18 +327,23 @@
                         method: "POST",
                         body: { phone, password }
                     });
-                    const driver = remote.driver || {};
+                    const driver = normalizeDriverRecord(remote.driver || {});
                     const drivers = loadRegisteredDrivers();
-                    if (!drivers.find(item => normalizePhone(item.phone) === phone)) {
-                        drivers.unshift({
-                            phone,
-                            name: driver.name || "",
-                            vehicleType: driver.vehicleType || "",
-                            passwordHash: await sha256(password),
-                            createdAt: driver.createdAt || nowStamp()
-                        });
-                        saveRegisteredDrivers(drivers);
+                    const existingIndex = drivers.findIndex(item => normalizePhone(item.phone) === phone);
+                    const nextLocalDriver = normalizeDriverRecord({
+                        ...(existingIndex >= 0 ? drivers[existingIndex] : {}),
+                        ...driver,
+                        phone,
+                        passwordHash: await sha256(password),
+                        createdAt: driver.createdAt || drivers[existingIndex]?.createdAt || nowStamp()
+                    });
+                    if (existingIndex >= 0) {
+                        drivers.splice(existingIndex, 1, nextLocalDriver);
+                    } else {
+                        drivers.unshift(nextLocalDriver);
                     }
+                    saveRegisteredDrivers(drivers);
+                    syncDriverToAdmin(nextLocalDriver);
                     bootstrapDriverSession(phone, driver);
                     window.location.href = "app.html?view=profile";
                     return;
@@ -345,6 +408,14 @@
                     phone,
                     name,
                     vehicleType,
+                    plate: "",
+                    city: "Sydney",
+                    settlementCycle: "周结",
+                    bankName: "",
+                    bankAccountName: "",
+                    bankAccount: "",
+                    bankTail: "",
+                    notes: "",
                     passwordHash: await sha256(password),
                     createdAt: nowStamp()
                 };
@@ -354,7 +425,12 @@
                         body: { phone, name, vehicleType, password }
                     });
                     if (remote?.driver) {
-                        newAccount.createdAt = remote.driver.createdAt || newAccount.createdAt;
+                        Object.assign(newAccount, normalizeDriverRecord({
+                            ...newAccount,
+                            ...remote.driver,
+                            passwordHash: newAccount.passwordHash,
+                            createdAt: remote.driver.createdAt || newAccount.createdAt
+                        }));
                     }
                 } catch (error) {
                     if (error.code === "DUPLICATE_DRIVER" || error.code === "HTTP_409") {

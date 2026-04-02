@@ -788,6 +788,215 @@
             color: #667085;
         }
 
+        .profile-summary-card {
+            background:
+                radial-gradient(circle at top right, rgba(28, 126, 214, 0.12), transparent 28%),
+                linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
+            border: 1px solid #dbe7ff;
+            border-radius: 22px;
+            box-shadow: 0 18px 36px rgba(11, 59, 145, 0.08);
+            padding: 18px;
+            margin-bottom: 14px;
+        }
+
+        .profile-summary-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+
+        .profile-summary-main {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .profile-avatar {
+            width: 54px;
+            height: 54px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #0b3b91 0%, #1c7ed6 100%);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: 900;
+            box-shadow: 0 14px 28px rgba(11, 59, 145, 0.18);
+            flex-shrink: 0;
+        }
+
+        .profile-summary-copy {
+            min-width: 0;
+        }
+
+        .profile-summary-name {
+            font-size: 21px;
+            font-weight: 900;
+            color: #101828;
+            line-height: 1.2;
+        }
+
+        .profile-summary-sub {
+            margin-top: 4px;
+            font-size: 13px;
+            color: #667085;
+            line-height: 1.6;
+            word-break: break-word;
+        }
+
+        .profile-chip-row {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .profile-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: #eef4ff;
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 800;
+            border: 1px solid #d7e3ff;
+        }
+
+        .profile-chip.profile-chip-soft {
+            background: #f8fafc;
+            color: #475467;
+            border-color: #e4e7ec;
+        }
+
+        .profile-summary-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .profile-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .profile-summary-item {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #edf0f2;
+            border-radius: 16px;
+            padding: 13px 14px;
+            min-width: 0;
+        }
+
+        .profile-summary-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 800;
+            color: #667085;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .profile-summary-value {
+            font-size: 15px;
+            font-weight: 800;
+            color: #101828;
+            line-height: 1.6;
+            word-break: break-word;
+        }
+
+        .profile-summary-note {
+            margin-top: 12px;
+            padding: 11px 12px;
+            border-radius: 14px;
+            background: #f8fafc;
+            border: 1px solid #eaecf0;
+            color: #667085;
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+        .profile-editor-grid {
+            display: grid;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .profile-editor-card {
+            background: #f8fafc;
+            border: 1px solid #e4e7ec;
+            border-radius: 16px;
+            padding: 14px;
+        }
+
+        .profile-editor-title {
+            font-size: 14px;
+            font-weight: 900;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .profile-editor-fields {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .profile-editor-fields .full-span {
+            grid-column: 1 / -1;
+        }
+
+        .profile-editor-fields .auth-field {
+            margin-bottom: 0;
+        }
+
+        .modal-status {
+            display: none;
+            margin-top: 12px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            border: 1px solid #dbe7ff;
+            background: #eef4ff;
+            color: var(--primary);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .modal-status.visible {
+            display: block;
+        }
+
+        .modal-status.error {
+            background: #fff4f4;
+            border-color: #ffd2d7;
+            color: #c92a2a;
+        }
+
+        .modal-status.success {
+            background: #edf9f1;
+            border-color: #b7ebc6;
+            color: #1f9d55;
+        }
+
+        .modal-action-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .modal-action-row .btn-main,
+        .modal-action-row .btn-outline {
+            margin-top: 0;
+            flex: 1 1 0;
+        }
+
         .profile-stack {
             display: grid;
             gap: 12px;
@@ -975,7 +1184,9 @@
 
             .form-grid,
             .quote-grid,
-            .cargo-spec-grid {
+            .cargo-spec-grid,
+            .profile-summary-grid,
+            .profile-editor-fields {
                 grid-template-columns: 1fr;
             }
 
@@ -996,6 +1207,14 @@
             .profile-group-right {
                 width: 100%;
                 justify-content: space-between;
+            }
+
+            .profile-summary-head,
+            .profile-summary-main,
+            .profile-summary-actions,
+            .modal-action-row {
+                flex-direction: column;
+                align-items: stretch;
             }
         }
     </style>
@@ -1058,11 +1277,12 @@
                 <input type="tel" id="auth-phone" class="auth-field" placeholder="手机号 (测试: 13888888888)">
 
                 <div id="driver-fields" class="hidden">
-                    <input type="text" class="auth-field" placeholder="姓名">
-                    <input type="text" class="auth-field" placeholder="车牌号">
-                    <select class="auth-field">
+                    <input type="text" id="auth-driver-name" class="auth-field" placeholder="姓名">
+                    <input type="text" id="auth-driver-plate" class="auth-field" placeholder="车牌号">
+                    <select id="auth-driver-vehicle" class="auth-field">
                         <option>Van (面包车)</option>
                         <option>Truck (大货车)</option>
+                        <option>Ute (皮卡)</option>
                     </select>
                 </div>
 
@@ -1088,6 +1308,7 @@
                 <div class="section-title">司机个人中心</div>
                 <button class="mini-btn" onclick="showSection('orders')">返回抢单大厅</button>
             </div>
+            <div id="driver-profile-summary"></div>
             <div class="stat-grid">
                 <div class="stat-card">
                     <span class="stat-val" id="total-income">$0.00</span>
@@ -1308,7 +1529,10 @@
         const initialOrders = externalOrders.map((order, index) => normalizeOrder(order, index + 1));
         const APP_STORAGE_KEY = "aulala_app_runtime_v1";
         const ADMIN_STORAGE_KEY = "aulala_admin_runtime_v1";
+        const DRIVER_ACCOUNTS_KEY = "aulala_driver_accounts_v1";
         const LOGIN_SESSION_KEY = "aulala-login-session";
+        const DEFAULT_DRIVER_PAYOUT_RATIO = 0.78;
+        const DRIVER_API_BASES = ["https://api.ai-express.cn:8443", "https://api.ai-express.cn"];
         const TEST_DRIVER_ACCOUNT = "13888888888";
         const estimateCache = {
             geocodes: {},
@@ -1328,11 +1552,7 @@
                 ongoing: false,
                 history: false
             },
-            driverProfile: {
-                account: "",
-                name: "",
-                vehicleType: ""
-            },
+            driverProfile: blankDriverProfile(),
             ownerProfile: {
                 name: "",
                 phone: "",
@@ -1352,12 +1572,161 @@
             return String(value || "").replace(/\s+/g, "");
         }
 
+        function extractBankTail(value) {
+            const digits = String(value || "").replace(/\D+/g, "");
+            if (digits.length >= 4) {
+                return digits.slice(-4);
+            }
+            const compact = String(value || "").replace(/\s+/g, "").trim();
+            return compact ? compact.slice(-4) : "";
+        }
+
+        function blankDriverProfile(overrides = {}) {
+            const bankAccount = String(overrides.bankAccount || "").trim();
+            return {
+                id: String(overrides.id || "").trim(),
+                account: normalizePhone(overrides.account || overrides.phone || ""),
+                name: String(overrides.name || "").trim(),
+                vehicleType: String(overrides.vehicleType || "").trim(),
+                plate: String(overrides.plate || "").trim(),
+                city: String(overrides.city || "").trim() || "Sydney",
+                settlementCycle: String(overrides.settlementCycle || "").trim() || "周结",
+                bankName: String(overrides.bankName || "").trim(),
+                bankAccountName: String(overrides.bankAccountName || "").trim(),
+                bankAccount,
+                bankTail: String(overrides.bankTail || "").trim() || extractBankTail(bankAccount),
+                createdAt: String(overrides.createdAt || "").trim(),
+                updatedAt: String(overrides.updatedAt || "").trim(),
+                status: String(overrides.status || "active").trim() || "active",
+                notes: String(overrides.notes || "").trim()
+            };
+        }
+
         function safeParse(raw, fallback) {
             try {
                 return JSON.parse(raw || "");
             } catch (error) {
                 return fallback;
             }
+        }
+
+        function loadRegisteredDrivers() {
+            const drivers = safeParse(localStorage.getItem(DRIVER_ACCOUNTS_KEY), []);
+            return Array.isArray(drivers) ? drivers.map(item => ({ ...blankDriverProfile(item), passwordHash: String(item.passwordHash || "").trim() })).filter(driver => driver.account) : [];
+        }
+
+        function saveRegisteredDrivers(drivers) {
+            localStorage.setItem(DRIVER_ACCOUNTS_KEY, JSON.stringify(drivers));
+        }
+
+        async function sha256(text) {
+            if (!window.crypto || !window.crypto.subtle) {
+                return `plain:${text}`;
+            }
+            try {
+                const bytes = new TextEncoder().encode(text);
+                const digest = await crypto.subtle.digest("SHA-256", bytes);
+                return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, "0")).join("");
+            } catch (error) {
+                return `plain:${text}`;
+            }
+        }
+
+        async function requestDriverApi(path, options = {}) {
+            let lastError = null;
+            for (const base of DRIVER_API_BASES) {
+                try {
+                    const response = await fetch(`${base}${path}`, {
+                        method: options.method || "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                            ...(options.headers || {})
+                        },
+                        body: options.body ? JSON.stringify(options.body) : undefined
+                    });
+                    const payload = await response.json().catch(() => ({}));
+                    if (!response.ok || payload?.ok === false) {
+                        const error = new Error(payload?.error?.message || `request failed: ${response.status}`);
+                        error.code = payload?.error?.code || `HTTP_${response.status}`;
+                        throw error;
+                    }
+                    return payload;
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+            throw lastError || new Error("driver api unavailable");
+        }
+
+        function persistLoginSession(profile) {
+            const normalized = blankDriverProfile(profile);
+            localStorage.setItem(LOGIN_SESSION_KEY, JSON.stringify({
+                account: normalized.account,
+                role: "driver",
+                loggedAt: new Date().toISOString(),
+                name: normalized.name,
+                vehicleType: normalized.vehicleType,
+                plate: normalized.plate,
+                city: normalized.city,
+                settlementCycle: normalized.settlementCycle,
+                bankName: normalized.bankName,
+                bankAccountName: normalized.bankAccountName,
+                bankAccount: normalized.bankAccount,
+                bankTail: normalized.bankTail,
+                createdAt: normalized.createdAt,
+                updatedAt: normalized.updatedAt,
+                status: normalized.status,
+                notes: normalized.notes
+            }));
+        }
+
+        function syncDriverToAdmin(driverAccount) {
+            const normalized = blankDriverProfile(driverAccount);
+            const saved = loadAdminRuntime();
+            const drivers = Array.isArray(saved.drivers) && saved.drivers.length ? saved.drivers.slice() : [];
+            const existingIndex = drivers.findIndex(driver => normalizePhone(driver.phone) === normalized.account);
+            const existing = existingIndex >= 0 ? drivers[existingIndex] : null;
+            const nextDriver = {
+                id: existing?.id || normalized.id || `DRV-${String(drivers.length + 1).padStart(3, "0")}`,
+                name: normalized.name || existing?.name || "新注册司机",
+                phone: normalized.account,
+                vehicleType: normalized.vehicleType || existing?.vehicleType || "Van",
+                plate: normalized.plate || existing?.plate || "",
+                city: normalized.city || existing?.city || "Sydney",
+                status: normalized.status === "inactive" ? "inactive" : "active",
+                settlementCycle: normalized.settlementCycle || existing?.settlementCycle || "周结",
+                bankTail: normalized.bankTail || existing?.bankTail || "",
+                payoutRatio: Number(existing?.payoutRatio || DEFAULT_DRIVER_PAYOUT_RATIO),
+                joinedAt: existing?.joinedAt || normalized.createdAt?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+                notes: normalized.notes || existing?.notes || "司机在司机端自助维护资料。"
+            };
+            if (existingIndex >= 0) {
+                drivers.splice(existingIndex, 1, nextDriver);
+            } else {
+                drivers.unshift(nextDriver);
+            }
+            saved.drivers = drivers;
+            saved.updatedAt = new Date().toISOString();
+            saveAdminRuntime(saved);
+        }
+
+        function upsertLocalDriverAccount(profile, passwordHash = "") {
+            const drivers = loadRegisteredDrivers();
+            const normalized = {
+                ...blankDriverProfile(profile),
+                passwordHash: ""
+            };
+            const existingIndex = drivers.findIndex(driver => normalizePhone(driver.account) === normalized.account);
+            const existing = existingIndex >= 0 ? drivers[existingIndex] : null;
+            normalized.passwordHash = String(passwordHash || profile.passwordHash || existing?.passwordHash || "").trim();
+            if (existingIndex >= 0) {
+                drivers.splice(existingIndex, 1, { ...existing, ...normalized });
+            } else {
+                drivers.unshift(normalized);
+            }
+            saveRegisteredDrivers(drivers);
+            syncDriverToAdmin(normalized);
+            return normalized;
         }
 
         function normalizeOrderCode(value) {
@@ -1634,8 +2003,8 @@
             }
             const loginSession = loadLoginSession();
 
-            state.loggedIn = Boolean(saved.loggedIn);
-            state.userRole = saved.userRole === "owner" ? "owner" : "driver";
+            state.loggedIn = Boolean(saved.loggedIn || loginSession?.account);
+            state.userRole = saved.userRole === "owner" || loginSession?.role === "owner" ? "owner" : "driver";
             state.authMode = saved.authMode === "reg" ? "reg" : "login";
             state.profilePanels = {
                 assigned: Boolean(saved.profilePanels?.assigned),
@@ -1643,11 +2012,11 @@
                 ongoing: Boolean(saved.profilePanels?.ongoing),
                 history: Boolean(saved.profilePanels?.history)
             };
-            state.driverProfile = {
+            state.driverProfile = blankDriverProfile({
+                ...(loginSession || {}),
+                ...(saved.driverProfile || {}),
                 account: normalizePhone(saved.driverProfile?.account || loginSession?.account || ""),
-                name: saved.driverProfile?.name || loginSession?.name || "",
-                vehicleType: saved.driverProfile?.vehicleType || loginSession?.vehicleType || ""
-            };
+            });
             state.ownerProfile = {
                 name: saved.ownerProfile?.name || "",
                 phone: saved.ownerProfile?.phone || "",
@@ -2912,6 +3281,259 @@
             list.innerHTML = filteredOrders.map(renderOwnerOrderCard).join("");
         }
 
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function formatDriverProfileDate(value) {
+            if (!value) {
+                return "--";
+            }
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) {
+                return String(value);
+            }
+            const pad = num => String(num).padStart(2, "0");
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+        }
+
+        function formatBankAccountDisplay(profile) {
+            const raw = String(profile.bankAccount || "").replace(/\s+/g, "").trim();
+            if (!raw) {
+                return "未填写";
+            }
+            if (raw.length <= 8) {
+                return raw;
+            }
+            return `${raw.slice(0, 4)} **** ${raw.slice(-4)}`;
+        }
+
+        function renderDriverProfileSummary() {
+            const container = document.getElementById("driver-profile-summary");
+            if (!container) {
+                return;
+            }
+            const profile = blankDriverProfile(state.driverProfile);
+            const avatarSeed = profile.name || profile.account || "D";
+            const chips = [
+                profile.vehicleType || "待完善车型",
+                profile.city || "Sydney",
+                profile.bankTail ? `结算尾号 ${profile.bankTail}` : "待完善银行信息"
+            ];
+            container.innerHTML = `
+                <div class="profile-summary-card">
+                    <div class="profile-summary-head">
+                        <div class="profile-summary-main">
+                            <div class="profile-avatar">${escapeHtml(avatarSeed.charAt(0).toUpperCase())}</div>
+                            <div class="profile-summary-copy">
+                                <div class="profile-summary-name">${escapeHtml(profile.name || "司机")}</div>
+                                <div class="profile-summary-sub">${escapeHtml(profile.account || "--")} · 注册时间 ${escapeHtml(formatDriverProfileDate(profile.createdAt))}</div>
+                                <div class="profile-chip-row">
+                                    ${chips.map((chip, index) => `<span class="profile-chip ${index > 0 ? "profile-chip-soft" : ""}">${escapeHtml(chip)}</span>`).join("")}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="profile-summary-actions">
+                            <button class="mini-btn" type="button" onclick="openDriverProfileEditor()">编辑资料</button>
+                        </div>
+                    </div>
+                    <div class="profile-summary-grid">
+                        <div class="profile-summary-item">
+                            <span class="profile-summary-label">账号手机号</span>
+                            <div class="profile-summary-value">${escapeHtml(profile.account || "--")}</div>
+                        </div>
+                        <div class="profile-summary-item">
+                            <span class="profile-summary-label">车型 / 车牌</span>
+                            <div class="profile-summary-value">${escapeHtml([profile.vehicleType || "--", profile.plate || "--"].join(" / "))}</div>
+                        </div>
+                        <div class="profile-summary-item">
+                            <span class="profile-summary-label">所在城市</span>
+                            <div class="profile-summary-value">${escapeHtml(profile.city || "--")}</div>
+                        </div>
+                        <div class="profile-summary-item">
+                            <span class="profile-summary-label">结算周期</span>
+                            <div class="profile-summary-value">${escapeHtml(profile.settlementCycle || "--")}</div>
+                        </div>
+                        <div class="profile-summary-item">
+                            <span class="profile-summary-label">开户名 / 银行</span>
+                            <div class="profile-summary-value">${escapeHtml([profile.bankAccountName || "未填写", profile.bankName || "未填写"].join(" / "))}</div>
+                        </div>
+                        <div class="profile-summary-item">
+                            <span class="profile-summary-label">银行卡号</span>
+                            <div class="profile-summary-value">${escapeHtml(formatBankAccountDisplay(profile))}</div>
+                        </div>
+                    </div>
+                    <div class="profile-summary-note">资料修改会即时同步到司机后台；为了保护结算和密码信息，保存时需要输入当前密码。</div>
+                </div>
+            `;
+        }
+
+        function setDetailModalStatus(message, type = "error") {
+            const banner = document.getElementById("detail-modal-status");
+            if (!banner) {
+                return;
+            }
+            banner.textContent = message;
+            banner.className = `modal-status visible ${type === "success" ? "success" : "error"}`;
+        }
+
+        function clearDetailModalStatus() {
+            const banner = document.getElementById("detail-modal-status");
+            if (!banner) {
+                return;
+            }
+            banner.textContent = "";
+            banner.className = "modal-status";
+        }
+
+        function openDriverProfileEditor() {
+            const profile = blankDriverProfile(state.driverProfile);
+            document.getElementById("detail-content").innerHTML = `
+                <h3 style="color:var(--primary); margin-bottom:8px; border-bottom:2px solid var(--primary); padding-bottom:10px;">司机资料设置</h3>
+                <div style="font-size:13px; color:#667085; line-height:1.7;">把常用车型、车牌和结算银行信息维护完整后，后台分配和财务结算会更顺畅。</div>
+                <div class="profile-editor-grid">
+                    <div class="profile-editor-card">
+                        <div class="profile-editor-title">基础资料</div>
+                        <div class="profile-editor-fields">
+                            <input id="driver-edit-name" class="auth-field" type="text" value="${escapeHtml(profile.name)}" placeholder="司机姓名">
+                            <input id="driver-edit-phone" class="auth-field" type="text" value="${escapeHtml(profile.account)}" disabled>
+                            <input id="driver-edit-vehicle" class="auth-field" type="text" value="${escapeHtml(profile.vehicleType)}" placeholder="车型，例如 Isuzu / Van / HiAce">
+                            <input id="driver-edit-plate" class="auth-field" type="text" value="${escapeHtml(profile.plate)}" placeholder="车牌号">
+                            <input id="driver-edit-city" class="auth-field" type="text" value="${escapeHtml(profile.city)}" placeholder="所在城市">
+                            <input id="driver-edit-cycle" class="auth-field" type="text" value="${escapeHtml(profile.settlementCycle)}" placeholder="结算周期，例如 周结">
+                        </div>
+                    </div>
+                    <div class="profile-editor-card">
+                        <div class="profile-editor-title">结算信息</div>
+                        <div class="profile-editor-fields">
+                            <input id="driver-edit-bank-name" class="auth-field" type="text" value="${escapeHtml(profile.bankName)}" placeholder="银行名称">
+                            <input id="driver-edit-bank-account-name" class="auth-field" type="text" value="${escapeHtml(profile.bankAccountName)}" placeholder="开户名">
+                            <input id="driver-edit-bank-account" class="auth-field full-span" type="text" value="${escapeHtml(profile.bankAccount)}" placeholder="银行卡号 / 结算账号">
+                        </div>
+                    </div>
+                    <div class="profile-editor-card">
+                        <div class="profile-editor-title">安全确认</div>
+                        <div class="profile-editor-fields">
+                            <input id="driver-edit-current-password" class="auth-field" type="password" placeholder="输入当前密码后才能保存">
+                            <input id="driver-edit-new-password" class="auth-field" type="password" placeholder="新密码（不改可留空）">
+                            <input id="driver-edit-confirm-password" class="auth-field full-span" type="password" placeholder="确认新密码">
+                        </div>
+                    </div>
+                </div>
+                <div id="detail-modal-status" class="modal-status"></div>
+                <div class="modal-action-row">
+                    <button class="btn-outline" type="button" onclick="closeDetail()">取消</button>
+                    <button class="btn-main" type="button" id="driver-profile-save-btn" onclick="submitDriverProfileUpdate()">保存资料</button>
+                </div>
+            `;
+            document.getElementById("detail-modal").style.display = "block";
+            clearDetailModalStatus();
+        }
+
+        async function submitDriverProfileUpdate() {
+            const currentPassword = document.getElementById("driver-edit-current-password")?.value.trim() || "";
+            const newPassword = document.getElementById("driver-edit-new-password")?.value.trim() || "";
+            const confirmPassword = document.getElementById("driver-edit-confirm-password")?.value.trim() || "";
+            const nextProfile = {
+                name: document.getElementById("driver-edit-name")?.value.trim() || "",
+                vehicleType: document.getElementById("driver-edit-vehicle")?.value.trim() || "",
+                plate: document.getElementById("driver-edit-plate")?.value.trim() || "",
+                city: document.getElementById("driver-edit-city")?.value.trim() || "Sydney",
+                settlementCycle: document.getElementById("driver-edit-cycle")?.value.trim() || "周结",
+                bankName: document.getElementById("driver-edit-bank-name")?.value.trim() || "",
+                bankAccountName: document.getElementById("driver-edit-bank-account-name")?.value.trim() || "",
+                bankAccount: document.getElementById("driver-edit-bank-account")?.value.trim() || ""
+            };
+
+            if (!nextProfile.name || !nextProfile.vehicleType) {
+                setDetailModalStatus("请先填写司机姓名和车型。");
+                return;
+            }
+            if (!currentPassword) {
+                setDetailModalStatus("保存资料前，请先输入当前密码。");
+                return;
+            }
+            if (newPassword && newPassword.length < 6) {
+                setDetailModalStatus("新密码至少需要 6 位。");
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                setDetailModalStatus("两次输入的新密码不一致，请重新确认。");
+                return;
+            }
+
+            const saveButton = document.getElementById("driver-profile-save-btn");
+            if (saveButton) {
+                saveButton.disabled = true;
+                saveButton.textContent = "保存中...";
+            }
+            clearDetailModalStatus();
+
+            try {
+                const remote = await requestDriverApi("/api/aulala/driver-profile/update", {
+                    method: "POST",
+                    body: {
+                        phone: currentDriverAccount(),
+                        currentPassword,
+                        ...nextProfile,
+                        newPassword: newPassword || undefined
+                    }
+                });
+                const savedHash = newPassword ? await sha256(newPassword) : "";
+                const updated = upsertLocalDriverAccount({ ...(remote.driver || {}), phone: currentDriverAccount() }, savedHash);
+                state.driverProfile = blankDriverProfile(updated);
+                persistLoginSession(state.driverProfile);
+                saveAppState();
+                renderProfile();
+                setDetailModalStatus("资料已更新，司机后台和结算信息都同步好了。", "success");
+                setTimeout(() => {
+                    closeDetail();
+                }, 450);
+            } catch (error) {
+                try {
+                    const drivers = loadRegisteredDrivers();
+                    const driverIndex = drivers.findIndex(driver => normalizePhone(driver.account) === currentDriverAccount());
+                    if (driverIndex < 0) {
+                        throw error;
+                    }
+                    const currentHash = await sha256(currentPassword);
+                    if (currentHash !== String(drivers[driverIndex].passwordHash || "")) {
+                        throw error;
+                    }
+                    const fallbackProfile = {
+                        ...drivers[driverIndex],
+                        ...nextProfile,
+                        account: currentDriverAccount(),
+                        updatedAt: new Date().toISOString(),
+                        bankTail: extractBankTail(nextProfile.bankAccount)
+                    };
+                    const fallbackHash = newPassword ? await sha256(newPassword) : drivers[driverIndex].passwordHash;
+                    const updated = upsertLocalDriverAccount(fallbackProfile, fallbackHash);
+                    state.driverProfile = blankDriverProfile(updated);
+                    persistLoginSession(state.driverProfile);
+                    saveAppState();
+                    renderProfile();
+                    setDetailModalStatus("资料已在当前设备更新；远端同步稍后再补。", "success");
+                    setTimeout(() => {
+                        closeDetail();
+                    }, 450);
+                } catch (fallbackError) {
+                    console.error("update driver profile failed", error, fallbackError);
+                    setDetailModalStatus(error?.message || "资料保存失败，请稍后重试。");
+                }
+            } finally {
+                if (saveButton) {
+                    saveButton.disabled = false;
+                    saveButton.textContent = "保存资料";
+                }
+            }
+        }
+
         function renderProfile() {
             const assignedList = document.getElementById("assigned-list");
             const requestList = document.getElementById("request-list");
@@ -2932,6 +3554,8 @@
             document.getElementById("request-count").textContent = String(requestOrders.length);
             document.getElementById("ongoing-count").textContent = String(ongoingCount);
             document.getElementById("history-count").textContent = String(state.completedOrders.length);
+
+            renderDriverProfileSummary();
 
             assignedList.innerHTML = assignedOrders.length
                 ? assignedOrders.map(renderAssignedOrderCard).join("")
@@ -3119,7 +3743,119 @@
             window.scrollTo(0, 0);
         }
 
-        function handleAuth() {
+        function finishDriverAuth(profile, passwordHash = "") {
+            const normalized = upsertLocalDriverAccount(profile, passwordHash);
+            state.loggedIn = true;
+            state.userRole = "driver";
+            state.authMode = "login";
+            state.driverProfile = blankDriverProfile(normalized);
+            persistLoginSession(state.driverProfile);
+            syncDriverScopedCollections();
+            rebuildAvailableOrders();
+            updateNavigation();
+            saveAppState();
+            renderProfile();
+            showSection("profile");
+        }
+
+        async function handleDriverLoginFromApp(phone, pass) {
+            if (normalizePhone(phone) === TEST_DRIVER_ACCOUNT && pass === "123456") {
+                finishDriverAuth({
+                    phone,
+                    name: "测试司机",
+                    vehicleType: "Van",
+                    plate: "TEST-888",
+                    city: "Sydney",
+                    settlementCycle: "周结",
+                    bankTail: "6688",
+                    createdAt: "2026-03-31T00:00:00.000Z",
+                    updatedAt: "2026-03-31T00:00:00.000Z",
+                    status: "active",
+                }, await sha256(pass));
+                return;
+            }
+
+            try {
+                const remote = await requestDriverApi("/api/aulala/driver-login", {
+                    method: "POST",
+                    body: { phone, password: pass }
+                });
+                finishDriverAuth({ ...(remote.driver || {}), phone }, await sha256(pass));
+                return;
+            } catch (error) {
+                if (!["DRIVER_NOT_FOUND", "INVALID_DRIVER_PASSWORD", "HTTP_404", "HTTP_401"].includes(error.code || "")) {
+                    console.warn("remote driver login failed, fallback to local", error);
+                }
+            }
+
+            const drivers = loadRegisteredDrivers();
+            const account = drivers.find(item => normalizePhone(item.account) === normalizePhone(phone));
+            if (!account) {
+                throw new Error("账号不存在，请先注册司机账号。");
+            }
+            const passwordHash = await sha256(pass);
+            if (passwordHash !== String(account.passwordHash || "")) {
+                throw new Error("密码不正确，请重新输入。");
+            }
+            finishDriverAuth(account, passwordHash);
+        }
+
+        async function handleDriverRegisterFromApp(phone, pass) {
+            const name = document.getElementById("auth-driver-name")?.value.trim() || "";
+            const plate = document.getElementById("auth-driver-plate")?.value.trim() || "";
+            const vehicleType = document.getElementById("auth-driver-vehicle")?.value.trim() || "";
+            if (!name || !vehicleType) {
+                throw new Error("请完整填写司机姓名和车型。");
+            }
+            if (pass.length < 6) {
+                throw new Error("密码至少需要 6 位。");
+            }
+            if (normalizePhone(phone) === TEST_DRIVER_ACCOUNT) {
+                throw new Error("这个手机号已被系统测试司机占用，请换一个手机号注册。");
+            }
+
+            const existingDrivers = loadRegisteredDrivers();
+            if (existingDrivers.some(item => normalizePhone(item.account) === normalizePhone(phone))) {
+                throw new Error("这个手机号已经注册过了，请直接登录。");
+            }
+
+            const baseProfile = {
+                phone,
+                name,
+                vehicleType,
+                plate,
+                city: "Sydney",
+                settlementCycle: "周结",
+                bankName: "",
+                bankAccountName: "",
+                bankAccount: "",
+                bankTail: "",
+                notes: ""
+            };
+
+            try {
+                const remote = await requestDriverApi("/api/aulala/driver-register", {
+                    method: "POST",
+                    body: { phone, name, vehicleType, plate, password: pass }
+                });
+                finishDriverAuth({ ...baseProfile, ...(remote.driver || {}) }, await sha256(pass));
+                return;
+            } catch (error) {
+                if (error.code === "DUPLICATE_DRIVER" || error.code === "HTTP_409") {
+                    throw new Error("这个手机号已经注册过了，请直接登录。");
+                }
+                console.warn("remote driver register failed, fallback to local", error);
+            }
+
+            finishDriverAuth({
+                ...baseProfile,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                status: "active",
+            }, await sha256(pass));
+        }
+
+        async function handleAuth() {
             const phone = document.getElementById("auth-phone").value.trim();
             const pass = document.getElementById("auth-pass").value.trim();
             const role = getSelectedAuthRole();
@@ -3128,17 +3864,21 @@
                 return;
             }
 
+            if (role === "driver") {
+                try {
+                    if (state.authMode === "reg") {
+                        await handleDriverRegisterFromApp(phone, pass);
+                    } else {
+                        await handleDriverLoginFromApp(phone, pass);
+                    }
+                } catch (error) {
+                    alert(error.message || "司机登录失败，请稍后重试。");
+                }
+                return;
+            }
+
             state.loggedIn = true;
             state.userRole = role;
-            if (role === "driver") {
-                state.driverProfile = {
-                    account: normalizePhone(phone),
-                    name: state.driverProfile.name || "",
-                    vehicleType: state.driverProfile.vehicleType || ""
-                };
-                syncDriverScopedCollections();
-                rebuildAvailableOrders();
-            }
             state.ownerProfile = {
                 name: (document.getElementById("owner-auth-name")?.value || "").trim() || state.ownerProfile.name || "",
                 phone,
@@ -3153,26 +3893,16 @@
             populateOwnerFormFromProfile();
             saveAppState();
 
-            if (role === "owner") {
-                renderOwnerPanel();
-                scheduleOwnerEstimate();
-                showSection("owner");
-                return;
-            }
-
-            renderProfile();
-            showSection("profile");
+            renderOwnerPanel();
+            scheduleOwnerEstimate();
+            showSection("owner");
         }
 
         function logout() {
             persistCurrentDriverBucket();
             state.loggedIn = false;
             state.userRole = "driver";
-            state.driverProfile = {
-                account: "",
-                name: "",
-                vehicleType: ""
-            };
+            state.driverProfile = blankDriverProfile();
             state.activeOrder = null;
             state.completedOrders = [];
             saveAppState();
