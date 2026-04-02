@@ -435,6 +435,10 @@
             cursor: pointer;
             font-size: 15px;
             transition: transform 0.15s ease, box-shadow 0.15s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .btn-main:active,
@@ -1006,7 +1010,7 @@
                 <a href="javascript:void(0)" onclick="openOwnerEntry()">货主发货</a>
             </span>
             <span id="user-nav" class="hidden">
-                <button type="button" id="dashboard-link" onclick="openDashboard()">个人中心</button>
+                <a href="app.html?view=profile" id="dashboard-link" onclick="return handleDashboardNav(event)">个人中心</a>
                 <button type="button" onclick="logout()">退出</button>
             </span>
         </div>
@@ -1028,7 +1032,7 @@
     <div class="container">
         <section id="order-section">
             <div id="dashboard-shortcut" class="dashboard-shortcut hidden">
-                <button class="btn-main" type="button" id="dashboard-shortcut-btn" onclick="openDashboard()">进入个人中心</button>
+                <a class="btn-main" id="dashboard-shortcut-btn" href="app.html?view=profile" onclick="return handleDashboardNav(event)">进入个人中心</a>
                 <button class="btn-outline" type="button" onclick="logout()">退出</button>
             </div>
             <div class="section-row">
@@ -2976,13 +2980,34 @@
             document.getElementById("guest-nav").classList.toggle("hidden", state.loggedIn);
             document.getElementById("user-nav").classList.toggle("hidden", !state.loggedIn);
             const dashboardText = state.userRole === "owner" ? "货主后台" : "个人中心";
-            document.getElementById("dashboard-link").textContent = dashboardText;
+            const dashboardHref = `app.html?view=${state.userRole === "owner" ? "owner" : "profile"}`;
+            const dashboardLink = document.getElementById("dashboard-link");
+            dashboardLink.textContent = dashboardText;
+            dashboardLink.setAttribute("href", dashboardHref);
             const shortcut = document.getElementById("dashboard-shortcut");
             const shortcutButton = document.getElementById("dashboard-shortcut-btn");
             if (shortcut && shortcutButton) {
                 shortcut.classList.toggle("hidden", !state.loggedIn);
                 shortcutButton.textContent = state.userRole === "owner" ? "进入货主后台" : "进入个人中心";
+                shortcutButton.setAttribute("href", dashboardHref);
             }
+        }
+
+        function handleDashboardNav(event) {
+            if (!state.loggedIn) {
+                event?.preventDefault();
+                openLoginEntry("driver");
+                return false;
+            }
+            const target = state.userRole === "owner" ? "owner" : "profile";
+            const nextUrl = new URL(window.location.href);
+            nextUrl.searchParams.set("view", target);
+            if (window.location.pathname.endsWith("/app.html") || window.location.pathname.endsWith("app.html")) {
+                history.replaceState(null, "", `${nextUrl.pathname}?${nextUrl.searchParams.toString()}`);
+                openDashboard();
+                return false;
+            }
+            return true;
         }
 
         function syncProfilePanels() {
@@ -3439,8 +3464,19 @@
                 }
             }
             switchAuthMode(state.authMode || "login");
+            const requestedView = new URLSearchParams(window.location.search).get("view");
             if (state.loggedIn) {
-                openDashboard();
+                if (requestedView === "owner") {
+                    showSection("owner");
+                    renderOwnerPanel();
+                } else if (requestedView === "profile") {
+                    showSection("profile");
+                    renderProfile();
+                } else {
+                    openDashboard();
+                }
+            } else if (requestedView === "profile" || requestedView === "owner") {
+                openLoginEntry(requestedView === "owner" ? "owner" : "driver");
             } else {
                 showSection("orders");
             }
