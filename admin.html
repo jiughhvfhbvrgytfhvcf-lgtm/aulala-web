@@ -858,6 +858,20 @@
                 payoutRatio: 0.8,
                 joinedAt: "2026-03-31",
                 notes: "备用运力，可在需要时启用。"
+            },
+            {
+                id: "DRV-003",
+                name: "kevin",
+                phone: "0450440830",
+                vehicleType: "Isuzu",
+                plate: "",
+                city: "Sydney",
+                status: "active",
+                settlementCycle: "周结",
+                bankTail: "",
+                payoutRatio: 0.78,
+                joinedAt: "2026-04-01",
+                notes: "预置司机，用于后台固定指派单。"
             }
         ];
 
@@ -1154,10 +1168,31 @@
             if (order.flowStatus === "grabbed") {
                 return "grabbed";
             }
-            if (order.op?.assignedDriverId) {
+            if (order.op?.assignedDriverId || order.assignedDriverAccount || order.assignedDriverName) {
                 return "assigned";
             }
             return "pending";
+        }
+
+        function resolveAssignedDriverId(order, existingAssignedDriverId = "") {
+            if (existingAssignedDriverId) {
+                return existingAssignedDriverId;
+            }
+            const assignedAccount = normalizePhone(order.assignedDriverAccount || "");
+            if (assignedAccount) {
+                const byPhone = state.adminData.drivers.find(driver => normalizePhone(driver.phone) === assignedAccount);
+                if (byPhone) {
+                    return byPhone.id || "";
+                }
+            }
+            const assignedName = String(order.assignedDriverName || "").trim().toLowerCase();
+            if (assignedName) {
+                const byName = state.adminData.drivers.find(driver => String(driver.name || "").trim().toLowerCase() === assignedName);
+                if (byName) {
+                    return byName.id || "";
+                }
+            }
+            return "";
         }
 
         function baseOrderRecord(order, sourceType) {
@@ -1189,9 +1224,15 @@
                 remarks: order.remarks || "",
                 ownerName: order.ownerName || "",
                 ownerPhone: order.ownerPhone || "",
+                assignedDriverAccount: normalizePhone(order.assignedDriverAccount || ""),
+                assignedDriverName: order.assignedDriverName || "",
                 driverAcceptedAt: order.driverAcceptedAt || "",
                 quoteAdjustedAt: order.quoteAdjustedAt || "",
                 createdAt: order.createdAt || "",
+                isMergedOrder: Boolean(order.isMergedOrder),
+                mergedOrderCount: Number(order.mergedOrderCount || 0),
+                mergedOrderCodes: Array.isArray(order.mergedOrderCodes) ? order.mergedOrderCodes : [],
+                mergeLabel: order.mergeLabel || "",
                 raw: order
             };
         }
@@ -1281,12 +1322,13 @@
 
         function getOrderOp(order) {
             const existing = state.adminData.orderOps[order.key] || {};
+            const feedAssignedDriverId = resolveAssignedDriverId(order, existing.assignedDriverId || "");
             return {
-                assignedDriverId: existing.assignedDriverId || "",
+                assignedDriverId: feedAssignedDriverId,
                 internalStatus: existing.internalStatus || "",
                 internalNotes: existing.internalNotes || "",
                 customerReceivable: roundMoney(existing.customerReceivable ?? order.price ?? 0),
-                driverPayable: roundMoney(existing.driverPayable ?? defaultDriverPayable(order, existing.assignedDriverId || "")),
+                driverPayable: roundMoney(existing.driverPayable ?? defaultDriverPayable(order, feedAssignedDriverId)),
                 receivableStatus: existing.receivableStatus || "待收款",
                 payableStatus: existing.payableStatus || "待结算",
                 updatedAt: existing.updatedAt || ""
@@ -1344,14 +1386,24 @@
                 }
                 return [
                     order.orderCode,
+                    (order.mergedOrderCodes || []).join(" "),
                     order.pickupAddress,
                     order.dropoffAddress,
                     order.pickup,
                     order.dropoff,
                     order.ownerName,
                     order.ownerPhone,
+                    order.remarks,
                     order.op.internalNotes
                 ].join(" ").toLowerCase().includes(query);
+            }).sort((left, right) => {
+                const leftTime = String(left.scheduledPickupTime || "9999-12-31 23:59");
+                const rightTime = String(right.scheduledPickupTime || "9999-12-31 23:59");
+                const timeCompare = leftTime.localeCompare(rightTime);
+                if (timeCompare !== 0) {
+                    return timeCompare;
+                }
+                return String(left.orderCode || left.key || "").localeCompare(String(right.orderCode || right.key || ""));
             });
         }
 
@@ -1646,6 +1698,8 @@
                                                 <tr>
                                                     <td>
                                                         <div class="cell-title">${escapeHtml(order.orderCode || order.key)}</div>
+                                                        ${order.isMergedOrder ? `<div class="cell-sub">${escapeHtml(order.mergeLabel || `合并${order.mergedOrderCount}票`)}</div>` : ""}
+                                                        ${order.isMergedOrder ? `<div class="cell-sub">子单：${escapeHtml(shortText((order.mergedOrderCodes || []).join("、"), 42))}</div>` : ""}
                                                         <div class="cell-sub">${escapeHtml(order.sourceLabel)} / ${escapeHtml(order.state || "--")}</div>
                                                         ${order.remarks ? `<div class="cell-sub">备注：${escapeHtml(shortText(order.remarks, 34))}</div>` : ""}
                                                     </td>
@@ -2051,6 +2105,16 @@
                         <label class="field-label">订单号</label>
                         <input class="field" type="text" value="${escapeHtml(order.orderCode || order.key)}" disabled>
                     </div>
+                    ${order.isMergedOrder ? `
+                    <div>
+                        <label class="field-label">合并派送</label>
+                        <input class="field" type="text" value="${escapeHtml(order.mergeLabel || `共${order.mergedOrderCount}票`)}" disabled>
+                    </div>
+                    <div class="full-span">
+                        <label class="field-label">子单号</label>
+                        <textarea class="textarea" disabled>${escapeHtml((order.mergedOrderCodes || []).join("、"))}</textarea>
+                    </div>
+                    ` : ""}
                     <div>
                         <label class="field-label">订单来源</label>
                         <input class="field" type="text" value="${escapeHtml(order.sourceLabel)}" disabled>

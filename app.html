@@ -1068,7 +1068,12 @@
                 quoteAdjustedAt: order.quoteAdjustedAt || "",
                 driverAcceptedAt: order.driverAcceptedAt || "",
                 assignedDriverAccount: normalizePhone(order.assignedDriverAccount || ""),
-                assignedDriverName: order.assignedDriverName || ""
+                assignedDriverName: order.assignedDriverName || "",
+                isMergedOrder: Boolean(order.isMergedOrder),
+                mergedOrderCount: Number(order.mergedOrderCount || 0),
+                mergedOrderCodes: Array.isArray(order.mergedOrderCodes) ? order.mergedOrderCodes : [],
+                mergedChildOrders: Array.isArray(order.mergedChildOrders) ? order.mergedChildOrders : [],
+                mergeLabel: order.mergeLabel || ""
             };
         }
 
@@ -1303,11 +1308,21 @@
             const consumedIds = new Set((state.consumedExternalOrderIds || []).map(Number));
             const activeId = state.activeOrder ? Number(state.activeOrder.id) : null;
             const blockedCodes = collectBlockedExternalOrderCodes();
+            const currentAccount = normalizePhone(currentDriverAccount());
             const ownerPublished = (state.ownerOrders || [])
                 .filter(order => order.ownerLifecycleStatus === "published")
                 .map((order, index) => normalizeOrder(order, 5000 + index));
             const externalAvailable = (state.baseExternalOrders || [])
                 .filter(order => {
+                    const assignedAccount = normalizePhone(order.assignedDriverAccount || "");
+                    if (assignedAccount) {
+                        if (!state.loggedIn || state.userRole !== "driver") {
+                            return false;
+                        }
+                        if (assignedAccount !== currentAccount) {
+                            return false;
+                        }
+                    }
                     const code = normalizeOrderCode(order.orderCode || order.putCode || "");
                     if (code && blockedCodes.has(code)) {
                         return false;
@@ -1626,6 +1641,18 @@
             return `<div class="note-box"><b>备注要求：</b>${order.remarks}</div>`;
         }
 
+        function renderMergedOrderInfo(order) {
+            if (!order.isMergedOrder || order.mergedOrderCount <= 1) {
+                return "";
+            }
+            return `
+                <div class="note-box">
+                    <b>${order.mergeLabel || `合并派送单（${order.mergedOrderCount}票）`}：</b>
+                    ${(order.mergedOrderCodes || []).join("、")}
+                </div>
+            `;
+        }
+
         function clearanceChipClass(order) {
             const status = normalizeClearanceStatus(order.clearanceStatus || order.clearanceStatusRaw);
             if (status === "clean") {
@@ -1722,10 +1749,12 @@
                     }
                     return [
                         order.orderCode,
+                        (order.mergedOrderCodes || []).join(" "),
                         order.pickup,
                         order.dropoff,
                         order.pickupAddress,
-                        order.dropoffAddress
+                        order.dropoffAddress,
+                        order.remarks
                     ]
                         .filter(Boolean)
                         .join(" ")
@@ -1760,6 +1789,8 @@
                     </div>
 
                     ${renderPickupTimePanel(order)}
+
+                    ${renderMergedOrderInfo(order)}
 
                     <div class="addr-box">
                         <div class="addr">
@@ -1816,6 +1847,8 @@
                     </div>
 
                     ${renderPickupTimePanel(order, order.scheduledPickupTime)}
+
+                    ${renderMergedOrderInfo(order)}
 
                     ${renderRouteBox(order)}
 
@@ -2792,6 +2825,8 @@
             document.getElementById("detail-content").innerHTML = `
                 <h3 style="color:var(--primary); margin-bottom:15px; border-bottom:2px solid var(--primary); padding-bottom:10px;">${detailTitle}</h3>
                 ${order.orderCode ? `<div class="detail-row"><span>入仓号</span><span>${orderCodeLabel(order)}</span></div>` : ""}
+                ${order.isMergedOrder ? `<div class="detail-row"><span>合并派送</span><span>${order.mergeLabel || `共${order.mergedOrderCount}票`}</span></div>` : ""}
+                ${order.isMergedOrder ? `<div class="detail-row"><span>子单号</span><span>${(order.mergedOrderCodes || []).join("、")}</span></div>` : ""}
                 ${isOwnerOrder ? `<div class="detail-row"><span>货主状态</span><span>${ownerStatus.label}</span></div>` : ""}
                 <div class="detail-row"><span>${priceLabel}</span><span style="color:var(--accent); font-weight:800;">${formatCurrency(order.price)}</span></div>
                 ${isOwnerOrder ? `<div class="detail-row"><span>系统参考价</span><span>${formatCurrency(order.systemEstimatedPrice || 0)}</span></div>` : ""}
