@@ -921,6 +921,12 @@
             </div>
 
             <div class="section-row">
+                <div class="section-title" id="assigned-title">已指派待接收 (0)</div>
+                <button class="mini-btn" onclick="showSection('orders')">返回抢单大厅</button>
+            </div>
+            <div id="assigned-list"></div>
+
+            <div class="section-row">
                 <div class="section-title" id="ongoing-title">进行中的订单 (0)</div>
                 <button class="mini-btn" onclick="showSection('orders')">返回抢单大厅</button>
             </div>
@@ -1859,6 +1865,54 @@
             `;
         }
 
+        function getAssignedOrdersForCurrentDriver() {
+            const account = normalizePhone(currentDriverAccount());
+            if (!account) {
+                return [];
+            }
+            return (state.availableOrders || [])
+                .filter(order => normalizePhone(order.assignedDriverAccount || "") === account)
+                .sort((left, right) => String(left.scheduledPickupTime || left.expectedPickupTime || "").localeCompare(String(right.scheduledPickupTime || right.expectedPickupTime || "")));
+        }
+
+        function renderAssignedOrderCard(order) {
+            return `
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            ${order.orderCode ? `<div class="${orderCodeClass(order)}">${orderCodeLabel(order)}</div>` : ""}
+                            <div class="highlight-specs">
+                                ${sourceChip(order)}
+                                <span class="spec-tag">${order.pallets} Plt</span>
+                                <span class="spec-tag">${order.weight}</span>
+                                ${order.cbm ? `<span class="spec-tag">${Number(order.cbm).toFixed(2)} CBM</span>` : ""}
+                            </div>
+                        </div>
+                        <span class="price">${formatCurrency(order.price)}</span>
+                    </div>
+
+                    ${renderPickupTimePanel(order, order.scheduledPickupTime || order.expectedPickupTime || order.time)}
+
+                    ${renderMergedOrderInfo(order)}
+
+                    <div class="addr-box">
+                        <div class="addr">
+                            <span class="dot" style="background:var(--success)"></span>
+                            <span class="addr-text"><b>提:</b> ${pickupAddressText(order)}</span>
+                        </div>
+                        <div class="addr">
+                            <span class="dot" style="background:var(--accent)"></span>
+                            <span class="addr-text"><b>送:</b> ${dropoffAddressText(order)}</span>
+                        </div>
+                    </div>
+
+                    ${renderOrderRemark(order)}
+
+                    <button class="btn-main" onclick="tryAccept(${order.id})">接收指派订单</button>
+                </div>
+            `;
+        }
+
         function renderRouteBox(order) {
             const pickupUrl = `https://maps.google.com/?q=${encodeURIComponent(order.pickupAddress || order.pickup)}`;
             const dropoffUrl = `https://maps.google.com/?q=${encodeURIComponent(order.dropoffAddress || order.dropoff)}`;
@@ -2443,13 +2497,25 @@
         }
 
         function renderProfile() {
+            const assignedList = document.getElementById("assigned-list");
             const ongoingList = document.getElementById("ongoing-list");
             const historyList = document.getElementById("history-list");
             const completedIncome = state.completedOrders.reduce((sum, order) => sum + Number(order.price), 0);
+            const assignedOrders = getAssignedOrdersForCurrentDriver();
 
             document.getElementById("completed-count").textContent = String(state.completedOrders.length);
             document.getElementById("total-income").textContent = formatCurrency(completedIncome);
+            document.getElementById("assigned-title").textContent = `已指派待接收 (${assignedOrders.length})`;
             document.getElementById("ongoing-title").textContent = `进行中的订单 (${state.activeOrder ? 1 : 0})`;
+
+            assignedList.innerHTML = assignedOrders.length
+                ? assignedOrders.map(renderAssignedOrderCard).join("")
+                : `
+                    <div class="card empty-card">
+                        <div style="font-size:16px; font-weight:800; color:#344054; margin-bottom:6px;">当前没有待接收的指派订单</div>
+                        <div>如果后台已经给你指派订单，它会优先显示在这里。</div>
+                    </div>
+                `;
 
             ongoingList.innerHTML = state.activeOrder
                 ? renderOngoingOrder(state.activeOrder)
