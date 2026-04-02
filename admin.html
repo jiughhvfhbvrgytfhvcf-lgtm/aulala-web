@@ -382,6 +382,50 @@
             line-height: 1.6;
         }
 
+        .request-queue {
+            margin-bottom: 18px;
+            padding: 18px;
+            border: 1px solid #f3d3da;
+            background: linear-gradient(180deg, #fff8f9 0%, #ffffff 100%);
+            border-radius: 20px;
+        }
+
+        .request-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            margin-top: 14px;
+        }
+
+        .request-card {
+            border: 1px solid #f0d7dd;
+            border-radius: 18px;
+            padding: 16px;
+            background: #fff;
+        }
+
+        .request-card-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .request-card-price {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--danger);
+            white-space: nowrap;
+        }
+
+        .request-card-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
         .tag-row {
             display: flex;
             flex-wrap: wrap;
@@ -708,7 +752,8 @@
             }
 
             .quick-grid,
-            .driver-grid {
+            .driver-grid,
+            .request-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -1131,6 +1176,16 @@
             return { label: "待抢单", className: "orange" };
         }
 
+        function hasPendingDriverPriceRequest(order) {
+            const requestedPrice = Number(order?.op?.driverRequestedPrice || 0);
+            const requestStatus = String(order?.op?.driverQuoteStatus || (requestedPrice > 0 ? "pending" : ""));
+            return requestedPrice > 0 && requestStatus !== "approved" && requestStatus !== "rejected";
+        }
+
+        function appendInternalNote(currentNotes, line) {
+            return [String(currentNotes || "").trim(), String(line || "").trim()].filter(Boolean).join("\n");
+        }
+
         function clearanceMeta(label) {
             if (label === "已放行") {
                 return { label, className: "green" };
@@ -1159,6 +1214,9 @@
         }
 
         function effectiveFlowStatus(order) {
+            if (order.op?.forceUnassigned) {
+                return "pending";
+            }
             if (order.flowStatus === "completed") {
                 return "completed";
             }
@@ -1174,7 +1232,10 @@
             return "pending";
         }
 
-        function resolveAssignedDriverId(order, existingAssignedDriverId = "") {
+        function resolveAssignedDriverId(order, existingAssignedDriverId = "", forceUnassigned = false) {
+            if (forceUnassigned) {
+                return "";
+            }
             if (existingAssignedDriverId) {
                 return existingAssignedDriverId;
             }
@@ -1301,6 +1362,9 @@
         }
 
         function defaultInternalStatus(order) {
+            if (hasPendingDriverPriceRequest(order)) {
+                return "司机申请调价";
+            }
             const flowStatus = effectiveFlowStatus(order);
             if (flowStatus === "completed") {
                 return "已完成";
@@ -1322,7 +1386,7 @@
 
         function getOrderOp(order) {
             const existing = state.adminData.orderOps[order.key] || {};
-            const feedAssignedDriverId = resolveAssignedDriverId(order, existing.assignedDriverId || "");
+            const feedAssignedDriverId = resolveAssignedDriverId(order, existing.assignedDriverId || "", Boolean(existing.forceUnassigned));
             return {
                 assignedDriverId: feedAssignedDriverId,
                 internalStatus: existing.internalStatus || "",
@@ -1330,6 +1394,9 @@
                 driverRequestedPrice: Number(existing.driverRequestedPrice || 0),
                 driverQuoteReason: existing.driverQuoteReason || "",
                 driverQuoteRequestedAt: existing.driverQuoteRequestedAt || "",
+                driverQuoteStatus: existing.driverQuoteStatus || (Number(existing.driverRequestedPrice || 0) > 0 ? "pending" : ""),
+                agreedDriverPrice: roundMoney(existing.agreedDriverPrice || 0),
+                forceUnassigned: Boolean(existing.forceUnassigned),
                 customerReceivable: roundMoney(existing.customerReceivable ?? order.price ?? 0),
                 driverPayable: roundMoney(existing.driverPayable ?? defaultDriverPayable(order, feedAssignedDriverId)),
                 receivableStatus: existing.receivableStatus || "待收款",
@@ -1373,8 +1440,11 @@
 
         function filteredOrders() {
             return state.orders.filter(order => {
+                if (state.orderFilter.flowStatus === "price_request" && !hasPendingDriverPriceRequest(order)) {
+                    return false;
+                }
                 const flowStatus = effectiveFlowStatus(order);
-                if (state.orderFilter.flowStatus !== "all" && flowStatus !== state.orderFilter.flowStatus) {
+                if (state.orderFilter.flowStatus !== "all" && state.orderFilter.flowStatus !== "price_request" && flowStatus !== state.orderFilter.flowStatus) {
                     return false;
                 }
                 if (state.orderFilter.sourceType !== "all" && order.sourceType !== state.orderFilter.sourceType) {
@@ -1465,6 +1535,7 @@
             const assignedOrders = orders.filter(order => effectiveFlowStatus(order) === "assigned").length;
             const inProgressOrders = orders.filter(order => effectiveFlowStatus(order) === "in_progress").length;
             const completedOrders = orders.filter(order => effectiveFlowStatus(order) === "completed").length;
+            const driverRequestOrders = orders.filter(order => hasPendingDriverPriceRequest(order)).length;
             const unassignedOrders = orders.filter(order => !order.op.assignedDriverId && order.flowStatus !== "completed").slice(0, 5);
             const financePending = orders.filter(order => order.op.receivableStatus !== "已收款" || order.op.payableStatus !== "已结算").slice(0, 5);
 
@@ -1486,6 +1557,11 @@
                         <div class="summary-label">待抢单</div>
                         <div class="summary-value">${pendingOrders}</div>
                         <div class="summary-hint">已指派 ${assignedOrders} 单，进行中 ${inProgressOrders} 单</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">调价申请</div>
+                        <div class="summary-value">${driverRequestOrders}</div>
+                        <div class="summary-hint">司机申请调价的单会优先在订单管理中处理</div>
                     </div>
                     <div class="summary-card">
                         <div class="summary-label">应收总额</div>
@@ -1644,6 +1720,9 @@
 
         function renderOrdersPanel() {
             const orders = filteredOrders();
+            const requestOrders = state.orders
+                .filter(order => hasPendingDriverPriceRequest(order))
+                .sort((left, right) => String(left.scheduledPickupTime || "").localeCompare(String(right.scheduledPickupTime || "")));
             const states = Array.from(new Set(state.orders.map(order => order.state).filter(Boolean))).sort();
 
             document.getElementById("panel-orders").innerHTML = `
@@ -1654,10 +1733,49 @@
                     </div>
                 </div>
 
+                <div class="request-queue">
+                    <div class="panel-title-row" style="margin-bottom:0;">
+                        <div>
+                            <div class="panel-title" style="font-size:18px;">司机调价申请</div>
+                            <div class="panel-subtitle">司机申请调价后，先在这里快速同意或驳回。驳回会直接退回抢单大厅。</div>
+                        </div>
+                    </div>
+                    ${
+                        requestOrders.length
+                            ? `<div class="request-grid">${requestOrders.map(order => {
+                                const driver = state.adminData.drivers.find(item => item.id === order.op.assignedDriverId);
+                                return `
+                                    <div class="request-card">
+                                        <div class="request-card-head">
+                                            <div>
+                                                <div class="cell-title">${escapeHtml(order.orderCode || order.key)}</div>
+                                                ${order.isMergedOrder ? `<div class="cell-sub">${escapeHtml(order.mergeLabel || `合并${order.mergedOrderCount}票`)}</div>` : ""}
+                                                <div class="cell-sub">司机：${driver ? `${escapeHtml(driver.name)} / ${escapeHtml(driver.phone)}` : "未识别"}</div>
+                                            </div>
+                                            <div class="request-card-price">${formatCurrency(order.op.driverRequestedPrice)}</div>
+                                        </div>
+                                        <div class="cell-sub">当前大厅运费：${formatCurrency(order.price)}</div>
+                                        <div class="cell-sub">计划提货：${escapeHtml(order.scheduledPickupTime || "--")}</div>
+                                        <div class="cell-sub">提：${escapeHtml(shortText(order.pickupAddress, 62))}</div>
+                                        <div class="cell-sub">送：${escapeHtml(shortText(order.dropoffAddress, 62))}</div>
+                                        <div class="cell-sub">原因：${escapeHtml(order.op.driverQuoteReason || "--")}</div>
+                                        <div class="request-card-actions">
+                                            <button class="inline-btn" type="button" onclick="openOrderModal('${encodeKey(order.key)}')">查看详情</button>
+                                            <button class="inline-btn" type="button" onclick="approveDriverQuote('${encodeKey(order.key)}')">同意继续指派</button>
+                                            <button class="inline-btn" type="button" onclick="rejectDriverQuote('${encodeKey(order.key)}')">驳回回大厅</button>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join("")}</div>`
+                            : `<div class="empty-state" style="margin-top:14px;">当前没有待处理的司机调价申请。</div>`
+                    }
+                </div>
+
                 <div class="filters">
                     <input id="order-filter-query" class="field" type="text" placeholder="搜索入仓号 / 地址 / 备注" value="${escapeHtml(state.orderFilter.query)}">
                     <select id="order-filter-status" class="select">
                         <option value="all">全部状态</option>
+                        <option value="price_request" ${state.orderFilter.flowStatus === "price_request" ? "selected" : ""}>调价申请</option>
                         <option value="pending" ${state.orderFilter.flowStatus === "pending" ? "selected" : ""}>待抢单</option>
                         <option value="assigned" ${state.orderFilter.flowStatus === "assigned" ? "selected" : ""}>已指派</option>
                         <option value="grabbed" ${state.orderFilter.flowStatus === "grabbed" ? "selected" : ""}>已被抢单</option>
@@ -2069,7 +2187,8 @@
             persistOrderOp(key, {
                 assignedDriverId: driverId,
                 driverPayable: roundMoney(nextPayable),
-                internalStatus: driverId ? "已指派" : "待分配"
+                internalStatus: driverId ? "已指派" : "待分配",
+                forceUnassigned: false
             });
         }
 
@@ -2092,6 +2211,47 @@
             }
             persistOrderOp(key, {
                 payableStatus: order.op.payableStatus === "已结算" ? "待结算" : "已结算"
+            });
+        }
+
+        function approveDriverQuote(encodedOrderKey) {
+            const key = decodeKey(encodedOrderKey);
+            const order = state.orders.find(item => item.key === key);
+            if (!order || !hasPendingDriverPriceRequest(order)) {
+                return;
+            }
+            const requested = roundMoney(order.op.driverRequestedPrice);
+            persistOrderOp(key, {
+                driverPayable: requested,
+                agreedDriverPrice: requested,
+                driverQuoteStatus: "approved",
+                driverRequestedPrice: 0,
+                driverQuoteReason: "",
+                driverQuoteRequestedAt: "",
+                forceUnassigned: false,
+                internalStatus: order.op.assignedDriverId ? "已指派" : "待分配",
+                internalNotes: appendInternalNote(order.op.internalNotes, `已同意司机调价申请，确认运费 ${formatCurrency(requested)}。`)
+            });
+        }
+
+        function rejectDriverQuote(encodedOrderKey) {
+            const key = decodeKey(encodedOrderKey);
+            const order = state.orders.find(item => item.key === key);
+            if (!order || !hasPendingDriverPriceRequest(order)) {
+                return;
+            }
+            const note = `已驳回司机调价申请，订单退回抢单大厅。原申请 ${formatCurrency(order.op.driverRequestedPrice)}，原因：${order.op.driverQuoteReason || "--"}`;
+            persistOrderOp(key, {
+                assignedDriverId: "",
+                driverPayable: roundMoney(defaultDriverPayable(order, "")),
+                agreedDriverPrice: 0,
+                driverQuoteStatus: "rejected",
+                driverRequestedPrice: 0,
+                driverQuoteReason: "",
+                driverQuoteRequestedAt: "",
+                forceUnassigned: true,
+                internalStatus: "待分配",
+                internalNotes: appendInternalNote(order.op.internalNotes, note)
             });
         }
 
@@ -2154,7 +2314,7 @@
                     <div>
                         <label class="field-label">内部状态</label>
                         <select id="order-modal-internal-status" class="select">
-                            ${["待分配", "已指派", "等待提货", "已提货", "派送途中", "已完成", "异常待处理"].map(option => `<option value="${option}" ${order.op.internalStatus === option ? "selected" : ""}>${option}</option>`).join("")}
+                            ${["待分配", "已指派", "司机申请调价", "等待提货", "已提货", "派送途中", "已完成", "异常待处理"].map(option => `<option value="${option}" ${order.op.internalStatus === option ? "selected" : ""}>${option}</option>`).join("")}
                         </select>
                     </div>
                     <div>
@@ -2179,6 +2339,16 @@
                             <option value="已结算" ${order.op.payableStatus === "已结算" ? "selected" : ""}>已结算</option>
                         </select>
                     </div>
+                    ${order.op.agreedDriverPrice ? `
+                    <div>
+                        <label class="field-label">已同意司机运费</label>
+                        <input class="field" type="text" value="${escapeHtml(formatCurrency(order.op.agreedDriverPrice))}" disabled>
+                    </div>
+                    <div>
+                        <label class="field-label">调价处理结果</label>
+                        <input class="field" type="text" value="${escapeHtml(order.op.driverQuoteStatus || "--")}" disabled>
+                    </div>
+                    ` : ""}
                     ${order.op.driverRequestedPrice ? `
                     <div>
                         <label class="field-label">司机申请运费</label>
@@ -2197,6 +2367,14 @@
                         <label class="field-label">内部备注</label>
                         <textarea id="order-modal-notes" class="textarea" placeholder="例如预约要求、异常说明、客户回款情况等">${escapeHtml(order.op.internalNotes || order.remarks || "")}</textarea>
                     </div>
+                    ${hasPendingDriverPriceRequest(order) ? `
+                    <div class="full-span">
+                        <div class="request-card-actions">
+                            <button class="btn btn-primary" type="button" onclick="approveDriverQuote('${encodeKey(order.key)}'); closeModal();">同意继续指派</button>
+                            <button class="btn btn-danger" type="button" onclick="rejectDriverQuote('${encodeKey(order.key)}'); closeModal();">驳回回大厅</button>
+                        </div>
+                    </div>
+                    ` : ""}
                 </div>
                 <div class="modal-actions">
                     <button class="btn btn-secondary" type="button" onclick="closeModal()">取消</button>
@@ -2219,7 +2397,8 @@
                 driverPayable: roundMoney(document.getElementById("order-modal-payable").value),
                 receivableStatus: document.getElementById("order-modal-receivable-status").value,
                 payableStatus: document.getElementById("order-modal-payable-status").value,
-                internalNotes: document.getElementById("order-modal-notes").value.trim()
+                internalNotes: document.getElementById("order-modal-notes").value.trim(),
+                forceUnassigned: driverId ? false : order.op.forceUnassigned
             });
             closeModal();
         }
@@ -2326,6 +2505,8 @@
         window.assignDriverInline = assignDriverInline;
         window.quickToggleReceivable = quickToggleReceivable;
         window.quickTogglePayable = quickTogglePayable;
+        window.approveDriverQuote = approveDriverQuote;
+        window.rejectDriverQuote = rejectDriverQuote;
         window.openOrderModal = openOrderModal;
         window.saveDriverModal = saveDriverModal;
         window.saveOrderModal = saveOrderModal;

@@ -69,6 +69,10 @@
             cursor: pointer;
             appearance: none;
             -webkit-appearance: none;
+            min-height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .auth-switch-row {
@@ -409,6 +413,18 @@
             font-size: 14px;
         }
 
+        .textarea {
+            width: 100%;
+            min-height: 118px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            background: #fff;
+        }
+
         .btn-main,
         .btn-outline,
         .btn-light {
@@ -471,6 +487,21 @@
 
         .section-row .section-title {
             margin: 0;
+        }
+
+        .dashboard-shortcut {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .dashboard-shortcut button {
+            margin-top: 0;
+        }
+
+        .dashboard-shortcut .btn-main,
+        .dashboard-shortcut .btn-outline {
+            flex: 1 1 0;
         }
 
         .compact-field {
@@ -753,6 +784,123 @@
             color: #667085;
         }
 
+        .profile-stack {
+            display: grid;
+            gap: 12px;
+        }
+
+        .profile-group {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #edf0f2;
+            box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+            overflow: hidden;
+        }
+
+        .profile-group-toggle {
+            width: 100%;
+            border: none;
+            background: transparent;
+            padding: 16px;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .profile-group-left {
+            min-width: 0;
+        }
+
+        .profile-group-name {
+            font-size: 16px;
+            font-weight: 900;
+            color: var(--primary);
+        }
+
+        .profile-group-meta {
+            margin-top: 4px;
+            font-size: 12px;
+            color: #667085;
+            line-height: 1.6;
+        }
+
+        .profile-group-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .profile-group-count {
+            min-width: 34px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: #eef4ff;
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 900;
+            text-align: center;
+        }
+
+        .profile-group-arrow {
+            font-size: 18px;
+            color: #98a2b3;
+            transition: transform 0.2s ease;
+        }
+
+        .profile-group.expanded .profile-group-arrow {
+            transform: rotate(180deg);
+        }
+
+        .profile-group-body {
+            padding: 0 15px 15px;
+            border-top: 1px solid #f2f4f7;
+        }
+
+        .profile-group.collapsed .profile-group-body {
+            display: none;
+        }
+
+        .request-modal-grid {
+            margin-top: 18px;
+            display: grid;
+            gap: 12px;
+        }
+
+        .request-modal-card {
+            background: #f8fafc;
+            border: 1px solid #e4e7ec;
+            border-radius: 14px;
+            padding: 14px;
+        }
+
+        .request-modal-label {
+            display: block;
+            font-size: 12px;
+            color: #667085;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .request-modal-card .auth-field,
+        .request-modal-card .textarea {
+            margin-bottom: 0;
+        }
+
+        .request-reason-field {
+            min-height: 136px;
+        }
+
+        .request-modal-note {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #667085;
+            line-height: 1.6;
+        }
+
         .detail-row {
             display: flex;
             justify-content: space-between;
@@ -831,6 +979,20 @@
                 flex-direction: column;
                 align-items: stretch;
             }
+
+            .dashboard-shortcut,
+            .action-row {
+                flex-direction: column;
+            }
+
+            .profile-group-toggle {
+                align-items: flex-start;
+            }
+
+            .profile-group-right {
+                width: 100%;
+                justify-content: space-between;
+            }
         }
     </style>
 </head>
@@ -865,6 +1027,10 @@
 
     <div class="container">
         <section id="order-section">
+            <div id="dashboard-shortcut" class="dashboard-shortcut hidden">
+                <button class="btn-main" type="button" id="dashboard-shortcut-btn" onclick="openDashboard()">进入个人中心</button>
+                <button class="btn-outline" type="button" onclick="logout()">退出</button>
+            </div>
             <div class="section-row">
                 <div class="section-title">抢单大厅</div>
                 <button class="mini-btn" onclick="openOwnerEntry()">货主发货</button>
@@ -914,6 +1080,10 @@
         </section>
 
         <section id="user-profile" class="hidden">
+            <div class="section-row">
+                <div class="section-title">司机个人中心</div>
+                <button class="mini-btn" onclick="showSection('orders')">返回抢单大厅</button>
+            </div>
             <div class="stat-grid">
                 <div class="stat-card">
                     <span class="stat-val" id="total-income">$0.00</span>
@@ -925,23 +1095,63 @@
                 </div>
             </div>
 
-            <div class="section-row">
-                <div class="section-title" id="assigned-title">已指派待接收 (0)</div>
-                <button class="mini-btn" onclick="showSection('orders')">返回抢单大厅</button>
-            </div>
-            <div id="assigned-list"></div>
+            <div class="profile-stack">
+                <div class="profile-group collapsed" id="profile-group-assigned">
+                    <button class="profile-group-toggle" type="button" onclick="toggleProfilePanel('assigned')">
+                        <div class="profile-group-left">
+                            <div class="profile-group-name" id="assigned-title">已指派待接收</div>
+                            <div class="profile-group-meta">后台指派给你的单，先在这里确认是否接单。</div>
+                        </div>
+                        <div class="profile-group-right">
+                            <span class="profile-group-count" id="assigned-count">0</span>
+                            <span class="profile-group-arrow">⌄</span>
+                        </div>
+                    </button>
+                    <div class="profile-group-body" id="assigned-list"></div>
+                </div>
 
-            <div class="section-row">
-                <div class="section-title" id="ongoing-title">进行中的订单 (0)</div>
-                <button class="mini-btn" onclick="showSection('orders')">返回抢单大厅</button>
-            </div>
-            <div id="ongoing-list"></div>
+                <div class="profile-group collapsed" id="profile-group-requests">
+                    <button class="profile-group-toggle" type="button" onclick="toggleProfilePanel('requests')">
+                        <div class="profile-group-left">
+                            <div class="profile-group-name" id="request-title">申请调价单</div>
+                            <div class="profile-group-meta">已提交调价申请的单，等后台处理结果后再继续。</div>
+                        </div>
+                        <div class="profile-group-right">
+                            <span class="profile-group-count" id="request-count">0</span>
+                            <span class="profile-group-arrow">⌄</span>
+                        </div>
+                    </button>
+                    <div class="profile-group-body" id="request-list"></div>
+                </div>
 
-            <div class="section-row">
-                <div class="section-title">已完成订单</div>
-                <button class="mini-btn" onclick="showSection('orders')">返回抢单大厅</button>
+                <div class="profile-group collapsed" id="profile-group-ongoing">
+                    <button class="profile-group-toggle" type="button" onclick="toggleProfilePanel('ongoing')">
+                        <div class="profile-group-left">
+                            <div class="profile-group-name" id="ongoing-title">进行中的订单</div>
+                            <div class="profile-group-meta">提货、送达、回单这些动作都在这里继续处理。</div>
+                        </div>
+                        <div class="profile-group-right">
+                            <span class="profile-group-count" id="ongoing-count">0</span>
+                            <span class="profile-group-arrow">⌄</span>
+                        </div>
+                    </button>
+                    <div class="profile-group-body" id="ongoing-list"></div>
+                </div>
+
+                <div class="profile-group collapsed" id="profile-group-history">
+                    <button class="profile-group-toggle" type="button" onclick="toggleProfilePanel('history')">
+                        <div class="profile-group-left">
+                            <div class="profile-group-name" id="history-title">已完成订单</div>
+                            <div class="profile-group-meta">完成后的回单、时间和备注都会沉淀在这里。</div>
+                        </div>
+                        <div class="profile-group-right">
+                            <span class="profile-group-count" id="history-count">0</span>
+                            <span class="profile-group-arrow">⌄</span>
+                        </div>
+                    </button>
+                    <div class="profile-group-body" id="history-list"></div>
+                </div>
             </div>
-            <div id="history-list"></div>
         </section>
 
         <section id="owner-panel" class="hidden">
@@ -1108,6 +1318,12 @@
             loggedIn: false,
             userRole: "driver",
             authMode: "login",
+            profilePanels: {
+                assigned: false,
+                requests: false,
+                ongoing: false,
+                history: false
+            },
             driverProfile: {
                 account: "",
                 name: "",
@@ -1163,7 +1379,24 @@
         function getAdminOrderOp(order) {
             const runtime = loadAdminRuntime();
             const ops = runtime && typeof runtime.orderOps === "object" ? runtime.orderOps : {};
-            return ops[orderStorageKey(order)] || {};
+            const raw = ops[orderStorageKey(order)] || {};
+            return {
+                ...raw,
+                driverRequestedPrice: Number(raw.driverRequestedPrice || 0),
+                agreedDriverPrice: Number(raw.agreedDriverPrice || 0),
+                forceUnassigned: Boolean(raw.forceUnassigned),
+                driverQuoteStatus: raw.driverQuoteStatus || (Number(raw.driverRequestedPrice || 0) > 0 ? "pending" : "")
+            };
+        }
+
+        function hasPendingDriverAdjustment(order) {
+            const op = getAdminOrderOp(order);
+            return !op.forceUnassigned && op.driverRequestedPrice > 0 && op.driverQuoteStatus !== "approved" && op.driverQuoteStatus !== "rejected";
+        }
+
+        function effectiveDriverPrice(order) {
+            const op = getAdminOrderOp(order);
+            return op.agreedDriverPrice > 0 ? op.agreedDriverPrice : Number(order.price || 0);
         }
 
         function persistDriverAdjustmentRequest(order, requestedPrice, reason) {
@@ -1180,6 +1413,8 @@
                 driverRequestedPrice: Number(requestedPrice),
                 driverQuoteReason: reason,
                 driverQuoteRequestedAt: nowStamp(),
+                driverQuoteStatus: "pending",
+                forceUnassigned: false,
                 internalNotes: notes,
                 updatedAt: nowStamp()
             };
@@ -1341,6 +1576,7 @@
                         loggedIn: state.loggedIn,
                         userRole: state.userRole,
                         authMode: state.authMode,
+                        profilePanels: state.profilePanels,
                         driverProfile: state.driverProfile,
                         ownerProfile: state.ownerProfile,
                         activeOrder: state.activeOrder,
@@ -1365,7 +1601,8 @@
                 .map((order, index) => normalizeOrder(order, 5000 + index));
             const externalAvailable = (state.baseExternalOrders || [])
                 .filter(order => {
-                    const assignedAccount = normalizePhone(order.assignedDriverAccount || "");
+                    const adminOp = getAdminOrderOp(order);
+                    const assignedAccount = adminOp.forceUnassigned ? "" : normalizePhone(order.assignedDriverAccount || "");
                     if (assignedAccount) {
                         if (!state.loggedIn || state.userRole !== "driver") {
                             return false;
@@ -1396,6 +1633,12 @@
             state.loggedIn = Boolean(saved.loggedIn);
             state.userRole = saved.userRole === "owner" ? "owner" : "driver";
             state.authMode = saved.authMode === "reg" ? "reg" : "login";
+            state.profilePanels = {
+                assigned: Boolean(saved.profilePanels?.assigned),
+                requests: Boolean(saved.profilePanels?.requests),
+                ongoing: Boolean(saved.profilePanels?.ongoing),
+                history: Boolean(saved.profilePanels?.history)
+            };
             state.driverProfile = {
                 account: normalizePhone(saved.driverProfile?.account || loginSession?.account || ""),
                 name: saved.driverProfile?.name || loginSession?.name || "",
@@ -1888,7 +2131,7 @@
                                 ${order.cbm ? `<span class="spec-tag">${Number(order.cbm).toFixed(2)} CBM</span>` : ""}
                             </div>
                         </div>
-                        <span class="price">${formatCurrency(order.price)}</span>
+                        <span class="price">${formatCurrency(effectiveDriverPrice(order))}</span>
                     </div>
 
                     <div class="flow-bar">
@@ -1917,14 +2160,23 @@
             }
             return (state.availableOrders || [])
                 .filter(order => normalizePhone(order.assignedDriverAccount || "") === account)
+                .filter(order => !getAdminOrderOp(order).forceUnassigned)
+                .filter(order => !hasPendingDriverAdjustment(order))
+                .sort((left, right) => String(left.scheduledPickupTime || left.expectedPickupTime || "").localeCompare(String(right.scheduledPickupTime || right.expectedPickupTime || "")));
+        }
+
+        function getRequestedOrdersForCurrentDriver() {
+            const account = normalizePhone(currentDriverAccount());
+            if (!account) {
+                return [];
+            }
+            return (state.availableOrders || [])
+                .filter(order => normalizePhone(order.assignedDriverAccount || "") === account)
+                .filter(order => hasPendingDriverAdjustment(order))
                 .sort((left, right) => String(left.scheduledPickupTime || left.expectedPickupTime || "").localeCompare(String(right.scheduledPickupTime || right.expectedPickupTime || "")));
         }
 
         function renderAssignedOrderCard(order) {
-            const adminOp = getAdminOrderOp(order);
-            const adjustmentRequest = adminOp.driverRequestedPrice
-                ? `<div class="note-box" style="margin-top:12px;"><b>已申请调价：</b>${formatCurrency(adminOp.driverRequestedPrice)}${adminOp.driverQuoteReason ? `；原因：${adminOp.driverQuoteReason}` : ""}</div>`
-                : "";
             return `
                 <div class="card">
                     <div class="card-header">
@@ -1937,7 +2189,7 @@
                                 ${order.cbm ? `<span class="spec-tag">${Number(order.cbm).toFixed(2)} CBM</span>` : ""}
                             </div>
                         </div>
-                        <span class="price">${formatCurrency(order.price)}</span>
+                        <span class="price">${formatCurrency(effectiveDriverPrice(order))}</span>
                     </div>
 
                     ${renderPickupTimePanel(order, order.scheduledPickupTime || order.expectedPickupTime || order.time)}
@@ -1956,11 +2208,58 @@
                     </div>
 
                     ${renderOrderRemark(order)}
-                    ${adjustmentRequest}
 
                     <div class="action-row" style="margin-top:12px;">
                         <button class="btn-outline" onclick="openAssignedPriceModal(${order.id})">申请调价</button>
                         <button class="btn-main" onclick="tryAccept(${order.id})">接收指派订单</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderRequestedOrderCard(order) {
+            const adminOp = getAdminOrderOp(order);
+            return `
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            ${order.orderCode ? `<div class="${orderCodeClass(order)}">${orderCodeLabel(order)}</div>` : ""}
+                            <div class="highlight-specs">
+                                ${sourceChip(order)}
+                                <span class="spec-tag">${order.pallets} Plt</span>
+                                <span class="spec-tag">${order.weight}</span>
+                                ${order.cbm ? `<span class="spec-tag">${Number(order.cbm).toFixed(2)} CBM</span>` : ""}
+                            </div>
+                        </div>
+                        <span class="price">${formatCurrency(effectiveDriverPrice(order))}</span>
+                    </div>
+
+                    ${renderPickupTimePanel(order, order.scheduledPickupTime || order.expectedPickupTime || order.time)}
+
+                    ${renderMergedOrderInfo(order)}
+
+                    <div class="addr-box">
+                        <div class="addr">
+                            <span class="dot" style="background:var(--success)"></span>
+                            <span class="addr-text"><b>提:</b> ${pickupAddressText(order)}</span>
+                        </div>
+                        <div class="addr">
+                            <span class="dot" style="background:var(--accent)"></span>
+                            <span class="addr-text"><b>送:</b> ${dropoffAddressText(order)}</span>
+                        </div>
+                    </div>
+
+                    ${renderOrderRemark(order)}
+
+                    <div class="note-box">
+                        <b>申请状态：</b>等待后台处理<br>
+                        <b>期望运费：</b>${formatCurrency(adminOp.driverRequestedPrice)}<br>
+                        <b>申请原因：</b>${adminOp.driverQuoteReason || "--"}<br>
+                        <b>申请时间：</b>${adminOp.driverQuoteRequestedAt || "--"}
+                    </div>
+
+                    <div class="action-row" style="margin-top:12px;">
+                        <button class="btn-outline" onclick="openAssignedPriceModal(${order.id})">修改申请</button>
                     </div>
                 </div>
             `;
@@ -2086,7 +2385,7 @@
                                 ${sourceChip(order)}
                             </div>
                         </div>
-                        <span class="status-chip status-completed">已完成 ${formatCurrency(order.price)}</span>
+                        <span class="status-chip status-completed">已完成 ${formatCurrency(effectiveDriverPrice(order))}</span>
                     </div>
                     <div class="history-line">计划提货时间: ${plannedPickupTime}</div>
                     <div class="history-line">实际提货时间: ${order.actualPickupTime || "待更新"}</div>
@@ -2451,15 +2750,22 @@
                 <div class="detail-row"><span>订单号</span><span>${orderCodeLabel(order) || order.orderCode}</span></div>
                 ${order.isMergedOrder ? `<div class="detail-row"><span>合并派送</span><span>${order.mergeLabel || `共${order.mergedOrderCount}票`}</span></div>` : ""}
                 ${order.isMergedOrder ? `<div class="detail-row"><span>子单号</span><span>${(order.mergedOrderCodes || []).join("、")}</span></div>` : ""}
-                <div class="detail-row"><span>当前运费</span><span style="color:var(--accent); font-weight:800;">${formatCurrency(order.price)}</span></div>
+                <div class="detail-row"><span>当前运费</span><span style="color:var(--accent); font-weight:800;">${formatCurrency(effectiveDriverPrice(order))}</span></div>
                 <div class="detail-row"><span>计划提货时间</span><span>${plannedPickupTime}</span></div>
                 <div class="detail-row"><span>提货地址</span><span>${pickupAddressText(order)}</span></div>
                 <div class="detail-row"><span>送货地址</span><span>${dropoffAddressText(order)}</span></div>
                 <div class="detail-row"><span>货物规格</span><span>${order.pallets} Pallets / ${order.weight}${order.cbm ? ` / ${Number(order.cbm).toFixed(2)} CBM` : ""}</span></div>
                 ${adminOp.driverQuoteRequestedAt ? `<div class="detail-row"><span>上次申请</span><span>${adminOp.driverQuoteRequestedAt}</span></div>` : ""}
-                <div style="margin-top:16px;">
-                    <input id="driver-request-price" class="auth-field" type="number" min="0" step="0.01" placeholder="请输入期望运费 (AUD)" value="${adminOp.driverRequestedPrice || ''}">
-                    <textarea id="driver-request-reason" class="textarea" placeholder="请写明调价原因，例如距离远、重量大、需预约、送仓排队等">${adminOp.driverQuoteReason || ""}</textarea>
+                <div class="request-modal-grid">
+                    <div class="request-modal-card">
+                        <span class="request-modal-label">期望运费 (AUD)</span>
+                        <input id="driver-request-price" class="auth-field" type="number" min="0" step="0.01" placeholder="请输入期望运费 (AUD)" value="${adminOp.driverRequestedPrice || ''}">
+                    </div>
+                    <div class="request-modal-card">
+                        <span class="request-modal-label">调价原因</span>
+                        <textarea id="driver-request-reason" class="textarea request-reason-field" placeholder="请写明调价原因，例如距离远、重量大、需预约、送仓排队、限时提货等">${adminOp.driverQuoteReason || ""}</textarea>
+                        <div class="request-modal-note">把距离、重量、预约或时效要求写清楚，后台会更快处理。</div>
+                    </div>
                 </div>
                 <div class="action-row" style="margin-top:14px;">
                     <button class="btn-outline" onclick="closeDetail()">取消</button>
@@ -2485,6 +2791,8 @@
                 return;
             }
             persistDriverAdjustmentRequest(order, requestedPrice, reason);
+            state.profilePanels.requests = true;
+            state.profilePanels.assigned = false;
             renderProfile();
             closeDetail();
             alert("调价申请已记录。");
@@ -2602,15 +2910,24 @@
 
         function renderProfile() {
             const assignedList = document.getElementById("assigned-list");
+            const requestList = document.getElementById("request-list");
             const ongoingList = document.getElementById("ongoing-list");
             const historyList = document.getElementById("history-list");
             const completedIncome = state.completedOrders.reduce((sum, order) => sum + Number(order.price), 0);
             const assignedOrders = getAssignedOrdersForCurrentDriver();
+            const requestOrders = getRequestedOrdersForCurrentDriver();
+            const ongoingCount = state.activeOrder ? 1 : 0;
 
             document.getElementById("completed-count").textContent = String(state.completedOrders.length);
             document.getElementById("total-income").textContent = formatCurrency(completedIncome);
-            document.getElementById("assigned-title").textContent = `已指派待接收 (${assignedOrders.length})`;
-            document.getElementById("ongoing-title").textContent = `进行中的订单 (${state.activeOrder ? 1 : 0})`;
+            document.getElementById("assigned-title").textContent = "已指派待接收";
+            document.getElementById("request-title").textContent = "申请调价单";
+            document.getElementById("ongoing-title").textContent = "进行中的订单";
+            document.getElementById("history-title").textContent = "已完成订单";
+            document.getElementById("assigned-count").textContent = String(assignedOrders.length);
+            document.getElementById("request-count").textContent = String(requestOrders.length);
+            document.getElementById("ongoing-count").textContent = String(ongoingCount);
+            document.getElementById("history-count").textContent = String(state.completedOrders.length);
 
             assignedList.innerHTML = assignedOrders.length
                 ? assignedOrders.map(renderAssignedOrderCard).join("")
@@ -2618,6 +2935,15 @@
                     <div class="card empty-card">
                         <div style="font-size:16px; font-weight:800; color:#344054; margin-bottom:6px;">当前没有待接收的指派订单</div>
                         <div>如果后台已经给你指派订单，它会优先显示在这里。</div>
+                    </div>
+                `;
+
+            requestList.innerHTML = requestOrders.length
+                ? requestOrders.map(renderRequestedOrderCard).join("")
+                : `
+                    <div class="card empty-card">
+                        <div style="font-size:16px; font-weight:800; color:#344054; margin-bottom:6px;">当前没有申请中的调价单</div>
+                        <div>司机发起调价申请后，会在这里集中等待后台审核。</div>
                     </div>
                 `;
 
@@ -2638,6 +2964,8 @@
                         <div>上传送达图片并签字后，这里会自动新增记录。</div>
                     </div>
                 `;
+
+            syncProfilePanels();
         }
 
         function getSelectedAuthRole() {
@@ -2647,7 +2975,36 @@
         function updateNavigation() {
             document.getElementById("guest-nav").classList.toggle("hidden", state.loggedIn);
             document.getElementById("user-nav").classList.toggle("hidden", !state.loggedIn);
-            document.getElementById("dashboard-link").textContent = state.userRole === "owner" ? "货主后台" : "个人中心";
+            const dashboardText = state.userRole === "owner" ? "货主后台" : "个人中心";
+            document.getElementById("dashboard-link").textContent = dashboardText;
+            const shortcut = document.getElementById("dashboard-shortcut");
+            const shortcutButton = document.getElementById("dashboard-shortcut-btn");
+            if (shortcut && shortcutButton) {
+                shortcut.classList.toggle("hidden", !state.loggedIn);
+                shortcutButton.textContent = state.userRole === "owner" ? "进入货主后台" : "进入个人中心";
+            }
+        }
+
+        function syncProfilePanels() {
+            [
+                ["assigned", "profile-group-assigned"],
+                ["requests", "profile-group-requests"],
+                ["ongoing", "profile-group-ongoing"],
+                ["history", "profile-group-history"]
+            ].forEach(([panel, elementId]) => {
+                const element = document.getElementById(elementId);
+                if (!element) {
+                    return;
+                }
+                element.classList.toggle("expanded", Boolean(state.profilePanels[panel]));
+                element.classList.toggle("collapsed", !state.profilePanels[panel]);
+            });
+        }
+
+        function toggleProfilePanel(panel) {
+            state.profilePanels[panel] = !state.profilePanels[panel];
+            syncProfilePanels();
+            saveAppState();
         }
 
         function openDashboard() {
@@ -2844,6 +3201,7 @@
             state.activeOrder = normalizeOrder(
                 {
                     ...order,
+                    price: effectiveDriverPrice(order),
                     ownerLifecycleStatus: order.sourceType === "owner_portal" ? "grabbed" : order.ownerLifecycleStatus,
                     status: "waiting_pickup",
                     scheduledPickupTime: order.time,
@@ -3006,7 +3364,7 @@
                 ${order.isMergedOrder ? `<div class="detail-row"><span>合并派送</span><span>${order.mergeLabel || `共${order.mergedOrderCount}票`}</span></div>` : ""}
                 ${order.isMergedOrder ? `<div class="detail-row"><span>子单号</span><span>${(order.mergedOrderCodes || []).join("、")}</span></div>` : ""}
                 ${isOwnerOrder ? `<div class="detail-row"><span>货主状态</span><span>${ownerStatus.label}</span></div>` : ""}
-                <div class="detail-row"><span>${priceLabel}</span><span style="color:var(--accent); font-weight:800;">${formatCurrency(order.price)}</span></div>
+                <div class="detail-row"><span>${priceLabel}</span><span style="color:var(--accent); font-weight:800;">${isOwnerOrder ? formatCurrency(order.ownerQuotedPrice || order.price) : formatCurrency(effectiveDriverPrice(order))}</span></div>
                 ${isOwnerOrder ? `<div class="detail-row"><span>系统参考价</span><span>${formatCurrency(order.systemEstimatedPrice || 0)}</span></div>` : ""}
                 ${isOwnerOrder && (order.ownerName || order.ownerPhone) ? `<div class="detail-row"><span>货主信息</span><span>${[order.ownerName, order.ownerPhone].filter(Boolean).join(" / ")}</span></div>` : ""}
                 <div class="detail-row"><span>计划提货时间</span><span>${plannedPickupTime}</span></div>
@@ -3041,6 +3399,29 @@
             }
         });
 
+        window.addEventListener("storage", event => {
+            if (![APP_STORAGE_KEY, ADMIN_STORAGE_KEY, LOGIN_SESSION_KEY].includes(event.key)) {
+                return;
+            }
+            const currentSection = document.getElementById("user-profile").classList.contains("hidden")
+                ? (document.getElementById("owner-panel").classList.contains("hidden")
+                    ? (document.getElementById("auth-section").classList.contains("hidden") ? "orders" : "auth")
+                    : "owner")
+                : "profile";
+            hydrateAppState();
+            updateNavigation();
+            renderOrders();
+            renderProfile();
+            renderOwnerPanel();
+            if (state.loggedIn) {
+                if (currentSection === "profile" || currentSection === "owner") {
+                    showSection(state.userRole === "owner" ? "owner" : "profile");
+                }
+            } else {
+                showSection(currentSection === "auth" ? "auth" : "orders");
+            }
+        });
+
         window.onload = () => {
             hydrateAppState();
             updateNavigation();
@@ -3064,6 +3445,8 @@
                 showSection("orders");
             }
         };
+
+        window.toggleProfilePanel = toggleProfilePanel;
     </script>
 </body>
 </html>
