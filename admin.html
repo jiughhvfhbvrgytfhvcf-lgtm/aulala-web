@@ -1127,6 +1127,34 @@
             throw lastError || new Error("push remote admin runtime failed");
         }
 
+        async function upsertRemoteOrderOp(orderKey, partial) {
+            let lastError = null;
+            for (const base of DRIVER_API_BASES) {
+                try {
+                    const response = await fetch(`${base}/api/aulala/order-op/upsert`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            orderKey,
+                            partial
+                        })
+                    });
+                    const payload = await response.json().catch(() => ({}));
+                    if (!response.ok || payload?.ok === false) {
+                        const error = new Error(payload?.error?.message || `request failed: ${response.status}`);
+                        error.code = payload?.error?.code || `HTTP_${response.status}`;
+                        throw error;
+                    }
+                    return normalizeRemoteAdminRuntime(payload.runtime || {});
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+            throw lastError || new Error("upsert remote order op failed");
+        }
+
         function mergeRegisteredDrivers(drivers, registeredAccounts) {
             const nextDrivers = Array.isArray(drivers) ? drivers.slice() : [];
             registeredAccounts.forEach(account => {
@@ -1203,6 +1231,56 @@
                 updatedAt: remoteRuntime?.updatedAt || state.adminData.updatedAt || ""
             };
             saveAdminData();
+        }
+
+        async function backfillAssignedOrdersToCloud() {
+            const missingOrders = (state.orders || []).filter(order => {
+                const feedAssignedAccount = normalizePhone(order.assignedDriverAccount || "");
+                if (!feedAssignedAccount) {
+                    return false;
+                }
+                const op = state.adminData.orderOps[order.key] || {};
+                if (op.forceUnassigned) {
+                    return false;
+                }
+                return !normalizePhone(op.assignedDriverAccount || "")
+                    && !String(op.assignedDriverId || "").trim()
+                    && !String(op.assignedDriverName || "").trim()
+                    && !String(op.flowStatus || "").trim();
+            });
+            if (!missingOrders.length) {
+                return false;
+            }
+
+            let remoteRuntime = null;
+            for (const order of missingOrders) {
+                const driver = state.adminData.drivers.find(item => normalizePhone(item.phone) === normalizePhone(order.assignedDriverAccount || ""));
+                remoteRuntime = await upsertRemoteOrderOp(order.key, {
+                    assignedDriverId: driver ? driver.id : "",
+                    assignedDriverAccount: normalizePhone(order.assignedDriverAccount || ""),
+                    assignedDriverName: order.assignedDriverName || (driver ? driver.name : ""),
+                    flowStatus: "assigned",
+                    internalStatus: "已指派",
+                    forceUnassigned: false,
+                    driverPayable: roundMoney(state.adminData.orderOps[order.key]?.driverPayable ?? defaultDriverPayable(order, driver ? driver.id : ""))
+                });
+            }
+
+            if (!remoteRuntime) {
+                return false;
+            }
+
+            applyRemoteAdminRuntime(remoteRuntime);
+            state.runtimeData = loadRuntimeData();
+            state.orders = buildOrderRecords().map(order => ({
+                ...order,
+                op: {
+                    ...order.op,
+                    internalStatus: order.op.internalStatus || defaultInternalStatus(order)
+                }
+            }));
+            renderAllPanels();
+            return true;
         }
 
         function loadRuntimeData() {
@@ -1537,7 +1615,7 @@
             state.adminData.orderOps[orderKeyValue] = next;
             saveAdminData();
             try {
-                const remoteRuntime = await pushRemoteAdminRuntime(state.adminData);
+                const remoteRuntime = await upsertRemoteOrderOp(orderKeyValue, next);
                 applyRemoteAdminRuntime(remoteRuntime);
                 refreshData();
             } catch (error) {
@@ -2210,6 +2288,9 @@
                         }));
                         renderAllPanels();
                     }
+                    backfillAssignedOrdersToCloud().catch(error => {
+                        console.warn("backfill assigned orders to cloud failed", error);
+                    });
                     if (driversResult.status === "rejected") {
                         console.warn("fetch remote drivers failed", driversResult.reason);
                     }
