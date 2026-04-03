@@ -49,10 +49,20 @@
     </div>
 
     <script>
-        const TEST_DRIVER_ACCOUNT = "13888888888";
-        const TEST_DRIVER_PASSWORD = "123456";
-        const KEVIN_DRIVER_ACCOUNT = "0450440830";
-        const KEVIN_DRIVER_PASSWORD = "Aulala123";
+    const TEST_DRIVER_ACCOUNT = "13888888888";
+    const TEST_DRIVER_PASSWORD = "123456";
+    const KEVIN_DRIVER_ACCOUNT = "0450440830";
+    const KEVIN_DRIVER_PASSWORD = "Aulala123";
+    const APP_SHELL_VERSION = "202604031630";
+
+    function buildAppUrl(view) {
+        const params = new URLSearchParams();
+        params.set("v", APP_SHELL_VERSION);
+        if (view) {
+            params.set("view", view);
+        }
+        return `app.html?${params.toString()}`;
+    }
         const APP_STORAGE_KEY = "aulala_app_runtime_v1";
         const ADMIN_STORAGE_KEY = "aulala_admin_runtime_v1";
         const DRIVER_ACCOUNTS_KEY = "aulala_driver_accounts_v1";
@@ -320,7 +330,7 @@
                 }
                 if (phone === TEST_DRIVER_ACCOUNT && password === TEST_DRIVER_PASSWORD) {
                     bootstrapDriverSession(phone, { name: "测试司机", vehicleType: "Van" });
-                    window.location.href = "app.html?view=center";
+                    window.location.href = buildAppUrl("center");
                     return;
                 }
                 if (phone === KEVIN_DRIVER_ACCOUNT && password === KEVIN_DRIVER_PASSWORD) {
@@ -355,7 +365,7 @@
                     saveRegisteredDrivers(drivers);
                     syncDriverToAdmin(nextLocalDriver);
                     bootstrapDriverSession(phone, nextLocalDriver);
-                    window.location.href = "app.html?view=center";
+                    window.location.href = buildAppUrl("center");
                     return;
                 }
 
@@ -382,7 +392,7 @@
                     saveRegisteredDrivers(drivers);
                     syncDriverToAdmin(nextLocalDriver);
                     bootstrapDriverSession(phone, driver);
-                    window.location.href = "app.html?view=center";
+                    window.location.href = buildAppUrl("center");
                     return;
                 } catch (error) {
                     if (!["DRIVER_NOT_FOUND", "INVALID_DRIVER_PASSWORD", "HTTP_404", "HTTP_401"].includes(error.code || "")) {
@@ -402,7 +412,7 @@
                     return;
                 }
                 bootstrapDriverSession(phone, account);
-                window.location.href = "app.html?view=center";
+                window.location.href = buildAppUrl("center");
             } catch (error) {
                 console.error("driver login failed", error);
                 showStatus("登录失败，请刷新页面后重试。");
@@ -483,7 +493,7 @@
                 showStatus("注册成功，正在进入司机后台。", "success");
                 bootstrapDriverSession(phone, newAccount);
                 setTimeout(() => {
-                    window.location.href = "app.html?view=center";
+                    window.location.href = buildAppUrl("center");
                 }, 250);
             } catch (error) {
                 console.error("driver register failed", error);
