@@ -2217,6 +2217,59 @@
             syncDriverCollectionsFromOrderOps();
         }
 
+        async function migrateLocalDriverLifecycleToCloud() {
+            if (!state.loggedIn || state.userRole !== "driver" || !currentDriverAccount()) {
+                return;
+            }
+
+            const migrationOrders = [];
+            if (state.activeOrder) {
+                migrationOrders.push({
+                    order: state.activeOrder,
+                    partial: {
+                        flowStatus: "in_progress",
+                        runtimeStatus: state.activeOrder.status || "waiting_pickup",
+                        internalStatus:
+                            state.activeOrder.status === "picked_up"
+                                ? "已提货"
+                                : state.activeOrder.status === "in_transit"
+                                    ? "派送途中"
+                                    : "等待提货",
+                        driverAcceptedAt: state.activeOrder.driverAcceptedAt || "",
+                        actualPickupTime: state.activeOrder.actualPickupTime || "",
+                        deliveredAt: state.activeOrder.deliveredAt || "",
+                        forceUnassigned: false
+                    }
+                });
+            }
+
+            (state.completedOrders || []).forEach(order => {
+                migrationOrders.push({
+                    order,
+                    partial: {
+                        flowStatus: "completed",
+                        runtimeStatus: "completed",
+                        internalStatus: "已完成",
+                        driverAcceptedAt: order.driverAcceptedAt || "",
+                        actualPickupTime: order.actualPickupTime || "",
+                        deliveredAt: order.deliveredAt || "",
+                        forceUnassigned: false
+                    }
+                });
+            });
+
+            for (const item of migrationOrders) {
+                const current = getAdminOrderOp(item.order);
+                const alreadySynced = item.partial.flowStatus === "completed"
+                    ? current.flowStatus === "completed"
+                    : current.flowStatus === "in_progress";
+                if (alreadySynced) {
+                    continue;
+                }
+                await persistDriverLifecycle(item.order, item.partial);
+            }
+        }
+
         async function persistDriverAdjustmentRequest(order, requestedPrice, reason) {
             const runtime = normalizeAdminRuntimePayload(loadAdminRuntime());
             const orderOps = runtime.orderOps || {};
@@ -4735,9 +4788,11 @@
             } else {
                 showSection("orders");
             }
-            syncAdminRuntimeFromRemote().catch(error => {
-                console.warn("sync admin runtime from remote failed", error);
-            });
+            syncAdminRuntimeFromRemote()
+                .then(() => migrateLocalDriverLifecycleToCloud())
+                .catch(error => {
+                    console.warn("sync admin runtime from remote failed", error);
+                });
         };
 
         window.toggleProfilePanel = toggleProfilePanel;
