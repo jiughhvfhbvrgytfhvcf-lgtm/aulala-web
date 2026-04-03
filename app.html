@@ -1025,6 +1025,7 @@
 
         .profile-group-left {
             min-width: 0;
+            flex: 1 1 auto;
         }
 
         .profile-group-name {
@@ -1162,6 +1163,47 @@
         }
 
         @media (max-width: 540px) {
+            body {
+                background:
+                    linear-gradient(180deg, #edf3fb 0%, #f4f7f9 160px, #f4f7f9 100%);
+            }
+
+            header {
+                padding: 12px 14px;
+            }
+
+            .logo {
+                font-size: 17px;
+            }
+
+            #guest-nav,
+            #user-nav {
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+
+            .filter-inner {
+                padding: 10px;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+
+            #date-filter,
+            #state-filter {
+                flex: 1 1 calc(50% - 3px);
+            }
+
+            #suburb-input {
+                flex: 1 1 100%;
+            }
+
+            .container {
+                padding: 10px 10px 18px;
+            }
+
             .time-box,
             .card-header,
             .detail-row {
@@ -1174,8 +1216,53 @@
                 text-align: left;
             }
 
+            .section-row {
+                flex-wrap: wrap;
+                align-items: flex-start;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+
+            .section-row .mini-btn {
+                margin-left: auto;
+            }
+
             .stat-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+            }
+
+            .stat-card {
+                padding: 14px 12px;
+                border-radius: 18px;
+            }
+
+            .stat-val {
+                font-size: 20px;
+            }
+
+            .stat-label {
+                display: block;
+                margin-top: 4px;
+                line-height: 1.5;
+            }
+
+            .card {
+                padding: 14px;
+                border-radius: 18px;
+            }
+
+            .price {
+                font-size: 20px;
+            }
+
+            .highlight-specs {
+                gap: 6px;
+            }
+
+            .spec-tag {
+                font-size: 12px;
+                padding: 4px 9px;
             }
 
             .upload-card {
@@ -1201,12 +1288,66 @@
             }
 
             .profile-group-toggle {
-                align-items: flex-start;
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                align-items: start;
+                gap: 8px 12px;
+                padding: 14px 14px 13px;
+            }
+
+            .profile-stack {
+                gap: 10px;
+            }
+
+            .profile-group {
+                border-radius: 20px;
+                box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+            }
+
+            .profile-group-left {
+                width: 100%;
+            }
+
+            .profile-group-name {
+                font-size: 15px;
+                line-height: 1.28;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .profile-group-meta {
+                margin-top: 6px;
+                font-size: 12px;
+                line-height: 1.55;
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 2;
+                overflow: hidden;
             }
 
             .profile-group-right {
-                width: 100%;
-                justify-content: space-between;
+                width: auto;
+                justify-content: flex-end;
+                align-self: start;
+                gap: 8px;
+            }
+
+            .profile-group-count {
+                min-width: 38px;
+                padding: 6px 10px;
+            }
+
+            .profile-group-arrow {
+                font-size: 16px;
+            }
+
+            .profile-group-body {
+                padding: 0 12px 12px;
+            }
+
+            .empty-card {
+                padding: 22px 14px;
             }
 
             .profile-summary-head,
@@ -1215,6 +1356,43 @@
             .modal-action-row {
                 flex-direction: column;
                 align-items: stretch;
+            }
+
+            .addr {
+                flex-wrap: wrap;
+            }
+
+            .addr-trailing {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .history-line {
+                line-height: 1.6;
+            }
+        }
+
+        @media (max-width: 390px) {
+            .nav-btns a,
+            .nav-btns button {
+                font-size: 11px;
+                padding: 5px 9px;
+            }
+
+            .section-title {
+                font-size: 14px;
+            }
+
+            .profile-group-name {
+                font-size: 14px;
+            }
+
+            .profile-group-meta {
+                font-size: 11px;
+            }
+
+            .spec-tag {
+                font-size: 11px;
             }
         }
     </style>
