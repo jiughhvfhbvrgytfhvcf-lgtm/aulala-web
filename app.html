@@ -548,6 +548,27 @@
             margin-top: 0;
         }
 
+        .action-row.compact-actions {
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .action-row.compact-actions .btn-main,
+        .action-row.compact-actions .btn-outline {
+            flex: 1 1 0;
+            min-height: 42px;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-weight: 800;
+            border-radius: 14px;
+            box-shadow: none;
+        }
+
+        .action-row.compact-actions .btn-outline {
+            background: #f8fbff;
+            border-color: #c7d7fe;
+        }
+
         .quote-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1287,6 +1308,20 @@
                 flex-direction: column;
             }
 
+            .action-row.compact-actions {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+            }
+
+            .action-row.compact-actions .btn-main,
+            .action-row.compact-actions .btn-outline {
+                width: 100%;
+                min-height: 40px;
+                font-size: 13px;
+                padding: 10px 12px;
+            }
+
             .profile-group-toggle {
                 display: grid;
                 grid-template-columns: minmax(0, 1fr) auto;
@@ -1940,6 +1975,13 @@
                 }
                 orderOps[normalizedKey] = {
                     ...raw,
+                    assignedDriverAccount: normalizePhone(raw.assignedDriverAccount || ""),
+                    assignedDriverName: String(raw.assignedDriverName || "").trim(),
+                    flowStatus: String(raw.flowStatus || "").trim(),
+                    runtimeStatus: String(raw.runtimeStatus || "").trim(),
+                    driverAcceptedAt: String(raw.driverAcceptedAt || "").trim(),
+                    actualPickupTime: String(raw.actualPickupTime || "").trim(),
+                    deliveredAt: String(raw.deliveredAt || "").trim(),
                     driverRequestedPrice: Number(raw.driverRequestedPrice || 0),
                     agreedDriverPrice: Number(raw.agreedDriverPrice || 0),
                     forceUnassigned: Boolean(raw.forceUnassigned),
@@ -1989,6 +2031,7 @@
                 updatedAt: remoteRuntime.updatedAt || localRuntime.updatedAt || ""
             };
             saveAdminRuntime(nextRuntime);
+            syncDriverCollectionsFromOrderOps();
             if (rerender) {
                 rebuildAvailableOrders();
                 renderOrders();
@@ -2004,6 +2047,13 @@
             const raw = ops[orderStorageKey(order)] || {};
             return {
                 ...raw,
+                assignedDriverAccount: normalizePhone(raw.assignedDriverAccount || ""),
+                assignedDriverName: String(raw.assignedDriverName || "").trim(),
+                flowStatus: String(raw.flowStatus || "").trim(),
+                runtimeStatus: String(raw.runtimeStatus || "").trim(),
+                driverAcceptedAt: String(raw.driverAcceptedAt || "").trim(),
+                actualPickupTime: String(raw.actualPickupTime || "").trim(),
+                deliveredAt: String(raw.deliveredAt || "").trim(),
                 driverRequestedPrice: Number(raw.driverRequestedPrice || 0),
                 agreedDriverPrice: Number(raw.agreedDriverPrice || 0),
                 forceUnassigned: Boolean(raw.forceUnassigned),
@@ -2021,6 +2071,152 @@
             return op.agreedDriverPrice > 0 ? op.agreedDriverPrice : Number(order.price || 0);
         }
 
+        function assignedDriverAccountFor(order, op = getAdminOrderOp(order)) {
+            return normalizePhone(op.assignedDriverAccount || order.assignedDriverAccount || "");
+        }
+
+        function assignedDriverNameFor(order, op = getAdminOrderOp(order)) {
+            return String(op.assignedDriverName || order.assignedDriverName || "").trim();
+        }
+
+        function driverFlowStatus(order, op = getAdminOrderOp(order)) {
+            if (op.forceUnassigned) {
+                return "pending";
+            }
+            if (op.flowStatus) {
+                return op.flowStatus;
+            }
+            if (order.status === "completed" || order.ownerLifecycleStatus === "completed") {
+                return "completed";
+            }
+            if (order.status && order.status !== "assigned" && order.status !== "pending") {
+                return "in_progress";
+            }
+            if (assignedDriverAccountFor(order, op) || op.assignedDriverId) {
+                return "assigned";
+            }
+            if (order.ownerLifecycleStatus === "grabbed") {
+                return "in_progress";
+            }
+            return "pending";
+        }
+
+        function orderBelongsToCurrentDriver(order, op = getAdminOrderOp(order)) {
+            const currentAccount = currentDriverAccount();
+            const currentDriverId = String(state.driverProfile.id || "").trim();
+            const assignedAccount = assignedDriverAccountFor(order, op);
+            if (assignedAccount && currentAccount && assignedAccount === currentAccount) {
+                return true;
+            }
+            if (currentDriverId && op.assignedDriverId && op.assignedDriverId === currentDriverId) {
+                return true;
+            }
+            return false;
+        }
+
+        function applyOrderOpSnapshot(order, op = getAdminOrderOp(order)) {
+            return normalizeOrder(
+                {
+                    ...order,
+                    assignedDriverAccount: assignedDriverAccountFor(order, op),
+                    assignedDriverName: assignedDriverNameFor(order, op),
+                    driverAcceptedAt: op.driverAcceptedAt || order.driverAcceptedAt || "",
+                    actualPickupTime: op.actualPickupTime || order.actualPickupTime || "",
+                    deliveredAt: op.deliveredAt || order.deliveredAt || "",
+                    status: op.runtimeStatus || order.status || "",
+                    price: effectiveDriverPrice(order)
+                },
+                order.id
+            );
+        }
+
+        function availableDriverCatalog() {
+            const catalog = new Map();
+            const append = order => {
+                if (!order || !order.orderCode) {
+                    return;
+                }
+                const key = orderStorageKey(order);
+                if (!catalog.has(key)) {
+                    catalog.set(key, normalizeOrder(order, order.id || catalog.size + 1));
+                }
+            };
+
+            (state.baseExternalOrders || []).forEach(append);
+            (state.ownerOrders || []).forEach(append);
+            if (state.activeOrder) {
+                append(state.activeOrder);
+            }
+            (state.completedOrders || []).forEach(append);
+            Object.values(state.driverOrderBuckets || {}).forEach(bucket => {
+                if (!bucket) {
+                    return;
+                }
+                append(bucket.activeOrder);
+                (bucket.completedOrders || []).forEach(append);
+            });
+            return Array.from(catalog.values());
+        }
+
+        function syncDriverCollectionsFromOrderOps() {
+            if (state.userRole !== "driver") {
+                return;
+            }
+            const remoteActive = [];
+            const remoteCompleted = [];
+            availableDriverCatalog().forEach(order => {
+                const op = getAdminOrderOp(order);
+                if (!orderBelongsToCurrentDriver(order, op)) {
+                    return;
+                }
+                const snapshot = applyOrderOpSnapshot(order, op);
+                const flowStatus = driverFlowStatus(order, op);
+                if (flowStatus === "completed") {
+                    remoteCompleted.push(snapshot);
+                    return;
+                }
+                if (flowStatus === "in_progress") {
+                    remoteActive.push(snapshot);
+                }
+            });
+
+            if (!remoteActive.length && !remoteCompleted.length) {
+                return;
+            }
+
+            remoteActive.sort((left, right) => String(right.driverAcceptedAt || "").localeCompare(String(left.driverAcceptedAt || "")));
+            remoteCompleted.sort((left, right) => String(right.deliveredAt || right.driverAcceptedAt || "").localeCompare(String(left.deliveredAt || left.driverAcceptedAt || "")));
+            state.activeOrder = remoteActive[0] || null;
+            state.completedOrders = remoteCompleted;
+            persistCurrentDriverBucket();
+        }
+
+        async function persistDriverLifecycle(order, partial = {}) {
+            const key = orderStorageKey(order);
+            const current = getAdminOrderOp(order);
+            const nextOp = {
+                ...current,
+                assignedDriverId: partial.assignedDriverId ?? current.assignedDriverId ?? String(state.driverProfile.id || "").trim(),
+                assignedDriverAccount: normalizePhone(partial.assignedDriverAccount ?? current.assignedDriverAccount ?? currentDriverAccount()),
+                assignedDriverName: String(partial.assignedDriverName ?? current.assignedDriverName ?? currentDriverName()).trim(),
+                flowStatus: String(partial.flowStatus ?? current.flowStatus ?? "").trim(),
+                runtimeStatus: String(partial.runtimeStatus ?? current.runtimeStatus ?? "").trim(),
+                driverAcceptedAt: String(partial.driverAcceptedAt ?? current.driverAcceptedAt ?? "").trim(),
+                actualPickupTime: String(partial.actualPickupTime ?? current.actualPickupTime ?? "").trim(),
+                deliveredAt: String(partial.deliveredAt ?? current.deliveredAt ?? "").trim(),
+                ...partial,
+                updatedAt: nowStamp()
+            };
+            const remoteRuntime = await upsertRemoteOrderOp(key, nextOp);
+            const localRuntime = normalizeAdminRuntimePayload(loadAdminRuntime());
+            saveAdminRuntime({
+                ...localRuntime,
+                orderOps: remoteRuntime.orderOps,
+                updatedAt: remoteRuntime.updatedAt || nowStamp()
+            });
+            syncDriverCollectionsFromOrderOps();
+        }
+
         async function persistDriverAdjustmentRequest(order, requestedPrice, reason) {
             const runtime = normalizeAdminRuntimePayload(loadAdminRuntime());
             const orderOps = runtime.orderOps || {};
@@ -2031,6 +2227,9 @@
             const notes = [String(current.internalNotes || "").trim(), noteLine].filter(Boolean).join("\n");
             const nextOp = {
                 ...current,
+                assignedDriverId: current.assignedDriverId || String(state.driverProfile.id || "").trim(),
+                assignedDriverAccount: assignedDriverAccountFor(order, current) || currentDriverAccount(),
+                assignedDriverName: assignedDriverNameFor(order, current) || currentDriverName(),
                 internalStatus: "司机申请调价",
                 driverRequestedPrice: Number(requestedPrice),
                 driverQuoteReason: reason,
@@ -2078,7 +2277,7 @@
                 if (!code || !op || typeof op !== "object") {
                     return;
                 }
-                if (op.assignedDriverId || /已完成/.test(String(op.internalStatus || ""))) {
+                if (["assigned", "in_progress", "completed"].includes(String(op.flowStatus || "")) || op.assignedDriverId || /已完成/.test(String(op.internalStatus || ""))) {
                     blockedCodes.add(code);
                 }
             });
@@ -2174,6 +2373,7 @@
             state.completedOrders = Array.isArray(bucket.completedOrders)
                 ? bucket.completedOrders.map((order, index) => normalizeOrder(order, 7000 + index))
                 : [];
+            syncDriverCollectionsFromOrderOps();
         }
 
         function persistCurrentDriverBucket() {
@@ -2227,12 +2427,16 @@
             const externalAvailable = (state.baseExternalOrders || [])
                 .filter(order => {
                     const adminOp = getAdminOrderOp(order);
-                    const assignedAccount = adminOp.forceUnassigned ? "" : normalizePhone(order.assignedDriverAccount || "");
-                    if (assignedAccount) {
+                    const assignedAccount = adminOp.forceUnassigned ? "" : assignedDriverAccountFor(order, adminOp);
+                    const flowStatus = driverFlowStatus(order, adminOp);
+                    if (flowStatus === "completed" || flowStatus === "in_progress") {
+                        return false;
+                    }
+                    if (assignedAccount || adminOp.assignedDriverId) {
                         if (!state.loggedIn || state.userRole !== "driver") {
                             return false;
                         }
-                        if (assignedAccount !== currentAccount) {
+                        if (!orderBelongsToCurrentDriver(order, adminOp)) {
                             return false;
                         }
                     }
@@ -2790,24 +2994,23 @@
         }
 
         function getAssignedOrdersForCurrentDriver() {
-            const account = normalizePhone(currentDriverAccount());
-            if (!account) {
+            if (!currentDriverAccount()) {
                 return [];
             }
             return (state.availableOrders || [])
-                .filter(order => normalizePhone(order.assignedDriverAccount || "") === account)
+                .filter(order => orderBelongsToCurrentDriver(order))
+                .filter(order => driverFlowStatus(order) === "assigned")
                 .filter(order => !getAdminOrderOp(order).forceUnassigned)
                 .filter(order => !hasPendingDriverAdjustment(order))
                 .sort((left, right) => String(left.scheduledPickupTime || left.expectedPickupTime || "").localeCompare(String(right.scheduledPickupTime || right.expectedPickupTime || "")));
         }
 
         function getRequestedOrdersForCurrentDriver() {
-            const account = normalizePhone(currentDriverAccount());
-            if (!account) {
+            if (!currentDriverAccount()) {
                 return [];
             }
             return (state.availableOrders || [])
-                .filter(order => normalizePhone(order.assignedDriverAccount || "") === account)
+                .filter(order => orderBelongsToCurrentDriver(order))
                 .filter(order => hasPendingDriverAdjustment(order))
                 .sort((left, right) => String(left.scheduledPickupTime || left.expectedPickupTime || "").localeCompare(String(right.scheduledPickupTime || right.expectedPickupTime || "")));
         }
@@ -2845,7 +3048,7 @@
 
                     ${renderOrderRemark(order)}
 
-                    <div class="action-row" style="margin-top:12px;">
+                    <div class="action-row compact-actions">
                         <button class="btn-outline" onclick="openAssignedPriceModal(${order.id})">申请调价</button>
                         <button class="btn-main" onclick="tryAccept(${order.id})">接收指派订单</button>
                     </div>
@@ -2894,7 +3097,7 @@
                         <b>申请时间：</b>${adminOp.driverQuoteRequestedAt || "--"}
                     </div>
 
-                    <div class="action-row" style="margin-top:12px;">
+                    <div class="action-row compact-actions">
                         <button class="btn-outline" onclick="openAssignedPriceModal(${order.id})">修改申请</button>
                     </div>
                 </div>
@@ -4155,7 +4358,7 @@
             location.href = "index.html";
         }
 
-        function tryAccept(orderId) {
+        async function tryAccept(orderId) {
             if (!state.loggedIn) {
                 alert("请先以司机身份登录，再去抢单。");
                 openLoginEntry("driver");
@@ -4182,44 +4385,63 @@
                 return;
             }
 
-            if (order.sourceType === "owner_portal") {
-                const ownerOrder = state.ownerOrders.find(item => item.id === order.id);
-                if (ownerOrder) {
-                    ownerOrder.ownerLifecycleStatus = "grabbed";
-                    ownerOrder.driverAcceptedAt = nowStamp();
-                    ownerOrder.assignedDriverAccount = currentDriverAccount();
-                    ownerOrder.assignedDriverName = currentDriverName();
-                }
-            } else if (!state.consumedExternalOrderIds.includes(order.id)) {
-                state.consumedExternalOrderIds.push(order.id);
-            }
+            const acceptedAt = nowStamp();
 
-            state.activeOrder = normalizeOrder(
-                {
-                    ...order,
-                    price: effectiveDriverPrice(order),
-                    ownerLifecycleStatus: order.sourceType === "owner_portal" ? "grabbed" : order.ownerLifecycleStatus,
-                    status: "waiting_pickup",
-                    scheduledPickupTime: order.time,
-                    scheduledPickupLabel: order.pickupTimeLabel || "预计提货时间",
+            try {
+                if (order.sourceType === "owner_portal") {
+                    const ownerOrder = state.ownerOrders.find(item => item.id === order.id);
+                    if (ownerOrder) {
+                        ownerOrder.ownerLifecycleStatus = "grabbed";
+                        ownerOrder.driverAcceptedAt = acceptedAt;
+                        ownerOrder.assignedDriverAccount = currentDriverAccount();
+                        ownerOrder.assignedDriverName = currentDriverName();
+                    }
+                } else if (!state.consumedExternalOrderIds.includes(order.id)) {
+                    state.consumedExternalOrderIds.push(order.id);
+                }
+
+                state.activeOrder = normalizeOrder(
+                    {
+                        ...order,
+                        price: effectiveDriverPrice(order),
+                        ownerLifecycleStatus: order.sourceType === "owner_portal" ? "grabbed" : order.ownerLifecycleStatus,
+                        status: "waiting_pickup",
+                        scheduledPickupTime: order.time,
+                        scheduledPickupLabel: order.pickupTimeLabel || "预计提货时间",
+                        assignedDriverAccount: currentDriverAccount(),
+                        assignedDriverName: currentDriverName(),
+                        driverAcceptedAt: acceptedAt,
+                        actualPickupTime: "",
+                        deliveredAt: "",
+                        pickupPhoto: "",
+                        deliveryPhoto: "",
+                        signaturePhoto: ""
+                    },
+                    order.id
+                );
+
+                await persistDriverLifecycle(order, {
+                    assignedDriverId: String(state.driverProfile.id || "").trim(),
                     assignedDriverAccount: currentDriverAccount(),
                     assignedDriverName: currentDriverName(),
-                    actualPickupTime: "",
-                    deliveredAt: "",
-                    pickupPhoto: "",
-                    deliveryPhoto: "",
-                    signaturePhoto: ""
-                },
-                order.id
-            );
+                    driverAcceptedAt: acceptedAt,
+                    flowStatus: "in_progress",
+                    runtimeStatus: "waiting_pickup",
+                    internalStatus: "等待提货",
+                    forceUnassigned: false
+                });
 
-            rebuildAvailableOrders();
-            saveAppState();
-            renderOrders();
-            renderProfile();
-            renderOwnerPanel();
-            alert(order.sourceType === "owner_portal" ? "抢单成功，货主后台已同步显示“已被抢单”。" : "抢单成功，订单已进入“等待提货”。");
-            showSection("center");
+                rebuildAvailableOrders();
+                saveAppState();
+                renderOrders();
+                renderProfile();
+                renderOwnerPanel();
+                alert(order.sourceType === "owner_portal" ? "抢单成功，货主后台已同步显示“已被抢单”。" : "抢单成功，订单已进入“等待提货”。");
+                showSection("center");
+            } catch (error) {
+                console.error("accept order failed", error);
+                alert(error?.message || "接单同步到服务器失败，请稍后重试。");
+            }
         }
 
         function openUpload(type) {
@@ -4240,7 +4462,7 @@
             }
 
             const reader = new FileReader();
-            reader.onload = () => {
+            reader.onload = async () => {
                 state.activeOrder[type] = reader.result;
 
                 if (type === "pickupPhoto") {
@@ -4248,6 +4470,21 @@
                         state.activeOrder.actualPickupTime = nowStamp();
                     }
                     state.activeOrder.status = "picked_up";
+                    try {
+                        await persistDriverLifecycle(state.activeOrder, {
+                            assignedDriverId: String(state.driverProfile.id || "").trim(),
+                            assignedDriverAccount: currentDriverAccount(),
+                            assignedDriverName: currentDriverName(),
+                            actualPickupTime: state.activeOrder.actualPickupTime,
+                            flowStatus: "in_progress",
+                            runtimeStatus: "picked_up",
+                            internalStatus: "已提货",
+                            forceUnassigned: false
+                        });
+                    } catch (error) {
+                        console.error("pickup upload sync failed", error);
+                        alert(error?.message || "提货状态同步到服务器失败，请稍后重试。");
+                    }
                     saveAppState();
                     renderProfile();
                     renderOwnerPanel();
@@ -4259,11 +4496,26 @@
                 }
 
                 if (state.activeOrder.deliveryPhoto && state.activeOrder.signaturePhoto) {
-                    completeOrder();
+                    await completeOrder();
                     return;
                 }
 
                 state.activeOrder.status = "in_transit";
+                try {
+                    await persistDriverLifecycle(state.activeOrder, {
+                        assignedDriverId: String(state.driverProfile.id || "").trim(),
+                        assignedDriverAccount: currentDriverAccount(),
+                        assignedDriverName: currentDriverName(),
+                        deliveredAt: state.activeOrder.deliveredAt || "",
+                        flowStatus: "in_progress",
+                        runtimeStatus: "in_transit",
+                        internalStatus: "派送途中",
+                        forceUnassigned: false
+                    });
+                } catch (error) {
+                    console.error("delivery upload sync failed", error);
+                    alert(error?.message || "派送状态同步到服务器失败，请稍后重试。");
+                }
                 saveAppState();
                 renderProfile();
                 renderOwnerPanel();
@@ -4271,7 +4523,7 @@
             reader.readAsDataURL(file);
         }
 
-        function completeOrder() {
+        async function completeOrder() {
             if (!state.activeOrder) {
                 return;
             }
@@ -4296,13 +4548,32 @@
                 }
             }
 
-            state.completedOrders.unshift(normalizeOrder(finished, finished.id));
-            state.activeOrder = null;
-            rebuildAvailableOrders();
-            saveAppState();
-            renderProfile();
-            renderOwnerPanel();
-            alert("订单已完成，已进入“已完成订单”。");
+            try {
+                await persistDriverLifecycle(finished, {
+                    assignedDriverId: String(state.driverProfile.id || "").trim(),
+                    assignedDriverAccount: currentDriverAccount(),
+                    assignedDriverName: currentDriverName(),
+                    driverAcceptedAt: finished.driverAcceptedAt || "",
+                    actualPickupTime: finished.actualPickupTime || "",
+                    deliveredAt: finished.deliveredAt,
+                    flowStatus: "completed",
+                    runtimeStatus: "completed",
+                    internalStatus: "已完成",
+                    forceUnassigned: false
+                });
+
+                state.completedOrders.unshift(normalizeOrder(finished, finished.id));
+                state.activeOrder = null;
+                rebuildAvailableOrders();
+                saveAppState();
+                renderOrders();
+                renderProfile();
+                renderOwnerPanel();
+                alert("订单已完成，已进入“已完成订单”。");
+            } catch (error) {
+                console.error("complete order failed", error);
+                alert(error?.message || "订单完成状态同步到服务器失败，请稍后重试。");
+            }
         }
 
         async function copyAddress(text, label) {

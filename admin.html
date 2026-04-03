@@ -1061,6 +1061,13 @@
                 }
                 orderOps[normalizedKey] = {
                     ...raw,
+                    assignedDriverAccount: normalizePhone(raw.assignedDriverAccount || ""),
+                    assignedDriverName: String(raw.assignedDriverName || "").trim(),
+                    flowStatus: String(raw.flowStatus || "").trim(),
+                    runtimeStatus: String(raw.runtimeStatus || "").trim(),
+                    driverAcceptedAt: String(raw.driverAcceptedAt || "").trim(),
+                    actualPickupTime: String(raw.actualPickupTime || "").trim(),
+                    deliveredAt: String(raw.deliveredAt || "").trim(),
                     driverRequestedPrice: Number(raw.driverRequestedPrice || 0),
                     agreedDriverPrice: roundMoney(raw.agreedDriverPrice || 0),
                     forceUnassigned: Boolean(raw.forceUnassigned),
@@ -1314,6 +1321,9 @@
             if (order.op?.forceUnassigned) {
                 return "pending";
             }
+            if (order.op?.flowStatus) {
+                return order.op.flowStatus;
+            }
             if (order.flowStatus === "completed") {
                 return "completed";
             }
@@ -1323,7 +1333,7 @@
             if (order.flowStatus === "grabbed") {
                 return "grabbed";
             }
-            if (order.op?.assignedDriverId || order.assignedDriverAccount || order.assignedDriverName) {
+            if (order.op?.assignedDriverId || order.op?.assignedDriverAccount || order.assignedDriverAccount || order.assignedDriverName) {
                 return "assigned";
             }
             return "pending";
@@ -1335,6 +1345,13 @@
             }
             if (existingAssignedDriverId) {
                 return existingAssignedDriverId;
+            }
+            const opAssignedAccount = normalizePhone(order.op?.assignedDriverAccount || "");
+            if (opAssignedAccount) {
+                const byOpPhone = state.adminData.drivers.find(driver => normalizePhone(driver.phone) === opAssignedAccount);
+                if (byOpPhone) {
+                    return byOpPhone.id || "";
+                }
             }
             const assignedAccount = normalizePhone(order.assignedDriverAccount || "");
             if (assignedAccount) {
@@ -1398,15 +1415,8 @@
         function buildOrderRecords() {
             const records = new Map();
             const feedOrders = Array.isArray(window.AULALA_ORDER_FEED?.orders) ? window.AULALA_ORDER_FEED.orders : [];
-            const consumed = new Set(state.runtimeData.consumedExternalOrderIds || []);
-            const activeId = Number(state.runtimeData.activeOrder?.id || 0);
-            const completedIds = new Set((state.runtimeData.completedOrders || []).map(order => Number(order.id)));
 
             feedOrders.forEach(order => {
-                const numericId = Number(order.id);
-                if (consumed.has(numericId) || completedIds.has(numericId) || numericId === activeId) {
-                    return;
-                }
                 const record = baseOrderRecord(order, "erp_auto");
                 records.set(record.key, record);
             });
@@ -1444,10 +1454,18 @@
             });
 
             return Array.from(records.values())
-                .map(record => ({
-                    ...record,
-                    op: getOrderOp(record)
-                }))
+                .map(record => {
+                    const op = getOrderOp(record);
+                    return {
+                        ...record,
+                        assignedDriverAccount: op.assignedDriverAccount || record.assignedDriverAccount,
+                        assignedDriverName: op.assignedDriverName || record.assignedDriverName,
+                        driverAcceptedAt: op.driverAcceptedAt || record.driverAcceptedAt,
+                        actualPickupTime: op.actualPickupTime || record.actualPickupTime,
+                        deliveredAt: op.deliveredAt || record.deliveredAt,
+                        op
+                    };
+                })
                 .sort((a, b) => {
                     const flowRank = { pending: 0, assigned: 1, grabbed: 2, in_progress: 3, completed: 4 };
                     const rankDelta = (flowRank[effectiveFlowStatus(a)] ?? 9) - (flowRank[effectiveFlowStatus(b)] ?? 9);
@@ -1486,6 +1504,13 @@
             const feedAssignedDriverId = resolveAssignedDriverId(order, existing.assignedDriverId || "", Boolean(existing.forceUnassigned));
             return {
                 assignedDriverId: feedAssignedDriverId,
+                assignedDriverAccount: normalizePhone(existing.assignedDriverAccount || order.assignedDriverAccount || ""),
+                assignedDriverName: String(existing.assignedDriverName || order.assignedDriverName || "").trim(),
+                flowStatus: String(existing.flowStatus || "").trim(),
+                runtimeStatus: String(existing.runtimeStatus || order.runtimeStatus || "").trim(),
+                driverAcceptedAt: existing.driverAcceptedAt || order.driverAcceptedAt || "",
+                actualPickupTime: existing.actualPickupTime || order.actualPickupTime || "",
+                deliveredAt: existing.deliveredAt || order.deliveredAt || "",
                 internalStatus: existing.internalStatus || "",
                 internalNotes: existing.internalNotes || "",
                 driverRequestedPrice: Number(existing.driverRequestedPrice || 0),
@@ -2358,9 +2383,13 @@
                 return;
             }
             const nextPayable = state.adminData.orderOps[key]?.driverPayable ?? defaultDriverPayable(order, driverId);
+            const driver = state.adminData.drivers.find(item => item.id === driverId);
             try {
                 await persistOrderOp(key, {
                     assignedDriverId: driverId,
+                    assignedDriverAccount: driver ? normalizePhone(driver.phone) : "",
+                    assignedDriverName: driver ? driver.name : "",
+                    flowStatus: driverId ? "assigned" : "pending",
                     driverPayable: roundMoney(nextPayable),
                     internalStatus: driverId ? "已指派" : "待分配",
                     forceUnassigned: false
@@ -2412,6 +2441,7 @@
                     driverPayable: requested,
                     agreedDriverPrice: requested,
                     driverQuoteStatus: "approved",
+                    flowStatus: order.op.flowStatus || (order.op.assignedDriverId ? "assigned" : "pending"),
                     driverRequestedPrice: 0,
                     driverQuoteReason: "",
                     driverQuoteRequestedAt: "",
@@ -2434,6 +2464,9 @@
             try {
                 await persistOrderOp(key, {
                     assignedDriverId: "",
+                    assignedDriverAccount: "",
+                    assignedDriverName: "",
+                    flowStatus: "pending",
                     driverPayable: roundMoney(defaultDriverPayable(order, "")),
                     agreedDriverPrice: 0,
                     driverQuoteStatus: "rejected",
@@ -2584,9 +2617,13 @@
                 return;
             }
             const driverId = document.getElementById("order-modal-driver").value;
+            const driver = state.adminData.drivers.find(item => item.id === driverId);
             try {
                 await persistOrderOp(key, {
                     assignedDriverId: driverId,
+                    assignedDriverAccount: driver ? normalizePhone(driver.phone) : "",
+                    assignedDriverName: driver ? driver.name : "",
+                    flowStatus: driverId ? (order.op.flowStatus || "assigned") : "pending",
                     internalStatus: document.getElementById("order-modal-internal-status").value,
                     customerReceivable: roundMoney(document.getElementById("order-modal-receivable").value),
                     driverPayable: roundMoney(document.getElementById("order-modal-payable").value),
