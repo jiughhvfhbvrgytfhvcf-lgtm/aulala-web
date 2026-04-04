@@ -1368,6 +1368,29 @@
             return [String(currentNotes || "").trim(), String(line || "").trim()].filter(Boolean).join("\n");
         }
 
+        function deriveFlowStateFromInternalStatus(status = "", fallbackFlow = "pending") {
+            const normalized = String(status || "").trim();
+            if (normalized === "已完成") {
+                return { flowStatus: "completed", runtimeStatus: "completed" };
+            }
+            if (normalized === "等待提货") {
+                return { flowStatus: "in_progress", runtimeStatus: "waiting_pickup" };
+            }
+            if (normalized === "已提货") {
+                return { flowStatus: "in_progress", runtimeStatus: "picked_up" };
+            }
+            if (normalized === "派送途中") {
+                return { flowStatus: "in_progress", runtimeStatus: "in_transit" };
+            }
+            if (normalized === "已指派" || normalized === "司机申请调价") {
+                return { flowStatus: "assigned", runtimeStatus: "" };
+            }
+            if (normalized === "待分配" || normalized === "异常待处理") {
+                return { flowStatus: "pending", runtimeStatus: "" };
+            }
+            return { flowStatus: fallbackFlow || "pending", runtimeStatus: "" };
+        }
+
         function clearanceMeta(label) {
             if (label === "已放行") {
                 return { label, className: "green" };
@@ -1401,6 +1424,15 @@
             }
             if (order.op?.flowStatus) {
                 return order.op.flowStatus;
+            }
+            if (String(order.op?.internalStatus || "").trim() === "已完成") {
+                return "completed";
+            }
+            if (["等待提货", "已提货", "派送途中"].includes(String(order.op?.internalStatus || "").trim())) {
+                return "in_progress";
+            }
+            if (["已指派", "司机申请调价"].includes(String(order.op?.internalStatus || "").trim())) {
+                return "assigned";
             }
             if (order.flowStatus === "completed") {
                 return "completed";
@@ -2699,13 +2731,16 @@
             }
             const driverId = document.getElementById("order-modal-driver").value;
             const driver = state.adminData.drivers.find(item => item.id === driverId);
+            const internalStatus = document.getElementById("order-modal-internal-status").value;
+            const derivedFlow = deriveFlowStateFromInternalStatus(internalStatus, driverId ? (order.op.flowStatus || "assigned") : "pending");
             try {
                 await persistOrderOp(key, {
                     assignedDriverId: driverId,
                     assignedDriverAccount: driver ? normalizePhone(driver.phone) : "",
                     assignedDriverName: driver ? driver.name : "",
-                    flowStatus: driverId ? (order.op.flowStatus || "assigned") : "pending",
-                    internalStatus: document.getElementById("order-modal-internal-status").value,
+                    flowStatus: derivedFlow.flowStatus,
+                    runtimeStatus: derivedFlow.runtimeStatus || order.op.runtimeStatus || "",
+                    internalStatus,
                     customerReceivable: roundMoney(document.getElementById("order-modal-receivable").value),
                     driverPayable: roundMoney(document.getElementById("order-modal-payable").value),
                     receivableStatus: document.getElementById("order-modal-receivable-status").value,

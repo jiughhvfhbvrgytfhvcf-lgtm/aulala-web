@@ -2086,6 +2086,15 @@
             if (op.flowStatus) {
                 return op.flowStatus;
             }
+            if (String(op.internalStatus || "").trim() === "已完成") {
+                return "completed";
+            }
+            if (["等待提货", "已提货", "派送途中"].includes(String(op.internalStatus || "").trim())) {
+                return "in_progress";
+            }
+            if (["已指派", "司机申请调价"].includes(String(op.internalStatus || "").trim())) {
+                return "assigned";
+            }
             if (order.status === "completed" || order.ownerLifecycleStatus === "completed") {
                 return "completed";
             }
