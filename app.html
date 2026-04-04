@@ -1442,7 +1442,7 @@
                 <a href="javascript:void(0)" onclick="openOwnerEntry()">货主发货</a>
             </span>
             <span id="user-nav" class="hidden">
-                <a href="app.html?v=202604041620&view=profile" id="dashboard-link">个人中心</a>
+                <a href="app.html?v=202604041700&view=profile" id="dashboard-link">个人中心</a>
                 <button type="button" onclick="logout()">退出</button>
             </span>
         </div>
@@ -1464,7 +1464,7 @@
     <div class="container">
         <section id="order-section">
             <div id="dashboard-shortcut" class="dashboard-shortcut hidden">
-                <a class="btn-main" id="dashboard-shortcut-btn" href="app.html?v=202604041620&view=center">进入订单中心</a>
+                <a class="btn-main" id="dashboard-shortcut-btn" href="app.html?v=202604041700&view=center">进入订单中心</a>
                 <button class="btn-outline" type="button" onclick="logout()">退出</button>
             </div>
             <div class="section-row">
@@ -1753,7 +1753,8 @@
         const LOGIN_SESSION_KEY = "aulala-login-session";
         const DEFAULT_DRIVER_PAYOUT_RATIO = 0.78;
         const DRIVER_API_BASES = ["https://api.ai-express.cn:8443", "https://api.ai-express.cn"];
-        const APP_SHELL_VERSION = "202604041620";
+        const APP_SHELL_VERSION = "202604041700";
+        const LIVE_RUNTIME_SYNC_INTERVAL_MS = 5000;
         const TEST_DRIVER_ACCOUNT = "13888888888";
         const estimateCache = {
             geocodes: {},
@@ -1762,6 +1763,9 @@
         let ownerEstimateDraft = null;
         let ownerEstimateTimer = null;
         let ownerPanelFilter = "all";
+        let liveRuntimeSyncTimer = null;
+        let liveRuntimeSyncInFlight = false;
+        let liveRuntimeSyncQueued = false;
 
         const state = {
             loggedIn: false,
@@ -1883,6 +1887,7 @@
                 try {
                     const response = await fetch(`${base}${path}`, {
                         method: options.method || "GET",
+                        cache: options.cache || "no-store",
                         headers: {
                             "Content-Type": "application/json",
                             ...(options.headers || {})
@@ -2048,6 +2053,10 @@
             const { rerender = true } = options;
             const remoteRuntime = await fetchRemoteAdminRuntime();
             const localRuntime = normalizeAdminRuntimePayload(loadAdminRuntime());
+            const runtimeChanged =
+                String(remoteRuntime.updatedAt || "") !== String(localRuntime.updatedAt || "") ||
+                Object.keys(remoteRuntime.orderOps || {}).length !== Object.keys(localRuntime.orderOps || {}).length ||
+                (Array.isArray(remoteRuntime.drivers) ? remoteRuntime.drivers.length : 0) !== (Array.isArray(localRuntime.drivers) ? localRuntime.drivers.length : 0);
             const nextRuntime = {
                 ...localRuntime,
                 drivers: Array.isArray(remoteRuntime.drivers) && remoteRuntime.drivers.length
@@ -2070,13 +2079,60 @@
                 }
             }
             syncDriverCollectionsFromOrderOps();
-            if (rerender) {
+            if (rerender && runtimeChanged) {
                 rebuildAvailableOrders();
                 renderOrders();
                 renderProfile();
                 renderOwnerPanel();
             }
             return nextRuntime;
+        }
+
+        function clearLiveRuntimeSyncTimer() {
+            if (liveRuntimeSyncTimer) {
+                clearTimeout(liveRuntimeSyncTimer);
+                liveRuntimeSyncTimer = null;
+            }
+        }
+
+        function scheduleLiveRuntimeSync(delay = LIVE_RUNTIME_SYNC_INTERVAL_MS) {
+            clearLiveRuntimeSyncTimer();
+            liveRuntimeSyncTimer = window.setTimeout(() => {
+                if (document.hidden) {
+                    scheduleLiveRuntimeSync();
+                    return;
+                }
+                void runLiveRuntimeSync();
+            }, delay);
+        }
+
+        async function runLiveRuntimeSync(options = {}) {
+            const { rerender = true, immediate = false } = options;
+            if (document.hidden && !immediate) {
+                scheduleLiveRuntimeSync();
+                return null;
+            }
+            if (liveRuntimeSyncInFlight) {
+                liveRuntimeSyncQueued = true;
+                return null;
+            }
+            liveRuntimeSyncInFlight = true;
+            try {
+                return await syncAdminRuntimeFromRemote({ rerender });
+            } catch (error) {
+                console.warn("live runtime sync failed", error);
+                return null;
+            } finally {
+                liveRuntimeSyncInFlight = false;
+                if (liveRuntimeSyncQueued) {
+                    liveRuntimeSyncQueued = false;
+                    window.setTimeout(() => {
+                        void runLiveRuntimeSync({ rerender: true, immediate: true });
+                    }, 0);
+                } else {
+                    scheduleLiveRuntimeSync();
+                }
+            }
         }
 
         function getAdminOrderOp(order) {
@@ -4853,6 +4909,19 @@
             }
         });
 
+        document.addEventListener("visibilitychange", () => {
+            if (!document.hidden) {
+                void runLiveRuntimeSync({ rerender: true, immediate: true });
+            }
+        });
+        window.addEventListener("focus", () => {
+            void runLiveRuntimeSync({ rerender: true, immediate: true });
+        });
+        window.addEventListener("pageshow", () => {
+            void runLiveRuntimeSync({ rerender: true, immediate: true });
+        });
+        window.addEventListener("beforeunload", clearLiveRuntimeSyncTimer);
+
         window.onload = () => {
             const searchParams = new URLSearchParams(window.location.search);
             const requestedView = searchParams.get("view");
@@ -4894,7 +4963,7 @@
             } else {
                 showSection("orders");
             }
-            syncAdminRuntimeFromRemote()
+            runLiveRuntimeSync({ rerender: true, immediate: true })
                 .then(() => migrateLocalDriverLifecycleToCloud())
                 .catch(error => {
                     console.warn("sync admin runtime from remote failed", error);

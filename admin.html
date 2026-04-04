@@ -936,6 +936,10 @@
                 settlement: "all"
             }
         };
+        const LIVE_ADMIN_REFRESH_INTERVAL_MS = 5000;
+        let adminRefreshTimer = null;
+        let adminRefreshInFlight = false;
+        let adminRefreshQueued = false;
 
         function safeParse(raw, fallback) {
             try {
@@ -1035,7 +1039,9 @@
             let lastError = null;
             for (const base of DRIVER_API_BASES) {
                 try {
-                    const response = await fetch(`${base}/api/aulala/drivers`);
+                    const response = await fetch(`${base}/api/aulala/drivers`, {
+                        cache: "no-store"
+                    });
                     const payload = await response.json().catch(() => ({}));
                     if (!response.ok || payload?.ok === false) {
                         const error = new Error(payload?.error?.message || `request failed: ${response.status}`);
@@ -1087,7 +1093,9 @@
             let lastError = null;
             for (const base of DRIVER_API_BASES) {
                 try {
-                    const response = await fetch(`${base}/api/aulala/admin-runtime`);
+                    const response = await fetch(`${base}/api/aulala/admin-runtime`, {
+                        cache: "no-store"
+                    });
                     const payload = await response.json().catch(() => ({}));
                     if (!response.ok || payload?.ok === false) {
                         const error = new Error(payload?.error?.message || `request failed: ${response.status}`);
@@ -2285,7 +2293,41 @@
             });
         }
 
-        function refreshData() {
+        function clearAdminRefreshTimer() {
+            if (adminRefreshTimer) {
+                clearTimeout(adminRefreshTimer);
+                adminRefreshTimer = null;
+            }
+        }
+
+        function scheduleAdminRefresh(delay = LIVE_ADMIN_REFRESH_INTERVAL_MS) {
+            clearAdminRefreshTimer();
+            if (document.getElementById("admin-shell").classList.contains("hidden")) {
+                return;
+            }
+            adminRefreshTimer = window.setTimeout(() => {
+                if (document.hidden) {
+                    scheduleAdminRefresh();
+                    return;
+                }
+                void refreshData({ immediate: true });
+            }, delay);
+        }
+
+        async function refreshData(options = {}) {
+            const { immediate = false } = options;
+            if (document.getElementById("admin-shell").classList.contains("hidden")) {
+                return;
+            }
+            if (document.hidden && !immediate) {
+                scheduleAdminRefresh();
+                return;
+            }
+            if (adminRefreshInFlight) {
+                adminRefreshQueued = true;
+                return;
+            }
+            adminRefreshInFlight = true;
             state.adminData = loadAdminData();
             state.runtimeData = loadRuntimeData();
             state.orders = buildOrderRecords().map(order => ({
@@ -2296,35 +2338,44 @@
                 }
             }));
             renderAllPanels();
-            Promise.allSettled([fetchRemoteDrivers(), fetchRemoteAdminRuntime()])
-                .then(([driversResult, runtimeResult]) => {
-                    const remoteDrivers = driversResult.status === "fulfilled" ? driversResult.value : null;
-                    const remoteRuntime = runtimeResult.status === "fulfilled" ? runtimeResult.value : null;
-                    if (remoteRuntime || remoteDrivers) {
-                        applyRemoteAdminRuntime(remoteRuntime || state.adminData, remoteDrivers);
-                        state.runtimeData = loadRuntimeData();
-                        state.orders = buildOrderRecords().map(order => ({
-                            ...order,
-                            op: {
-                                ...order.op,
-                                internalStatus: order.op.internalStatus || defaultInternalStatus(order)
-                            }
-                        }));
-                        renderAllPanels();
-                    }
-                    backfillAssignedOrdersToCloud().catch(error => {
-                        console.warn("backfill assigned orders to cloud failed", error);
-                    });
-                    if (driversResult.status === "rejected") {
-                        console.warn("fetch remote drivers failed", driversResult.reason);
-                    }
-                    if (runtimeResult.status === "rejected") {
-                        console.warn("fetch remote admin runtime failed", runtimeResult.reason);
-                    }
-                })
-                .catch(error => {
-                    console.warn("refresh admin remote state failed", error);
+            try {
+                const [driversResult, runtimeResult] = await Promise.allSettled([fetchRemoteDrivers(), fetchRemoteAdminRuntime()]);
+                const remoteDrivers = driversResult.status === "fulfilled" ? driversResult.value : null;
+                const remoteRuntime = runtimeResult.status === "fulfilled" ? runtimeResult.value : null;
+                if (remoteRuntime || remoteDrivers) {
+                    applyRemoteAdminRuntime(remoteRuntime || state.adminData, remoteDrivers);
+                    state.runtimeData = loadRuntimeData();
+                    state.orders = buildOrderRecords().map(order => ({
+                        ...order,
+                        op: {
+                            ...order.op,
+                            internalStatus: order.op.internalStatus || defaultInternalStatus(order)
+                        }
+                    }));
+                    renderAllPanels();
+                }
+                backfillAssignedOrdersToCloud().catch(error => {
+                    console.warn("backfill assigned orders to cloud failed", error);
                 });
+                if (driversResult.status === "rejected") {
+                    console.warn("fetch remote drivers failed", driversResult.reason);
+                }
+                if (runtimeResult.status === "rejected") {
+                    console.warn("fetch remote admin runtime failed", runtimeResult.reason);
+                }
+            } catch (error) {
+                console.warn("refresh admin remote state failed", error);
+            } finally {
+                adminRefreshInFlight = false;
+                if (adminRefreshQueued) {
+                    adminRefreshQueued = false;
+                    window.setTimeout(() => {
+                        void refreshData({ immediate: true });
+                    }, 0);
+                } else {
+                    scheduleAdminRefresh();
+                }
+            }
         }
 
         function openModal(title, bodyHtml) {
@@ -2803,11 +2854,12 @@
             state.runtimeData = loadRuntimeData();
             document.getElementById("admin-login-view").classList.add("hidden");
             document.getElementById("admin-shell").classList.remove("hidden");
-            refreshData();
+            void refreshData({ immediate: true });
             switchPanel(state.currentPanel);
         }
 
         function logoutAdmin() {
+            clearAdminRefreshTimer();
             clearAdminSession();
             document.getElementById("admin-shell").classList.add("hidden");
             document.getElementById("admin-login-view").classList.remove("hidden");
@@ -2832,9 +2884,25 @@
             if (document.getElementById("admin-shell").classList.contains("hidden")) {
                 return;
             }
-            refreshData();
+            void refreshData({ immediate: true });
             switchPanel(state.currentPanel);
         });
+        document.addEventListener("visibilitychange", () => {
+            if (!document.hidden && !document.getElementById("admin-shell").classList.contains("hidden")) {
+                void refreshData({ immediate: true });
+            }
+        });
+        window.addEventListener("focus", () => {
+            if (!document.getElementById("admin-shell").classList.contains("hidden")) {
+                void refreshData({ immediate: true });
+            }
+        });
+        window.addEventListener("pageshow", () => {
+            if (!document.getElementById("admin-shell").classList.contains("hidden")) {
+                void refreshData({ immediate: true });
+            }
+        });
+        window.addEventListener("beforeunload", clearAdminRefreshTimer);
         document.querySelectorAll(".nav-item").forEach(button => {
             button.addEventListener("click", () => switchPanel(button.dataset.panel));
         });
