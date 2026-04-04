@@ -1753,7 +1753,7 @@
         const LOGIN_SESSION_KEY = "aulala-login-session";
         const DEFAULT_DRIVER_PAYOUT_RATIO = 0.78;
         const DRIVER_API_BASES = ["https://api.ai-express.cn:8443", "https://api.ai-express.cn"];
-        const APP_SHELL_VERSION = "202604041345";
+        const APP_SHELL_VERSION = "202604041430";
         const TEST_DRIVER_ACCOUNT = "13888888888";
         const KEVIN_DRIVER_ACCOUNT = "0450440830";
         const KEVIN_DRIVER_PASSWORD = "Aulala123";
@@ -2139,6 +2139,36 @@
             );
         }
 
+        function orderRuntimeScore(order) {
+            if (!order) {
+                return 0;
+            }
+            let score = 0;
+            const status = String(order.status || "").trim();
+            if (status && status !== "pending" && status !== "assigned") {
+                score += 10;
+            }
+            if (order.driverAcceptedAt) {
+                score += 4;
+            }
+            if (order.actualPickupTime) {
+                score += 4;
+            }
+            if (order.deliveredAt) {
+                score += 4;
+            }
+            if (order.pickupPhoto) {
+                score += 2;
+            }
+            if (order.deliveryPhoto) {
+                score += 2;
+            }
+            if (order.signaturePhoto) {
+                score += 2;
+            }
+            return score;
+        }
+
         function availableDriverCatalog() {
             const catalog = new Map();
             const append = order => {
@@ -2146,8 +2176,10 @@
                     return;
                 }
                 const key = orderStorageKey(order);
-                if (!catalog.has(key)) {
-                    catalog.set(key, normalizeOrder(order, order.id || catalog.size + 1));
+                const normalized = normalizeOrder(order, order.id || catalog.size + 1);
+                const existing = catalog.get(key);
+                if (!existing || orderRuntimeScore(normalized) >= orderRuntimeScore(existing)) {
+                    catalog.set(key, normalized);
                 }
             };
 
@@ -3047,6 +3079,16 @@
         }
 
         function ongoingDisplayStatus(order) {
+            const runtimeStatus = String(order?.status || "").trim();
+            if (runtimeStatus === "waiting_pickup") {
+                return "waiting_pickup";
+            }
+            if (runtimeStatus === "picked_up") {
+                return "picked_up";
+            }
+            if (runtimeStatus === "in_transit") {
+                return "in_transit";
+            }
             if (!order || !order.pickupPhoto) {
                 return "waiting_pickup";
             }
