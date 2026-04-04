@@ -51,9 +51,7 @@
     <script>
     const TEST_DRIVER_ACCOUNT = "13888888888";
     const TEST_DRIVER_PASSWORD = "123456";
-    const KEVIN_DRIVER_ACCOUNT = "0450440830";
-    const KEVIN_DRIVER_PASSWORD = "Aulala123";
-    const APP_SHELL_VERSION = "202604041430";
+    const APP_SHELL_VERSION = "202604041600";
 
     function buildAppUrl(view) {
         const params = new URLSearchParams();
@@ -300,6 +298,7 @@
             );
 
             localStorage.setItem("aulala-login-session", JSON.stringify({
+                id: normalized.id,
                 account: normalized.phone,
                 role: "driver",
                 loggedAt: new Date().toISOString(),
@@ -333,42 +332,6 @@
                     window.location.href = buildAppUrl("center");
                     return;
                 }
-                if (phone === KEVIN_DRIVER_ACCOUNT && password === KEVIN_DRIVER_PASSWORD) {
-                    const kevinProfile = {
-                        id: "DRV-003",
-                        name: "kevin",
-                        vehicleType: "Isuzu",
-                        plate: "",
-                        city: "Sydney",
-                        settlementCycle: "周结",
-                        bankName: "",
-                        bankAccountName: "",
-                        bankAccount: "",
-                        bankTail: "",
-                        createdAt: "2026-03-31T10:00:32.804Z",
-                        updatedAt: new Date().toISOString(),
-                        status: "active",
-                        notes: ""
-                    };
-                    const drivers = loadRegisteredDrivers();
-                    const existingIndex = drivers.findIndex(item => normalizePhone(item.phone) === phone);
-                    const nextLocalDriver = normalizeDriverRecord({
-                        ...kevinProfile,
-                        phone,
-                        passwordHash: await sha256(password)
-                    });
-                    if (existingIndex >= 0) {
-                        drivers.splice(existingIndex, 1, nextLocalDriver);
-                    } else {
-                        drivers.unshift(nextLocalDriver);
-                    }
-                    saveRegisteredDrivers(drivers);
-                    syncDriverToAdmin(nextLocalDriver);
-                    bootstrapDriverSession(phone, nextLocalDriver);
-                    window.location.href = buildAppUrl("center");
-                    return;
-                }
-
                 try {
                     const remote = await requestDriverApi("/api/aulala/driver-login", {
                         method: "POST",
@@ -395,24 +358,18 @@
                     window.location.href = buildAppUrl("center");
                     return;
                 } catch (error) {
-                    if (!["DRIVER_NOT_FOUND", "INVALID_DRIVER_PASSWORD", "HTTP_404", "HTTP_401"].includes(error.code || "")) {
-                        console.warn("remote driver login failed, fallback to local", error);
+                    if (["DRIVER_NOT_FOUND", "HTTP_404"].includes(error.code || "")) {
+                        showStatus("账号不存在，请先注册司机账号。");
+                        return;
                     }
-                }
-
-                const drivers = loadRegisteredDrivers();
-                const account = drivers.find(item => normalizePhone(item.phone) === phone);
-                if (!account) {
-                    showStatus("账号不存在，请先注册司机账号。");
+                    if (["INVALID_DRIVER_PASSWORD", "HTTP_401"].includes(error.code || "")) {
+                        showStatus("密码不正确，请重新输入。");
+                        return;
+                    }
+                    console.error("remote driver login failed", error);
+                    showStatus("云端登录服务暂不可用，请稍后重试。");
                     return;
                 }
-                const passwordHash = await sha256(password);
-                if (passwordHash !== account.passwordHash) {
-                    showStatus("密码不正确，请重新输入。");
-                    return;
-                }
-                bootstrapDriverSession(phone, account);
-                window.location.href = buildAppUrl("center");
             } catch (error) {
                 console.error("driver login failed", error);
                 showStatus("登录失败，请刷新页面后重试。");
@@ -441,13 +398,6 @@
                 }
                 if (password.length < 6) {
                     showStatus("密码至少需要 6 位。");
-                    return;
-                }
-
-                const drivers = loadRegisteredDrivers();
-                const duplicate = drivers.find(item => normalizePhone(item.phone) === phone);
-                if (duplicate) {
-                    showStatus("这个手机号已经注册过了，请直接登录。");
                     return;
                 }
 
@@ -484,10 +434,18 @@
                         showStatus("这个手机号已经注册过了，请直接登录。");
                         return;
                     }
-                    console.warn("remote driver register failed, fallback to local", error);
+                    console.error("remote driver register failed", error);
+                    showStatus("云端注册服务暂不可用，请稍后重试。");
+                    return;
                 }
 
-                drivers.unshift(newAccount);
+                const drivers = loadRegisteredDrivers();
+                const existingIndex = drivers.findIndex(item => normalizePhone(item.phone) === phone);
+                if (existingIndex >= 0) {
+                    drivers.splice(existingIndex, 1, newAccount);
+                } else {
+                    drivers.unshift(newAccount);
+                }
                 saveRegisteredDrivers(drivers);
                 syncDriverToAdmin(newAccount);
                 showStatus("注册成功，正在进入司机后台。", "success");

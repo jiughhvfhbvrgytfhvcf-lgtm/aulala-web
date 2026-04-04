@@ -1753,10 +1753,8 @@
         const LOGIN_SESSION_KEY = "aulala-login-session";
         const DEFAULT_DRIVER_PAYOUT_RATIO = 0.78;
         const DRIVER_API_BASES = ["https://api.ai-express.cn:8443", "https://api.ai-express.cn"];
-        const APP_SHELL_VERSION = "202604041430";
+        const APP_SHELL_VERSION = "202604041600";
         const TEST_DRIVER_ACCOUNT = "13888888888";
-        const KEVIN_DRIVER_ACCOUNT = "0450440830";
-        const KEVIN_DRIVER_PASSWORD = "Aulala123";
         const estimateCache = {
             geocodes: {},
             routes: {}
@@ -1884,6 +1882,7 @@
         function persistLoginSession(profile) {
             const normalized = blankDriverProfile(profile);
             localStorage.setItem(LOGIN_SESSION_KEY, JSON.stringify({
+                id: normalized.id,
                 account: normalized.account,
                 role: "driver",
                 loggedAt: new Date().toISOString(),
@@ -2027,10 +2026,25 @@
             const localRuntime = normalizeAdminRuntimePayload(loadAdminRuntime());
             const nextRuntime = {
                 ...localRuntime,
+                drivers: Array.isArray(remoteRuntime.drivers) && remoteRuntime.drivers.length
+                    ? remoteRuntime.drivers
+                    : localRuntime.drivers,
                 orderOps: remoteRuntime.orderOps,
                 updatedAt: remoteRuntime.updatedAt || localRuntime.updatedAt || ""
             };
             saveAdminRuntime(nextRuntime);
+            if (state.loggedIn && state.userRole === "driver") {
+                const remoteDriver = (nextRuntime.drivers || []).find(driver => normalizePhone(driver.phone) === currentDriverAccount());
+                if (remoteDriver) {
+                    state.driverProfile = blankDriverProfile({
+                        ...state.driverProfile,
+                        ...remoteDriver,
+                        account: normalizePhone(remoteDriver.phone || state.driverProfile.account || "")
+                    });
+                    persistLoginSession(state.driverProfile);
+                    upsertLocalDriverAccount(state.driverProfile);
+                }
+            }
             syncDriverCollectionsFromOrderOps();
             if (rerender) {
                 rebuildAvailableOrders();
@@ -4056,35 +4070,8 @@
                 renderDriverSettingsPage();
                 setDriverSettingsStatus("资料已更新，司机后台和结算信息都同步好了。", "success");
             } catch (error) {
-                try {
-                    const drivers = loadRegisteredDrivers();
-                    const driverIndex = drivers.findIndex(driver => normalizePhone(driver.account) === currentDriverAccount());
-                    if (driverIndex < 0) {
-                        throw error;
-                    }
-                    const currentHash = await sha256(currentPassword);
-                    if (currentHash !== String(drivers[driverIndex].passwordHash || "")) {
-                        throw error;
-                    }
-                    const fallbackProfile = {
-                        ...drivers[driverIndex],
-                        ...nextProfile,
-                        account: currentDriverAccount(),
-                        updatedAt: new Date().toISOString(),
-                        bankTail: extractBankTail(nextProfile.bankAccount)
-                    };
-                    const fallbackHash = newPassword ? await sha256(newPassword) : drivers[driverIndex].passwordHash;
-                    const updated = upsertLocalDriverAccount(fallbackProfile, fallbackHash);
-                    state.driverProfile = blankDriverProfile(updated);
-                    persistLoginSession(state.driverProfile);
-                    saveAppState();
-                    renderProfile();
-                    renderDriverSettingsPage();
-                    setDriverSettingsStatus("资料已在当前设备更新；远端同步稍后再补。", "success");
-                } catch (fallbackError) {
-                    console.error("update driver profile failed", error, fallbackError);
-                    setDriverSettingsStatus(error?.message || "资料保存失败，请稍后重试。");
-                }
+                console.error("update driver profile failed", error);
+                setDriverSettingsStatus(error?.message || "云端资料保存失败，请稍后重试。");
             } finally {
                 if (saveButton) {
                     saveButton.disabled = false;
@@ -4357,26 +4344,6 @@
                 }, await sha256(pass));
                 return;
             }
-            if (normalizePhone(phone) === KEVIN_DRIVER_ACCOUNT && pass === KEVIN_DRIVER_PASSWORD) {
-                finishDriverAuth({
-                    id: "DRV-003",
-                    phone,
-                    name: "kevin",
-                    vehicleType: "Isuzu",
-                    plate: "",
-                    city: "Sydney",
-                    settlementCycle: "周结",
-                    bankName: "",
-                    bankAccountName: "",
-                    bankAccount: "",
-                    bankTail: "",
-                    createdAt: "2026-03-31T10:00:32.804Z",
-                    updatedAt: new Date().toISOString(),
-                    status: "active",
-                    notes: ""
-                }, await sha256(pass));
-                return;
-            }
 
             try {
                 const remote = await requestDriverApi("/api/aulala/driver-login", {
@@ -4386,21 +4353,15 @@
                 finishDriverAuth({ ...(remote.driver || {}), phone }, await sha256(pass));
                 return;
             } catch (error) {
-                if (!["DRIVER_NOT_FOUND", "INVALID_DRIVER_PASSWORD", "HTTP_404", "HTTP_401"].includes(error.code || "")) {
-                    console.warn("remote driver login failed, fallback to local", error);
+                if (["DRIVER_NOT_FOUND", "HTTP_404"].includes(error.code || "")) {
+                    throw new Error("账号不存在，请先注册司机账号。");
                 }
+                if (["INVALID_DRIVER_PASSWORD", "HTTP_401"].includes(error.code || "")) {
+                    throw new Error("密码不正确，请重新输入。");
+                }
+                console.error("remote driver login failed", error);
+                throw new Error("云端登录服务暂不可用，请稍后重试。");
             }
-
-            const drivers = loadRegisteredDrivers();
-            const account = drivers.find(item => normalizePhone(item.account) === normalizePhone(phone));
-            if (!account) {
-                throw new Error("账号不存在，请先注册司机账号。");
-            }
-            const passwordHash = await sha256(pass);
-            if (passwordHash !== String(account.passwordHash || "")) {
-                throw new Error("密码不正确，请重新输入。");
-            }
-            finishDriverAuth(account, passwordHash);
         }
 
         async function handleDriverRegisterFromApp(phone, pass) {
@@ -4415,11 +4376,6 @@
             }
             if (normalizePhone(phone) === TEST_DRIVER_ACCOUNT) {
                 throw new Error("这个手机号已被系统测试司机占用，请换一个手机号注册。");
-            }
-
-            const existingDrivers = loadRegisteredDrivers();
-            if (existingDrivers.some(item => normalizePhone(item.account) === normalizePhone(phone))) {
-                throw new Error("这个手机号已经注册过了，请直接登录。");
             }
 
             const baseProfile = {
@@ -4447,15 +4403,9 @@
                 if (error.code === "DUPLICATE_DRIVER" || error.code === "HTTP_409") {
                     throw new Error("这个手机号已经注册过了，请直接登录。");
                 }
-                console.warn("remote driver register failed, fallback to local", error);
+                console.error("remote driver register failed", error);
+                throw new Error("云端注册服务暂不可用，请稍后重试。");
             }
-
-            finishDriverAuth({
-                ...baseProfile,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                status: "active",
-            }, await sha256(pass));
         }
 
         async function handleAuth() {

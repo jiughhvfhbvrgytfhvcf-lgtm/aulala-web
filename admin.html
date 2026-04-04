@@ -1199,12 +1199,8 @@
 
         function loadAdminData() {
             const saved = safeParse(localStorage.getItem(ADMIN_STORAGE_KEY), {});
-            const drivers = mergeRegisteredDrivers(
-                normalizeDrivers(saved.drivers),
-                loadRegisteredDriverAccounts()
-            );
             return {
-                drivers,
+                drivers: normalizeDrivers(saved.drivers),
                 orderOps: saved.orderOps && typeof saved.orderOps === "object" ? saved.orderOps : {},
                 updatedAt: saved.updatedAt || ""
             };
@@ -1216,17 +1212,13 @@
         }
 
         function applyRemoteAdminRuntime(remoteRuntime, remoteDrivers = null) {
-            const baseDrivers = Array.isArray(remoteRuntime?.drivers) && remoteRuntime.drivers.length
-                ? remoteRuntime.drivers
-                : state.adminData.drivers;
-            const mergedDrivers = mergeRegisteredDrivers(
-                Array.isArray(remoteDrivers) && remoteDrivers.length
-                    ? mergeRegisteredDrivers(baseDrivers, remoteDrivers)
-                    : baseDrivers,
-                loadRegisteredDriverAccounts()
-            );
+            const baseDrivers = Array.isArray(remoteDrivers) && remoteDrivers.length
+                ? remoteDrivers
+                : Array.isArray(remoteRuntime?.drivers) && remoteRuntime.drivers.length
+                    ? remoteRuntime.drivers
+                    : state.adminData.drivers;
             state.adminData = {
-                drivers: mergedDrivers,
+                drivers: normalizeDrivers(baseDrivers),
                 orderOps: remoteRuntime?.orderOps && typeof remoteRuntime.orderOps === "object" ? remoteRuntime.orderOps : {},
                 updatedAt: remoteRuntime?.updatedAt || state.adminData.updatedAt || ""
             };
