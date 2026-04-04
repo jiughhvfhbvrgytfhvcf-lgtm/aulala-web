@@ -1753,7 +1753,7 @@
         const LOGIN_SESSION_KEY = "aulala-login-session";
         const DEFAULT_DRIVER_PAYOUT_RATIO = 0.78;
         const DRIVER_API_BASES = ["https://api.ai-express.cn:8443", "https://api.ai-express.cn"];
-        const APP_SHELL_VERSION = "202604041305";
+        const APP_SHELL_VERSION = "202604041345";
         const TEST_DRIVER_ACCOUNT = "13888888888";
         const KEVIN_DRIVER_ACCOUNT = "0450440830";
         const KEVIN_DRIVER_PASSWORD = "Aulala123";
@@ -2419,10 +2419,24 @@
         }
 
         function normalizeDriverBucket(bucket, account) {
+            const normalizedAccount = normalizePhone(account);
+            const sanitizeOrderForDriver = (order, fallbackId) => {
+                if (!order) {
+                    return null;
+                }
+                const normalizedOrder = normalizeOrder(order, fallbackId);
+                const assignedAccount = normalizePhone(normalizedOrder.assignedDriverAccount || "");
+                if (assignedAccount && normalizedAccount && assignedAccount !== normalizedAccount) {
+                    return null;
+                }
+                return normalizedOrder;
+            };
             return {
-                activeOrder: bucket?.activeOrder ? normalizeOrder(bucket.activeOrder, 4000) : null,
+                activeOrder: sanitizeOrderForDriver(bucket?.activeOrder, 4000),
                 completedOrders: Array.isArray(bucket?.completedOrders)
-                    ? bucket.completedOrders.map((order, index) => normalizeOrder(order, 7000 + index))
+                    ? bucket.completedOrders
+                        .map((order, index) => sanitizeOrderForDriver(order, 7000 + index))
+                        .filter(Boolean)
                     : getDefaultCompletedOrders(account)
             };
         }
@@ -2571,7 +2585,12 @@
                 state.driverOrderBuckets[normalizedAccount] = normalizeDriverBucket(bucket, normalizedAccount);
             });
 
-            const legacyAccount = normalizePhone(state.driverProfile.account || loginSession?.account || TEST_DRIVER_ACCOUNT);
+            const legacyAccount = normalizePhone(
+                saved.driverProfile?.account
+                || saved.driverProfile?.phone
+                || loginSession?.account
+                || TEST_DRIVER_ACCOUNT
+            );
             if (!Object.keys(state.driverOrderBuckets).length && legacyAccount) {
                 state.driverOrderBuckets[legacyAccount] = {
                     activeOrder: saved.activeOrder ? normalizeOrder(saved.activeOrder, 4000) : null,
@@ -4466,6 +4485,20 @@
             if (state.userRole !== "driver") {
                 alert("当前登录的是货主账号，请切换司机身份后再抢单。");
                 return;
+            }
+
+            if (state.activeOrder) {
+                const activeOp = getAdminOrderOp(state.activeOrder);
+                const activeBelongsToDriver = orderBelongsToCurrentDriver(state.activeOrder, activeOp);
+                const activeFlowStatus = driverFlowStatus(state.activeOrder, activeOp);
+                if (!activeBelongsToDriver || activeFlowStatus !== "in_progress") {
+                    state.activeOrder = null;
+                    persistCurrentDriverBucket();
+                    rebuildAvailableOrders();
+                    saveAppState();
+                    renderOrders();
+                    renderProfile();
+                }
             }
 
             if (state.activeOrder) {
