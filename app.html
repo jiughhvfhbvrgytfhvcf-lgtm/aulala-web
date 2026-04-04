@@ -1753,7 +1753,7 @@
         const LOGIN_SESSION_KEY = "aulala-login-session";
         const DEFAULT_DRIVER_PAYOUT_RATIO = 0.78;
         const DRIVER_API_BASES = ["https://api.ai-express.cn:8443", "https://api.ai-express.cn"];
-        const APP_SHELL_VERSION = "202604031630";
+        const APP_SHELL_VERSION = "202604041305";
         const TEST_DRIVER_ACCOUNT = "13888888888";
         const KEVIN_DRIVER_ACCOUNT = "0450440830";
         const KEVIN_DRIVER_PASSWORD = "Aulala123";
@@ -2228,7 +2228,7 @@
 
         async function migrateLocalDriverLifecycleToCloud() {
             if (!state.loggedIn || state.userRole !== "driver" || !currentDriverAccount()) {
-                return;
+                return 0;
             }
 
             const migrationOrders = [];
@@ -2267,16 +2267,34 @@
                 });
             });
 
+            let syncedCount = 0;
             for (const item of migrationOrders) {
                 const current = getAdminOrderOp(item.order);
-                const alreadySynced = item.partial.flowStatus === "completed"
-                    ? current.flowStatus === "completed"
-                    : current.flowStatus === "in_progress";
-                if (alreadySynced) {
+                const needsCompletedSync = item.partial.flowStatus === "completed" && (
+                    current.flowStatus !== "completed" ||
+                    String(current.actualPickupTime || "") !== String(item.partial.actualPickupTime || "") ||
+                    String(current.deliveredAt || "") !== String(item.partial.deliveredAt || "")
+                );
+                const needsInProgressSync = item.partial.flowStatus !== "completed" && (
+                    current.flowStatus !== "in_progress" ||
+                    String(current.runtimeStatus || "") !== String(item.partial.runtimeStatus || "") ||
+                    String(current.internalStatus || "") !== String(item.partial.internalStatus || "") ||
+                    String(current.actualPickupTime || "") !== String(item.partial.actualPickupTime || "") ||
+                    String(current.deliveredAt || "") !== String(item.partial.deliveredAt || "")
+                );
+                if (!needsCompletedSync && !needsInProgressSync) {
                     continue;
                 }
                 await persistDriverLifecycle(item.order, item.partial);
+                syncedCount += 1;
             }
+            if (syncedCount > 0) {
+                rebuildAvailableOrders();
+                renderOrders();
+                renderProfile();
+                renderOwnerPanel();
+            }
+            return syncedCount;
         }
 
         async function persistDriverAdjustmentRequest(order, requestedPrice, reason) {
@@ -4242,6 +4260,24 @@
             saveAppState();
             renderProfile();
             showSection("center");
+            refreshDriverLifecycleAfterAuth();
+        }
+
+        async function refreshDriverLifecycleAfterAuth() {
+            if (!state.loggedIn || state.userRole !== "driver") {
+                return;
+            }
+            try {
+                await syncAdminRuntimeFromRemote({ rerender: false });
+                await migrateLocalDriverLifecycleToCloud();
+                await syncAdminRuntimeFromRemote({ rerender: true });
+            } catch (error) {
+                console.warn("refresh driver lifecycle after auth failed", error);
+                rebuildAvailableOrders();
+                renderOrders();
+                renderProfile();
+                renderOwnerPanel();
+            }
         }
 
         async function handleDriverLoginFromApp(phone, pass) {
@@ -4262,7 +4298,7 @@
             }
             if (normalizePhone(phone) === KEVIN_DRIVER_ACCOUNT && pass === KEVIN_DRIVER_PASSWORD) {
                 finishDriverAuth({
-                    id: "DRV-001",
+                    id: "DRV-003",
                     phone,
                     name: "kevin",
                     vehicleType: "Isuzu",
