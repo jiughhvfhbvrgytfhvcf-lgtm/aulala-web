@@ -1442,7 +1442,7 @@
                 <a href="javascript:void(0)" onclick="openOwnerEntry()">货主发货</a>
             </span>
             <span id="user-nav" class="hidden">
-                <a href="app.html?v=202604031630&view=profile" id="dashboard-link">个人中心</a>
+                <a href="app.html?v=202604041620&view=profile" id="dashboard-link">个人中心</a>
                 <button type="button" onclick="logout()">退出</button>
             </span>
         </div>
@@ -1464,7 +1464,7 @@
     <div class="container">
         <section id="order-section">
             <div id="dashboard-shortcut" class="dashboard-shortcut hidden">
-                <a class="btn-main" id="dashboard-shortcut-btn" href="app.html?v=202604031630&view=center">进入订单中心</a>
+                <a class="btn-main" id="dashboard-shortcut-btn" href="app.html?v=202604041620&view=center">进入订单中心</a>
                 <button class="btn-outline" type="button" onclick="logout()">退出</button>
             </div>
             <div class="section-row">
@@ -1753,7 +1753,7 @@
         const LOGIN_SESSION_KEY = "aulala-login-session";
         const DEFAULT_DRIVER_PAYOUT_RATIO = 0.78;
         const DRIVER_API_BASES = ["https://api.ai-express.cn:8443", "https://api.ai-express.cn"];
-        const APP_SHELL_VERSION = "202604041610";
+        const APP_SHELL_VERSION = "202604041620";
         const TEST_DRIVER_ACCOUNT = "13888888888";
         const estimateCache = {
             geocodes: {},
@@ -1782,6 +1782,7 @@
             },
             baseExternalOrders: initialOrders.map(order => ({ ...order })),
             availableOrders: [],
+            activeOrders: [],
             activeOrder: null,
             completedOrders: [],
             ownerOrders: [],
@@ -1821,6 +1822,29 @@
                 status: String(overrides.status || "active").trim() || "active",
                 notes: String(overrides.notes || "").trim()
             };
+        }
+
+        function normalizeActiveOrders(orders = [], fallbackStart = 4000) {
+            return Array.isArray(orders)
+                ? orders.map((order, index) => normalizeOrder(order, fallbackStart + index)).filter(Boolean)
+                : [];
+        }
+
+        function currentActiveOrders() {
+            if (Array.isArray(state.activeOrders) && state.activeOrders.length) {
+                return state.activeOrders;
+            }
+            return state.activeOrder ? [state.activeOrder] : [];
+        }
+
+        function setDriverActiveOrders(orders = []) {
+            state.activeOrders = normalizeActiveOrders(orders, 4000);
+            state.activeOrder = state.activeOrders[0] || null;
+        }
+
+        function findActiveDriverOrderById(orderId) {
+            const numericId = Number(orderId);
+            return currentActiveOrders().find(order => Number(order.id) === numericId) || null;
         }
 
         function safeParse(raw, fallback) {
@@ -2199,15 +2223,13 @@
 
             (state.baseExternalOrders || []).forEach(append);
             (state.ownerOrders || []).forEach(append);
-            if (state.activeOrder) {
-                append(state.activeOrder);
-            }
+            currentActiveOrders().forEach(append);
             (state.completedOrders || []).forEach(append);
             Object.values(state.driverOrderBuckets || {}).forEach(bucket => {
                 if (!bucket) {
                     return;
                 }
-                append(bucket.activeOrder);
+                (bucket.activeOrders || []).forEach(append);
                 (bucket.completedOrders || []).forEach(append);
             });
             return Array.from(catalog.values());
@@ -2241,7 +2263,7 @@
 
             remoteActive.sort((left, right) => String(right.driverAcceptedAt || "").localeCompare(String(left.driverAcceptedAt || "")));
             remoteCompleted.sort((left, right) => String(right.deliveredAt || right.driverAcceptedAt || "").localeCompare(String(left.deliveredAt || left.driverAcceptedAt || "")));
-            state.activeOrder = remoteActive[0] || null;
+            setDriverActiveOrders(remoteActive);
             state.completedOrders = remoteCompleted;
             persistCurrentDriverBucket();
         }
@@ -2278,25 +2300,25 @@
             }
 
             const migrationOrders = [];
-            if (state.activeOrder) {
+            currentActiveOrders().forEach((activeOrder) => {
                 migrationOrders.push({
-                    order: state.activeOrder,
+                    order: activeOrder,
                     partial: {
                         flowStatus: "in_progress",
-                        runtimeStatus: state.activeOrder.status || "waiting_pickup",
+                        runtimeStatus: activeOrder.status || "waiting_pickup",
                         internalStatus:
-                            state.activeOrder.status === "picked_up"
+                            activeOrder.status === "picked_up"
                                 ? "已提货"
-                                : state.activeOrder.status === "in_transit"
+                                : activeOrder.status === "in_transit"
                                     ? "派送途中"
                                     : "等待提货",
-                        driverAcceptedAt: state.activeOrder.driverAcceptedAt || "",
-                        actualPickupTime: state.activeOrder.actualPickupTime || "",
-                        deliveredAt: state.activeOrder.deliveredAt || "",
+                        driverAcceptedAt: activeOrder.driverAcceptedAt || "",
+                        actualPickupTime: activeOrder.actualPickupTime || "",
+                        deliveredAt: activeOrder.deliveredAt || "",
                         forceUnassigned: false
                     }
                 });
-            }
+            });
 
             (state.completedOrders || []).forEach(order => {
                 migrationOrders.push({
@@ -2389,11 +2411,11 @@
                 if (!bucket) {
                     return;
                 }
-                addOrderCode(bucket.activeOrder);
+                (bucket.activeOrders || []).forEach(addOrderCode);
                 (bucket.completedOrders || []).forEach(addOrderCode);
             });
 
-            addOrderCode(state.activeOrder);
+            currentActiveOrders().forEach(addOrderCode);
             (state.completedOrders || []).forEach(addOrderCode);
 
             const adminRuntime = loadAdminRuntime();
@@ -2477,8 +2499,15 @@
                 }
                 return normalizedOrder;
             };
+            const rawActiveOrders = Array.isArray(bucket?.activeOrders)
+                ? bucket.activeOrders
+                : bucket?.activeOrder
+                    ? [bucket.activeOrder]
+                    : [];
             return {
-                activeOrder: sanitizeOrderForDriver(bucket?.activeOrder, 4000),
+                activeOrders: rawActiveOrders
+                    .map((order, index) => sanitizeOrderForDriver(order, 4000 + index))
+                    .filter(Boolean),
                 completedOrders: Array.isArray(bucket?.completedOrders)
                     ? bucket.completedOrders
                         .map((order, index) => sanitizeOrderForDriver(order, 7000 + index))
@@ -2491,7 +2520,7 @@
             const normalizedAccount = normalizePhone(account);
             if (!normalizedAccount) {
                 return {
-                    activeOrder: null,
+                    activeOrders: [],
                     completedOrders: []
                 };
             }
@@ -2499,7 +2528,7 @@
                 state.driverOrderBuckets[normalizedAccount] = normalizeDriverBucket(null, normalizedAccount);
             }
             return state.driverOrderBuckets[normalizedAccount] || {
-                activeOrder: null,
+                activeOrders: [],
                 completedOrders: []
             };
         }
@@ -2509,7 +2538,7 @@
                 return;
             }
             const bucket = getDriverBucket(currentDriverAccount(), true);
-            state.activeOrder = bucket.activeOrder ? normalizeOrder(bucket.activeOrder, 4000) : null;
+            setDriverActiveOrders(bucket.activeOrders || []);
             state.completedOrders = Array.isArray(bucket.completedOrders)
                 ? bucket.completedOrders.map((order, index) => normalizeOrder(order, 7000 + index))
                 : [];
@@ -2525,7 +2554,7 @@
                 return;
             }
             state.driverOrderBuckets[account] = {
-                activeOrder: state.activeOrder ? normalizeOrder(state.activeOrder, 4000) : null,
+                activeOrders: currentActiveOrders().map((order, index) => normalizeOrder(order, 4000 + index)),
                 completedOrders: Array.isArray(state.completedOrders)
                     ? state.completedOrders.map((order, index) => normalizeOrder(order, 7000 + index))
                     : []
@@ -2544,6 +2573,7 @@
                         profilePanels: state.profilePanels,
                         driverProfile: state.driverProfile,
                         ownerProfile: state.ownerProfile,
+                        activeOrders: currentActiveOrders(),
                         activeOrder: state.activeOrder,
                         completedOrders: state.completedOrders,
                         ownerOrders: state.ownerOrders,
@@ -2558,7 +2588,7 @@
 
         function rebuildAvailableOrders() {
             const consumedIds = new Set((state.consumedExternalOrderIds || []).map(Number));
-            const activeId = state.activeOrder ? Number(state.activeOrder.id) : null;
+            const activeIds = new Set(currentActiveOrders().map(order => Number(order.id)));
             const blockedCodes = collectBlockedExternalOrderCodes();
             const currentAccount = normalizePhone(currentDriverAccount());
             const ownerPublished = (state.ownerOrders || [])
@@ -2584,7 +2614,7 @@
                     if (code && blockedCodes.has(code)) {
                         return false;
                     }
-                    return !consumedIds.has(Number(order.id)) && Number(order.id) !== activeId;
+                    return !consumedIds.has(Number(order.id)) && !activeIds.has(Number(order.id));
                 })
                 .map((order, index) => normalizeOrder(order, index + 1));
             state.availableOrders = [...ownerPublished, ...externalAvailable];
@@ -2639,13 +2669,18 @@
             );
             if (!Object.keys(state.driverOrderBuckets).length && legacyAccount) {
                 state.driverOrderBuckets[legacyAccount] = {
-                    activeOrder: saved.activeOrder ? normalizeOrder(saved.activeOrder, 4000) : null,
+                    activeOrders: Array.isArray(saved.activeOrders) && saved.activeOrders.length
+                        ? saved.activeOrders.map((order, index) => normalizeOrder(order, 4000 + index))
+                        : saved.activeOrder
+                            ? [normalizeOrder(saved.activeOrder, 4000)]
+                            : [],
                     completedOrders: Array.isArray(saved.completedOrders) && saved.completedOrders.length
                         ? saved.completedOrders.map((order, index) => normalizeOrder(order, 7000 + index))
                         : getDefaultCompletedOrders(legacyAccount)
                 };
             }
 
+            state.activeOrders = [];
             state.activeOrder = null;
             state.completedOrders = [];
             state.ownerOrders = Array.isArray(saved.ownerOrders)
@@ -3313,7 +3348,7 @@
                     <div class="upload-title">提货现场照片</div>
                     <div class="upload-area">
                         <div class="upload-card">
-                            ${renderUploadBlock(order.pickupPhoto, "pickupPhoto", "上传装车照片")}
+                            ${renderUploadBlock(order, "pickupPhoto", "上传装车照片")}
                         </div>
                     </div>
                 `;
@@ -3325,10 +3360,10 @@
                     <div class="upload-title">送达凭证</div>
                     <div class="upload-area">
                         <div class="upload-card">
-                            ${renderUploadBlock(order.deliveryPhoto, "deliveryPhoto", "上传送达照片")}
+                            ${renderUploadBlock(order, "deliveryPhoto", "上传送达照片")}
                         </div>
                         <div class="upload-card">
-                            ${renderUploadBlock(order.signaturePhoto, "signaturePhoto", "上传签字照片")}
+                            ${renderUploadBlock(order, "signaturePhoto", "上传签字照片")}
                         </div>
                     </div>
                 `;
@@ -3339,29 +3374,31 @@
                 <div class="upload-title">送达凭证</div>
                 <div class="upload-area">
                     <div class="upload-card">
-                        ${renderUploadBlock(order.deliveryPhoto, "deliveryPhoto", "上传送达照片")}
+                        ${renderUploadBlock(order, "deliveryPhoto", "上传送达照片")}
                     </div>
                     <div class="upload-card">
-                        ${renderUploadBlock(order.signaturePhoto, "signaturePhoto", "上传签字照片")}
+                        ${renderUploadBlock(order, "signaturePhoto", "上传签字照片")}
                     </div>
                 </div>
             `;
         }
 
-        function renderUploadBlock(image, type, label) {
+        function renderUploadBlock(order, type, label) {
+            const image = order?.[type] || "";
+            const inputId = `upload-${type}-${order.id}`;
             if (image) {
                 const pretty = type === "pickupPhoto" ? "提货照片" : type === "deliveryPhoto" ? "送达照片" : "客户签字";
                 return `
-                    <input class="file-input" id="upload-${type}" type="file" accept="image/*" capture="environment" onchange="handleProofUpload(event, '${type}')">
+                    <input class="file-input" id="${inputId}" type="file" accept="image/*" capture="environment" onchange="handleProofUpload(event, ${order.id}, '${type}')">
                     <img class="preview-img" src="${image}" alt="${pretty}">
                     <div class="preview-label">${pretty}已上传，可重新拍照</div>
-                    <button class="btn-light" onclick="openUpload('${type}')">重新上传</button>
+                    <button class="btn-light" onclick="openUpload(${order.id}, '${type}')">重新上传</button>
                 `;
             }
 
             return `
-                <input class="file-input" id="upload-${type}" type="file" accept="image/*" capture="environment" onchange="handleProofUpload(event, '${type}')">
-                <div class="upload-btn" onclick="openUpload('${type}')">
+                <input class="file-input" id="${inputId}" type="file" accept="image/*" capture="environment" onchange="handleProofUpload(event, ${order.id}, '${type}')">
+                <div class="upload-btn" onclick="openUpload(${order.id}, '${type}')">
                     <div style="font-size:24px; line-height:1;">+</div>
                     <div>${label}</div>
                 </div>
@@ -4088,7 +4125,8 @@
             const completedIncome = state.completedOrders.reduce((sum, order) => sum + Number(order.price), 0);
             const assignedOrders = getAssignedOrdersForCurrentDriver();
             const requestOrders = getRequestedOrdersForCurrentDriver();
-            const ongoingCount = state.activeOrder ? 1 : 0;
+            const ongoingOrders = currentActiveOrders();
+            const ongoingCount = ongoingOrders.length;
 
             document.getElementById("completed-count").textContent = String(state.completedOrders.length);
             document.getElementById("total-income").textContent = formatCurrency(completedIncome);
@@ -4119,8 +4157,8 @@
                     </div>
                 `;
 
-            ongoingList.innerHTML = state.activeOrder
-                ? renderOngoingOrder(state.activeOrder)
+            ongoingList.innerHTML = ongoingOrders.length
+                ? ongoingOrders.map(renderOngoingOrder).join("")
                 : `
                     <div class="card empty-card">
                         <div style="font-size:16px; font-weight:800; color:#344054; margin-bottom:6px;">当前没有进行中的订单</div>
@@ -4456,6 +4494,7 @@
             state.loggedIn = false;
             state.userRole = "driver";
             state.driverProfile = blankDriverProfile();
+            state.activeOrders = [];
             state.activeOrder = null;
             state.completedOrders = [];
             saveAppState();
@@ -4479,27 +4518,14 @@
                 return;
             }
 
-            if (state.activeOrder) {
-                const activeOp = getAdminOrderOp(state.activeOrder);
-                const activeBelongsToDriver = orderBelongsToCurrentDriver(state.activeOrder, activeOp);
-                const activeFlowStatus = driverFlowStatus(state.activeOrder, activeOp);
-                if (!activeBelongsToDriver || activeFlowStatus !== "in_progress") {
-                    state.activeOrder = null;
-                    persistCurrentDriverBucket();
-                    rebuildAvailableOrders();
-                    saveAppState();
-                    renderOrders();
-                    renderProfile();
-                }
-            }
-
-            if (state.activeOrder) {
-                alert("当前已有进行中的订单，请先完成后再抢下一单。");
+            if (findActiveDriverOrderById(orderId)) {
+                alert("这票已经在你的进行中订单里了。");
                 showSection("center");
                 return;
             }
 
-            const order = state.availableOrders.find(item => item.id === orderId);
+            const order = availableDriverCatalog().find(item => Number(item.id) === Number(orderId))
+                || state.availableOrders.find(item => Number(item.id) === Number(orderId));
             if (!order) {
                 return;
             }
@@ -4523,7 +4549,7 @@
                     state.consumedExternalOrderIds.push(order.id);
                 }
 
-                state.activeOrder = normalizeOrder(
+                const acceptedOrder = normalizeOrder(
                     {
                         ...order,
                         price: effectiveDriverPrice(order),
@@ -4542,6 +4568,10 @@
                     },
                     order.id
                 );
+                setDriverActiveOrders([
+                    acceptedOrder,
+                    ...currentActiveOrders().filter(item => Number(item.id) !== Number(order.id))
+                ]);
 
                 await persistDriverLifecycle(order, {
                     assignedDriverId: String(state.driverProfile.id || "").trim(),
@@ -4559,7 +4589,7 @@
                 renderOrders();
                 renderProfile();
                 renderOwnerPanel();
-                alert(order.sourceType === "owner_portal" ? "抢单成功，货主后台已同步显示“已被抢单”。" : "抢单成功，订单已进入“等待提货”。");
+                alert(order.sourceType === "owner_portal" ? "抢单成功，货主后台已同步显示“已被抢单”。" : "接单成功，订单已进入“等待提货”，你现在可以继续接下一单。");
                 showSection("center");
             } catch (error) {
                 console.error("accept order failed", error);
@@ -4567,15 +4597,16 @@
             }
         }
 
-        function openUpload(type) {
-            const input = document.getElementById(`upload-${type}`);
+        function openUpload(orderId, type) {
+            const input = document.getElementById(`upload-${type}-${orderId}`);
             if (input) {
                 input.click();
             }
         }
 
-        function handleProofUpload(event, type) {
-            if (!state.activeOrder) {
+        function handleProofUpload(event, orderId, type) {
+            const targetOrder = findActiveDriverOrderById(orderId);
+            if (!targetOrder) {
                 return;
             }
 
@@ -4586,19 +4617,23 @@
 
             const reader = new FileReader();
             reader.onload = async () => {
-                state.activeOrder[type] = reader.result;
+                const nextOrder = normalizeOrder({
+                    ...targetOrder,
+                    [type]: reader.result
+                }, targetOrder.id);
 
                 if (type === "pickupPhoto") {
-                    if (!state.activeOrder.actualPickupTime) {
-                        state.activeOrder.actualPickupTime = nowStamp();
+                    if (!nextOrder.actualPickupTime) {
+                        nextOrder.actualPickupTime = nowStamp();
                     }
-                    state.activeOrder.status = "picked_up";
+                    nextOrder.status = "picked_up";
+                    setDriverActiveOrders(currentActiveOrders().map(order => Number(order.id) === Number(orderId) ? nextOrder : order));
                     try {
-                        await persistDriverLifecycle(state.activeOrder, {
+                        await persistDriverLifecycle(nextOrder, {
                             assignedDriverId: String(state.driverProfile.id || "").trim(),
                             assignedDriverAccount: currentDriverAccount(),
                             assignedDriverName: currentDriverName(),
-                            actualPickupTime: state.activeOrder.actualPickupTime,
+                            actualPickupTime: nextOrder.actualPickupTime,
                             flowStatus: "in_progress",
                             runtimeStatus: "picked_up",
                             internalStatus: "已提货",
@@ -4614,22 +4649,25 @@
                     return;
                 }
 
-                if (type === "deliveryPhoto" && !state.activeOrder.deliveredAt) {
-                    state.activeOrder.deliveredAt = nowStamp();
+                if (type === "deliveryPhoto" && !nextOrder.deliveredAt) {
+                    nextOrder.deliveredAt = nowStamp();
                 }
 
-                if (state.activeOrder.deliveryPhoto && state.activeOrder.signaturePhoto) {
-                    await completeOrder();
+                setDriverActiveOrders(currentActiveOrders().map(order => Number(order.id) === Number(orderId) ? nextOrder : order));
+
+                if (nextOrder.deliveryPhoto && nextOrder.signaturePhoto) {
+                    await completeOrder(orderId);
                     return;
                 }
 
-                state.activeOrder.status = "in_transit";
+                nextOrder.status = "in_transit";
+                setDriverActiveOrders(currentActiveOrders().map(order => Number(order.id) === Number(orderId) ? nextOrder : order));
                 try {
-                    await persistDriverLifecycle(state.activeOrder, {
+                    await persistDriverLifecycle(nextOrder, {
                         assignedDriverId: String(state.driverProfile.id || "").trim(),
                         assignedDriverAccount: currentDriverAccount(),
                         assignedDriverName: currentDriverName(),
-                        deliveredAt: state.activeOrder.deliveredAt || "",
+                        deliveredAt: nextOrder.deliveredAt || "",
                         flowStatus: "in_progress",
                         runtimeStatus: "in_transit",
                         internalStatus: "派送途中",
@@ -4646,20 +4684,21 @@
             reader.readAsDataURL(file);
         }
 
-        async function completeOrder() {
-            if (!state.activeOrder) {
+        async function completeOrder(orderId) {
+            const targetOrder = findActiveDriverOrderById(orderId);
+            if (!targetOrder) {
                 return;
             }
 
-            if (!state.activeOrder.deliveryPhoto || !state.activeOrder.signaturePhoto) {
+            if (!targetOrder.deliveryPhoto || !targetOrder.signaturePhoto) {
                 alert("请先上传送达照片和签字图片。");
                 return;
             }
 
             const finished = {
-                ...state.activeOrder,
+                ...targetOrder,
                 status: "completed",
-                deliveredAt: state.activeOrder.deliveredAt || nowStamp()
+                deliveredAt: targetOrder.deliveredAt || nowStamp()
             };
 
             if (finished.sourceType === "owner_portal") {
@@ -4685,8 +4724,6 @@
                     forceUnassigned: false
                 });
 
-                state.completedOrders.unshift(normalizeOrder(finished, finished.id));
-                state.activeOrder = null;
                 rebuildAvailableOrders();
                 saveAppState();
                 renderOrders();
@@ -4719,11 +4756,10 @@
 
         function findOrderById(orderId) {
             const numericId = Number(orderId);
-            if (state.activeOrder && Number(state.activeOrder.id) === numericId) {
-                return state.activeOrder;
-            }
-            return state.ownerOrders.find(item => Number(item.id) === numericId)
+            return currentActiveOrders().find(item => Number(item.id) === numericId)
+                || state.ownerOrders.find(item => Number(item.id) === numericId)
                 || state.completedOrders.find(item => Number(item.id) === numericId)
+                || availableDriverCatalog().find(item => Number(item.id) === numericId)
                 || state.availableOrders.find(item => Number(item.id) === numericId)
                 || null;
         }
