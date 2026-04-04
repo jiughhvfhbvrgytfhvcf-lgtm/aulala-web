@@ -1753,7 +1753,7 @@
         const LOGIN_SESSION_KEY = "aulala-login-session";
         const DEFAULT_DRIVER_PAYOUT_RATIO = 0.78;
         const DRIVER_API_BASES = ["https://api.ai-express.cn:8443", "https://api.ai-express.cn"];
-        const APP_SHELL_VERSION = "202604041600";
+        const APP_SHELL_VERSION = "202604041610";
         const TEST_DRIVER_ACCOUNT = "13888888888";
         const estimateCache = {
             geocodes: {},
@@ -3152,7 +3152,7 @@
             if (!currentDriverAccount()) {
                 return [];
             }
-            return (state.availableOrders || [])
+            return availableDriverCatalog()
                 .filter(order => orderBelongsToCurrentDriver(order))
                 .filter(order => driverFlowStatus(order) === "assigned")
                 .filter(order => !getAdminOrderOp(order).forceUnassigned)
@@ -3164,7 +3164,7 @@
             if (!currentDriverAccount()) {
                 return [];
             }
-            return (state.availableOrders || [])
+            return availableDriverCatalog()
                 .filter(order => orderBelongsToCurrentDriver(order))
                 .filter(order => hasPendingDriverAdjustment(order))
                 .sort((left, right) => String(left.scheduledPickupTime || left.expectedPickupTime || "").localeCompare(String(right.scheduledPickupTime || right.expectedPickupTime || "")));
