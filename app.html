@@ -1183,6 +1183,117 @@
             color: #344054;
         }
 
+        #signature-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.76);
+            z-index: 2100;
+            display: none;
+            padding: 18px;
+            overflow-y: auto;
+        }
+
+        .signature-modal-content {
+            max-width: 560px;
+            margin: 10px auto;
+            background: #ffffff;
+            border-radius: 22px;
+            padding: 20px;
+            box-shadow: 0 30px 60px rgba(15, 23, 42, 0.18);
+        }
+
+        .signature-modal-title {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .signature-modal-subtitle {
+            font-size: 13px;
+            line-height: 1.7;
+            color: #667085;
+            margin-bottom: 14px;
+        }
+
+        .signature-order-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: #eef4ff;
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 800;
+            margin-bottom: 14px;
+        }
+
+        .signature-canvas-shell {
+            border-radius: 20px;
+            padding: 12px;
+            background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+            border: 1px solid #dbe3f1;
+        }
+
+        #signature-canvas {
+            display: block;
+            width: 100%;
+            height: 240px;
+            background: #fff;
+            border-radius: 16px;
+            border: 1px dashed #b6c2d4;
+            touch-action: none;
+            cursor: crosshair;
+        }
+
+        .signature-toolbar {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .signature-toolbar .btn-outline,
+        .signature-toolbar .btn-main,
+        .signature-toolbar .btn-light {
+            flex: 1 1 140px;
+            min-width: 0;
+        }
+
+        .signature-helper-text {
+            margin-top: 10px;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #667085;
+        }
+
+        .pod-download-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        .pod-download-row .btn-outline,
+        .pod-download-row .btn-main {
+            flex: 1 1 180px;
+        }
+
+        @media (max-width: 640px) {
+            .signature-modal-content {
+                padding: 16px;
+                border-radius: 18px;
+            }
+
+            .signature-modal-title {
+                font-size: 21px;
+            }
+
+            #signature-canvas {
+                height: 220px;
+            }
+        }
+
         @media (max-width: 540px) {
             body {
                 background:
@@ -1666,6 +1777,23 @@
         </div>
     </div>
 
+    <div id="signature-modal">
+        <div class="signature-modal-content">
+            <div class="signature-modal-title">客户签字</div>
+            <div class="signature-modal-subtitle">请直接在手机上手写签字，保存后会自动生成 POD 回单。</div>
+            <div id="signature-order-chip" class="signature-order-chip"></div>
+            <div class="signature-canvas-shell">
+                <canvas id="signature-canvas"></canvas>
+            </div>
+            <div class="signature-helper-text">建议横向手写签字；如果写错了，可以先清空再重签。</div>
+            <div class="signature-toolbar">
+                <button class="btn-light" type="button" onclick="clearSignaturePad()">清空重签</button>
+                <button class="btn-outline" type="button" onclick="closeSignaturePad()">取消</button>
+                <button class="btn-main" type="button" onclick="saveSignaturePad()">保存签字</button>
+            </div>
+        </div>
+    </div>
+
     <script src="./orders-data.js"></script>
     <script>
         const fallbackOrders = [
@@ -1730,6 +1858,9 @@
                 pickupPhoto: order.pickupPhoto || "",
                 deliveryPhoto: order.deliveryPhoto || "",
                 signaturePhoto: order.signaturePhoto || "",
+                podDownloadUrl: order.podDownloadUrl || "",
+                podFilename: order.podFilename || "",
+                podGeneratedAt: order.podGeneratedAt || "",
                 createdAt: order.createdAt || "",
                 quoteAdjustedAt: order.quoteAdjustedAt || "",
                 driverAcceptedAt: order.driverAcceptedAt || "",
@@ -1753,7 +1884,7 @@
         const LOGIN_SESSION_KEY = "aulala-login-session";
         const DEFAULT_DRIVER_PAYOUT_RATIO = 0.78;
         const DRIVER_API_BASES = ["https://api.ai-express.cn:8443", "https://api.ai-express.cn"];
-        const APP_SHELL_VERSION = "202604041700";
+        const APP_SHELL_VERSION = "202604050100";
         const LIVE_RUNTIME_SYNC_INTERVAL_MS = 5000;
         const TEST_DRIVER_ACCOUNT = "13888888888";
         const estimateCache = {
@@ -1792,6 +1923,13 @@
             ownerOrders: [],
             consumedExternalOrderIds: [],
             driverOrderBuckets: {}
+        };
+        const signaturePadState = {
+            orderId: null,
+            pointerId: null,
+            drawing: false,
+            hasInk: false,
+            lastPoint: null
         };
 
         function normalizePhone(value) {
@@ -1908,6 +2046,269 @@
             throw lastError || new Error("driver api unavailable");
         }
 
+        function looksLikePutCode(value) {
+            return /^[A-Z]{2}\d{8,}[A-Z0-9]*$/i.test(String(value || "").trim());
+        }
+
+        function signatureModalElement() {
+            return document.getElementById("signature-modal");
+        }
+
+        function signatureCanvasElement() {
+            return document.getElementById("signature-canvas");
+        }
+
+        function signatureChipElement() {
+            return document.getElementById("signature-order-chip");
+        }
+
+        function resetSignaturePadState() {
+            signaturePadState.orderId = null;
+            signaturePadState.pointerId = null;
+            signaturePadState.drawing = false;
+            signaturePadState.hasInk = false;
+            signaturePadState.lastPoint = null;
+        }
+
+        function signatureCanvasContext() {
+            const canvas = signatureCanvasElement();
+            if (!canvas) {
+                return null;
+            }
+            return canvas.getContext("2d");
+        }
+
+        function prepareSignatureCanvas() {
+            const canvas = signatureCanvasElement();
+            const shell = canvas?.parentElement;
+            if (!canvas || !shell) {
+                return;
+            }
+            const ratio = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+            const rect = shell.getBoundingClientRect();
+            const width = Math.max(280, Math.floor(rect.width - 24));
+            const height = Math.max(180, Math.floor(window.innerWidth < 768 ? 220 : 260));
+            canvas.width = Math.floor(width * ratio);
+            canvas.height = Math.floor(height * ratio);
+            canvas.style.width = `${width}px`;
+            canvas.style.height = `${height}px`;
+            const context = signatureCanvasContext();
+            if (!context) {
+                return;
+            }
+            context.setTransform(ratio, 0, 0, ratio, 0, 0);
+            context.fillStyle = "#ffffff";
+            context.fillRect(0, 0, width, height);
+            context.strokeStyle = "#113a8f";
+            context.lineWidth = 3;
+            context.lineCap = "round";
+            context.lineJoin = "round";
+            signaturePadState.hasInk = false;
+            signaturePadState.lastPoint = null;
+        }
+
+        function signaturePointFromEvent(event) {
+            const canvas = signatureCanvasElement();
+            if (!canvas) {
+                return null;
+            }
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: event.clientX - rect.left,
+                y: event.clientY - rect.top
+            };
+        }
+
+        function beginSignatureStroke(event) {
+            if (signaturePadState.orderId == null) {
+                return;
+            }
+            const context = signatureCanvasContext();
+            const point = signaturePointFromEvent(event);
+            if (!context || !point) {
+                return;
+            }
+            if (typeof event.pointerId === "number") {
+                signaturePadState.pointerId = event.pointerId;
+            }
+            signaturePadState.drawing = true;
+            signaturePadState.lastPoint = point;
+            signaturePadState.hasInk = true;
+            context.beginPath();
+            context.moveTo(point.x, point.y);
+            context.lineTo(point.x + 0.1, point.y + 0.1);
+            context.stroke();
+            event.preventDefault();
+        }
+
+        function moveSignatureStroke(event) {
+            if (!signaturePadState.drawing) {
+                return;
+            }
+            if (signaturePadState.pointerId != null && typeof event.pointerId === "number" && event.pointerId !== signaturePadState.pointerId) {
+                return;
+            }
+            const context = signatureCanvasContext();
+            const point = signaturePointFromEvent(event);
+            if (!context || !point || !signaturePadState.lastPoint) {
+                return;
+            }
+            context.beginPath();
+            context.moveTo(signaturePadState.lastPoint.x, signaturePadState.lastPoint.y);
+            context.lineTo(point.x, point.y);
+            context.stroke();
+            signaturePadState.lastPoint = point;
+            signaturePadState.hasInk = true;
+            event.preventDefault();
+        }
+
+        function endSignatureStroke(event) {
+            if (signaturePadState.pointerId != null && typeof event?.pointerId === "number" && event.pointerId !== signaturePadState.pointerId) {
+                return;
+            }
+            signaturePadState.drawing = false;
+            signaturePadState.pointerId = null;
+            signaturePadState.lastPoint = null;
+        }
+
+        function openSignaturePad(orderId) {
+            const order = findActiveDriverOrderById(orderId);
+            if (!order) {
+                return;
+            }
+            signaturePadState.orderId = Number(orderId);
+            const modal = signatureModalElement();
+            const chip = signatureChipElement();
+            if (chip) {
+                chip.textContent = `${orderCodeLabel(order)} | ${dropoffAddressText(order) || "待补地址"}`;
+            }
+            if (modal) {
+                modal.style.display = "flex";
+            }
+            window.requestAnimationFrame(() => {
+                prepareSignatureCanvas();
+            });
+        }
+
+        function closeSignaturePad() {
+            const modal = signatureModalElement();
+            if (modal) {
+                modal.style.display = "none";
+            }
+            resetSignaturePadState();
+        }
+
+        function clearSignaturePad() {
+            if (signaturePadState.orderId == null) {
+                return;
+            }
+            prepareSignatureCanvas();
+        }
+
+        async function generatePodDocument(order) {
+            const orderCode = normalizeOrderCode(order?.orderCode || "");
+            if (!looksLikePutCode(orderCode) || !order?.signaturePhoto) {
+                return null;
+            }
+            const payload = await requestDriverApi("/api/aulala/pod-generate", {
+                method: "POST",
+                body: {
+                    orderCode,
+                    signaturePhoto: order.signaturePhoto,
+                    deliveredAt: order.deliveredAt || "",
+                    actualPickupTime: order.actualPickupTime || "",
+                    driverName: currentDriverName() || order.assignedDriverName || "",
+                    pickupAddress: pickupAddressText(order),
+                    dropoffAddress: dropoffAddressText(order)
+                }
+            });
+            return {
+                podDownloadUrl: String(payload?.url || "").trim(),
+                podFilename: String(payload?.filename || "").trim(),
+                podGeneratedAt: String(payload?.generatedAt || nowStamp()).trim()
+            };
+        }
+
+        async function saveSignaturePad() {
+            const order = findActiveDriverOrderById(signaturePadState.orderId);
+            const canvas = signatureCanvasElement();
+            if (!order || !canvas) {
+                closeSignaturePad();
+                return;
+            }
+            if (!signaturePadState.hasInk) {
+                alert("请先手写签字。");
+                return;
+            }
+            const signaturePhoto = canvas.toDataURL("image/png");
+            const nextOrder = normalizeOrder({
+                ...order,
+                signaturePhoto,
+                deliveredAt: order.deliveredAt || nowStamp()
+            }, order.id);
+            closeSignaturePad();
+            setDriverActiveOrders(currentActiveOrders().map(item => Number(item.id) === Number(order.id) ? nextOrder : item));
+
+            if (nextOrder.deliveryPhoto) {
+                await completeOrder(order.id, nextOrder);
+                return;
+            }
+
+            try {
+                await persistDriverLifecycle(nextOrder, {
+                    assignedDriverId: String(state.driverProfile.id || "").trim(),
+                    assignedDriverAccount: currentDriverAccount(),
+                    assignedDriverName: currentDriverName(),
+                    signaturePhoto: nextOrder.signaturePhoto,
+                    deliveredAt: nextOrder.deliveredAt || "",
+                    flowStatus: "in_progress",
+                    runtimeStatus: "in_transit",
+                    internalStatus: "派送途中",
+                    forceUnassigned: false
+                });
+            } catch (error) {
+                console.error("signature upload sync failed", error);
+                alert(error?.message || "签字同步到服务器失败，请稍后重试。");
+            }
+            saveAppState();
+            renderProfile();
+            renderOwnerPanel();
+        }
+
+        async function regenerateOrderPod(orderId) {
+            const order = findOrderById(orderId);
+            if (!order) {
+                return;
+            }
+            if (!looksLikePutCode(order.orderCode || "")) {
+                alert("这票没有可用于生成正式 POD 的入仓号。");
+                return;
+            }
+            if (!order.signaturePhoto) {
+                alert("请先完成客户签字，再生成 POD。");
+                return;
+            }
+            try {
+                const pod = await generatePodDocument(order);
+                if (!pod?.podDownloadUrl) {
+                    throw new Error("POD 生成失败，请稍后重试。");
+                }
+                await persistDriverLifecycle(order, {
+                    podDownloadUrl: pod.podDownloadUrl,
+                    podFilename: pod.podFilename,
+                    podGeneratedAt: pod.podGeneratedAt
+                });
+                rebuildAvailableOrders();
+                renderOrders();
+                renderProfile();
+                renderOwnerPanel();
+                openDetail(orderId);
+            } catch (error) {
+                console.error("regenerate pod failed", error);
+                alert(error?.message || "POD 生成失败，请稍后重试。");
+            }
+        }
+
         function persistLoginSession(profile) {
             const normalized = blankDriverProfile(profile);
             localStorage.setItem(LOGIN_SESSION_KEY, JSON.stringify({
@@ -2010,6 +2411,10 @@
                     driverAcceptedAt: String(raw.driverAcceptedAt || "").trim(),
                     actualPickupTime: String(raw.actualPickupTime || "").trim(),
                     deliveredAt: String(raw.deliveredAt || "").trim(),
+                    signaturePhoto: String(raw.signaturePhoto || "").trim(),
+                    podDownloadUrl: String(raw.podDownloadUrl || "").trim(),
+                    podFilename: String(raw.podFilename || "").trim(),
+                    podGeneratedAt: String(raw.podGeneratedAt || "").trim(),
                     driverRequestedPrice: Number(raw.driverRequestedPrice || 0),
                     agreedDriverPrice: Number(raw.agreedDriverPrice || 0),
                     forceUnassigned: Boolean(raw.forceUnassigned),
@@ -2148,6 +2553,10 @@
                 driverAcceptedAt: String(raw.driverAcceptedAt || "").trim(),
                 actualPickupTime: String(raw.actualPickupTime || "").trim(),
                 deliveredAt: String(raw.deliveredAt || "").trim(),
+                signaturePhoto: String(raw.signaturePhoto || "").trim(),
+                podDownloadUrl: String(raw.podDownloadUrl || "").trim(),
+                podFilename: String(raw.podFilename || "").trim(),
+                podGeneratedAt: String(raw.podGeneratedAt || "").trim(),
                 driverRequestedPrice: Number(raw.driverRequestedPrice || 0),
                 agreedDriverPrice: Number(raw.agreedDriverPrice || 0),
                 forceUnassigned: Boolean(raw.forceUnassigned),
@@ -2226,6 +2635,10 @@
                     driverAcceptedAt: op.driverAcceptedAt || order.driverAcceptedAt || "",
                     actualPickupTime: op.actualPickupTime || order.actualPickupTime || "",
                     deliveredAt: op.deliveredAt || order.deliveredAt || "",
+                    signaturePhoto: op.signaturePhoto || order.signaturePhoto || "",
+                    podDownloadUrl: op.podDownloadUrl || order.podDownloadUrl || "",
+                    podFilename: op.podFilename || order.podFilename || "",
+                    podGeneratedAt: op.podGeneratedAt || order.podGeneratedAt || "",
                     status: op.runtimeStatus || order.status || "",
                     price: effectiveDriverPrice(order)
                 },
@@ -2258,6 +2671,9 @@
                 score += 2;
             }
             if (order.signaturePhoto) {
+                score += 2;
+            }
+            if (order.podGeneratedAt || order.podDownloadUrl) {
                 score += 2;
             }
             return score;
@@ -3442,6 +3858,21 @@
         function renderUploadBlock(order, type, label) {
             const image = order?.[type] || "";
             const inputId = `upload-${type}-${order.id}`;
+            if (type === "signaturePhoto") {
+                if (image) {
+                    return `
+                        <img class="preview-img" src="${image}" alt="客户签字">
+                        <div class="preview-label">客户签字已保存，可重新签字</div>
+                        <button class="btn-light" onclick="openSignaturePad(${order.id})">重新签字</button>
+                    `;
+                }
+                return `
+                    <div class="upload-btn" onclick="openSignaturePad(${order.id})">
+                        <div style="font-size:24px; line-height:1;">✍</div>
+                        <div>${label}</div>
+                    </div>
+                `;
+            }
             if (image) {
                 const pretty = type === "pickupPhoto" ? "提货照片" : type === "deliveryPhoto" ? "送达照片" : "客户签字";
                 return `
@@ -4740,8 +5171,8 @@
             reader.readAsDataURL(file);
         }
 
-        async function completeOrder(orderId) {
-            const targetOrder = findActiveDriverOrderById(orderId);
+        async function completeOrder(orderId, providedOrder = null) {
+            const targetOrder = providedOrder || findActiveDriverOrderById(orderId);
             if (!targetOrder) {
                 return;
             }
@@ -4756,6 +5187,19 @@
                 status: "completed",
                 deliveredAt: targetOrder.deliveredAt || nowStamp()
             };
+            let podFailureMessage = "";
+
+            try {
+                const pod = await generatePodDocument(finished);
+                if (pod?.podDownloadUrl) {
+                    finished.podDownloadUrl = pod.podDownloadUrl;
+                    finished.podFilename = pod.podFilename;
+                    finished.podGeneratedAt = pod.podGeneratedAt;
+                }
+            } catch (error) {
+                console.error("generate pod failed", error);
+                podFailureMessage = error?.message || "POD 生成失败，可稍后在详情里重新生成。";
+            }
 
             if (finished.sourceType === "owner_portal") {
                 const ownerOrder = state.ownerOrders.find(item => item.id === finished.id);
@@ -4774,6 +5218,10 @@
                     driverAcceptedAt: finished.driverAcceptedAt || "",
                     actualPickupTime: finished.actualPickupTime || "",
                     deliveredAt: finished.deliveredAt,
+                    signaturePhoto: finished.signaturePhoto || "",
+                    podDownloadUrl: finished.podDownloadUrl || "",
+                    podFilename: finished.podFilename || "",
+                    podGeneratedAt: finished.podGeneratedAt || "",
                     flowStatus: "completed",
                     runtimeStatus: "completed",
                     internalStatus: "已完成",
@@ -4785,7 +5233,7 @@
                 renderOrders();
                 renderProfile();
                 renderOwnerPanel();
-                alert("订单已完成，已进入“已完成订单”。");
+                alert(podFailureMessage ? `订单已完成，但 ${podFailureMessage}` : "订单已完成，已进入“已完成订单”。");
             } catch (error) {
                 console.error("complete order failed", error);
                 alert(error?.message || "订单完成状态同步到服务器失败，请稍后重试。");
@@ -4857,9 +5305,13 @@
                 <div class="detail-row"><span>货物规格</span><span>${order.pallets} Pallets / ${order.weight}</span></div>
                 ${order.quoteAdjustedAt ? `<div class="detail-row"><span>最后调价时间</span><span>${order.quoteAdjustedAt}</span></div>` : ""}
                 ${order.driverAcceptedAt ? `<div class="detail-row"><span>被抢单时间</span><span>${order.driverAcceptedAt}</span></div>` : ""}
+                ${order.podGeneratedAt ? `<div class="detail-row"><span>POD生成时间</span><span>${order.podGeneratedAt}</span></div>` : ""}
                 ${order.remarks ? `<div class="detail-row"><span>备注要求</span><span>${order.remarks}</span></div>` : ""}
                 <div style="margin-top:15px;">
                     ${proofBlocks}
+                </div>
+                <div class="pod-download-row">
+                    ${order.podDownloadUrl ? `<a class="btn-main" href="${order.podDownloadUrl}" target="_blank" rel="noopener noreferrer">${order.podFilename ? `查看POD：${order.podFilename}` : "查看/下载POD"}</a>` : `<button class="btn-outline" onclick="regenerateOrderPod(${order.id})">生成POD回单</button>`}
                 </div>
                 <button class="btn-main" onclick="closeDetail()">关闭</button>
             `;
@@ -4878,6 +5330,11 @@
         document.getElementById("detail-modal").addEventListener("click", event => {
             if (event.target.id === "detail-modal") {
                 closeDetail();
+            }
+        });
+        document.getElementById("signature-modal").addEventListener("click", event => {
+            if (event.target.id === "signature-modal") {
+                closeSignaturePad();
             }
         });
 
@@ -4920,6 +5377,11 @@
         window.addEventListener("pageshow", () => {
             void runLiveRuntimeSync({ rerender: true, immediate: true });
         });
+        window.addEventListener("resize", () => {
+            if (signaturePadState.orderId != null) {
+                prepareSignatureCanvas();
+            }
+        });
         window.addEventListener("beforeunload", clearLiveRuntimeSyncTimer);
 
         window.onload = () => {
@@ -4938,6 +5400,14 @@
             renderOrders();
             renderProfile();
             renderOwnerPanel();
+            const signatureCanvas = signatureCanvasElement();
+            if (signatureCanvas) {
+                signatureCanvas.addEventListener("pointerdown", beginSignatureStroke);
+                signatureCanvas.addEventListener("pointermove", moveSignatureStroke);
+                signatureCanvas.addEventListener("pointerup", endSignatureStroke);
+                signatureCanvas.addEventListener("pointerleave", endSignatureStroke);
+                signatureCanvas.addEventListener("pointercancel", endSignatureStroke);
+            }
             if (state.userRole === "owner") {
                 const ownerRadio = document.querySelector('input[name="role"][value="owner"]');
                 if (ownerRadio) {
