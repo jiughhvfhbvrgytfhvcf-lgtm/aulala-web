@@ -2207,13 +2207,18 @@
 
         async function generatePodDocument(order) {
             const orderCode = normalizeOrderCode(order?.orderCode || "");
-            if (!looksLikePutCode(orderCode) || !order?.signaturePhoto) {
+            const mergedPutCodes = Array.isArray(order?.mergedOrderCodes)
+                ? order.mergedOrderCodes.map(item => normalizeOrderCode(item)).filter(code => looksLikePutCode(code))
+                : [];
+            const validPutCodes = looksLikePutCode(orderCode) ? [orderCode] : mergedPutCodes;
+            if (!validPutCodes.length || !order?.signaturePhoto) {
                 return null;
             }
             const payload = await requestDriverApi("/api/aulala/pod-generate", {
                 method: "POST",
                 body: {
-                    orderCode,
+                    orderCode: validPutCodes[0],
+                    putCodes: validPutCodes,
                     signaturePhoto: order.signaturePhoto,
                     deliveredAt: order.deliveredAt || "",
                     actualPickupTime: order.actualPickupTime || "",
@@ -2280,7 +2285,10 @@
             if (!order) {
                 return;
             }
-            if (!looksLikePutCode(order.orderCode || "")) {
+            const mergedPutCodes = Array.isArray(order?.mergedOrderCodes)
+                ? order.mergedOrderCodes.map(item => normalizeOrderCode(item)).filter(code => looksLikePutCode(code))
+                : [];
+            if (!looksLikePutCode(order.orderCode || "") && !mergedPutCodes.length) {
                 alert("这票没有可用于生成正式 POD 的入仓号。");
                 return;
             }
