@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-06 22:59:36",
+  "generatedAt": "2026-04-06 23:53:17",
   "source": "fbadidi-live-crowdfund-api",
   "rules": {
     "pickupAddress": "悉尼",
@@ -13,7 +13,7 @@
     "orderApiUrl": "http://121.196.233.99:8080/api/order/getOrderByPutCode",
     "orderEnrichWorkers": 16,
     "assignmentOverridesPath": "/Users/yangxiaochun/项目/fbadidi/data/aulala-assignment-overrides.json",
-    "assignmentOverrideCount": 12,
+    "assignmentOverrideCount": 0,
     "excludedProviders": [],
     "skippedProviderOrders": [],
     "crowdfundStartDate": "",
@@ -205,8 +205,8 @@
       "cbm": 3.67,
       "weightKg": 358.1,
       "distanceKm": null,
-      "distancePricingBasis": "merged_same_address_assigned_batch",
-      "pricingModel": "merged_assigned_delivery",
+      "distancePricingBasis": "merged_same_address_auto_hall",
+      "pricingModel": "merged_auto_delivery",
       "pricingVendor": "MERGED",
       "destinationPostcode": "3175",
       "chargeableWeightKg": 920.25,
@@ -239,7 +239,7 @@
       "planArrivedPortTime": "2026-03-25",
       "actualArrivedPortTime": "2026-03-28",
       "importClearanceTime": "",
-      "pickupTimeBasis": "merged_assignment_batch_same_address",
+      "pickupTimeBasis": "merged_auto_order_same_address",
       "pickupTimeLabel": "确定提货时间",
       "pickupTimeStatus": "confirmed",
       "pickupTimeColor": "green",
@@ -254,13 +254,8 @@
       "chargeCode": "",
       "refId": "",
       "provider": "MERGED",
-      "source": "fbadidi_putcode_order_api",
+      "source": "fbadidi-live-crowdfund-api-merged",
       "sourceRefreshedAt": "2026-04-06 11:57:38",
-      "assignedDriverAccount": "0450440830",
-      "assignedDriverName": "kevin",
-      "assignedDriverVehicleType": "Isuzu",
-      "assignmentSource": "POD-MKP3103044430.xlsx",
-      "assignmentNote": "从POD表批量指派给kevin派送。",
       "showClearanceSuffix": false,
       "isMergedOrder": true,
       "mergedOrderCount": 7,
@@ -345,8 +340,8 @@
           "remarks": ""
         }
       ],
-      "mergeLabel": "平台合并派送单（7票）",
-      "remarks": "平台自动合并派送单，共7票：QY06001642MEL1、QY06001643MEL1、QY06001667MEL1、QY06001677MEL1、QY06001682MEL1、QY06001685MEL1、QY06001687MEL1；从POD表批量指派给kevin派送。"
+      "mergeLabel": "平台自动合并单（7票）",
+      "remarks": "平台自动合并单，共7票：QY06001642MEL1、QY06001643MEL1、QY06001667MEL1、QY06001677MEL1、QY06001682MEL1、QY06001685MEL1、QY06001687MEL1"
     },
     {
       "id": 499620,
