@@ -1553,7 +1553,7 @@
                 <a href="javascript:void(0)" onclick="openOwnerEntry()">货主发货</a>
             </span>
             <span id="user-nav" class="hidden">
-                <a href="app.html?v=202604041700&view=profile" id="dashboard-link">个人中心</a>
+                <a href="app.html?v=202604062130&view=profile" id="dashboard-link">个人中心</a>
                 <button type="button" onclick="logout()">退出</button>
             </span>
         </div>
@@ -1575,7 +1575,7 @@
     <div class="container">
         <section id="order-section">
             <div id="dashboard-shortcut" class="dashboard-shortcut hidden">
-                <a class="btn-main" id="dashboard-shortcut-btn" href="app.html?v=202604041700&view=center">进入订单中心</a>
+                <a class="btn-main" id="dashboard-shortcut-btn" href="app.html?v=202604062130&view=center">进入订单中心</a>
                 <button class="btn-outline" type="button" onclick="logout()">退出</button>
             </div>
             <div class="section-row">
@@ -1951,7 +1951,7 @@
         const LOGIN_SESSION_KEY = "aulala-login-session";
         const DEFAULT_DRIVER_PAYOUT_RATIO = 0.78;
         const DRIVER_API_BASES = ["https://api.ai-express.cn:8443", "https://api.ai-express.cn"];
-        const APP_SHELL_VERSION = "202604062000";
+        const APP_SHELL_VERSION = "202604062130";
         const LIVE_RUNTIME_SYNC_INTERVAL_MS = 5000;
         const TEST_DRIVER_ACCOUNT = "13888888888";
         const estimateCache = {
@@ -1964,6 +1964,7 @@
         let liveRuntimeSyncTimer = null;
         let liveRuntimeSyncInFlight = false;
         let liveRuntimeSyncQueued = false;
+        let hasSuccessfulRemoteRuntimeSync = false;
 
         const state = {
             loggedIn: false,
@@ -2573,6 +2574,7 @@
                 orderOps: remoteRuntime.orderOps,
                 updatedAt: remoteRuntime.updatedAt || localRuntime.updatedAt || ""
             };
+            hasSuccessfulRemoteRuntimeSync = true;
             saveAdminRuntime(nextRuntime);
             if (state.loggedIn && state.userRole === "driver") {
                 const remoteDriver = (nextRuntime.drivers || []).find(driver => normalizePhone(driver.phone) === currentDriverAccount());
@@ -2789,7 +2791,19 @@
             return score;
         }
 
-        function availableDriverCatalog() {
+        function shouldSeedDriverDisplayFromLocal(account = currentDriverAccount()) {
+            return normalizePhone(account) === TEST_DRIVER_ACCOUNT;
+        }
+
+        function canUseCloudBackedDriverState(account = currentDriverAccount()) {
+            if (!state.loggedIn || state.userRole !== "driver") {
+                return true;
+            }
+            return shouldSeedDriverDisplayFromLocal(account) || hasSuccessfulRemoteRuntimeSync;
+        }
+
+        function availableDriverCatalog(options = {}) {
+            const { includeLocalDriverState = true } = options;
             const catalog = new Map();
             const append = order => {
                 if (!order || !order.orderCode) {
@@ -2805,21 +2819,25 @@
 
             (state.baseExternalOrders || []).forEach(append);
             (state.ownerOrders || []).forEach(append);
-            currentActiveOrders().forEach(append);
-            (state.completedOrders || []).forEach(append);
-            Object.values(state.driverOrderBuckets || {}).forEach(bucket => {
-                if (!bucket) {
-                    return;
-                }
-                (bucket.activeOrders || []).forEach(append);
-                (bucket.completedOrders || []).forEach(append);
-            });
-            const runtime = loadAdminRuntime();
-            Object.values(runtime?.orderOps || {}).forEach(op => {
-                if (op?.orderSnapshot && typeof op.orderSnapshot === "object") {
-                    append(applyOrderOpSnapshot(op.orderSnapshot, op));
-                }
-            });
+            if (includeLocalDriverState) {
+                currentActiveOrders().forEach(append);
+                (state.completedOrders || []).forEach(append);
+                Object.values(state.driverOrderBuckets || {}).forEach(bucket => {
+                    if (!bucket) {
+                        return;
+                    }
+                    (bucket.activeOrders || []).forEach(append);
+                    (bucket.completedOrders || []).forEach(append);
+                });
+            }
+            if (canUseCloudBackedDriverState()) {
+                const runtime = loadAdminRuntime();
+                Object.values(runtime?.orderOps || {}).forEach(op => {
+                    if (op?.orderSnapshot && typeof op.orderSnapshot === "object") {
+                        append(applyOrderOpSnapshot(op.orderSnapshot, op));
+                    }
+                });
+            }
             return Array.from(catalog.values());
         }
 
@@ -2829,7 +2847,7 @@
             }
             const remoteActive = [];
             const remoteCompleted = [];
-            availableDriverCatalog().forEach(order => {
+            availableDriverCatalog({ includeLocalDriverState: false }).forEach(order => {
                 const op = getAdminOrderOp(order);
                 if (!orderBelongsToCurrentDriver(order, op)) {
                     return;
@@ -2907,7 +2925,11 @@
             }
 
             const migrationOrders = [];
-            currentActiveOrders().forEach((activeOrder) => {
+            const bucket = getDriverBucket(currentDriverAccount(), false);
+            const localActiveOrders = Array.isArray(bucket?.activeOrders) ? bucket.activeOrders : [];
+            const localCompletedOrders = Array.isArray(bucket?.completedOrders) ? bucket.completedOrders : [];
+
+            localActiveOrders.forEach((activeOrder) => {
                 migrationOrders.push({
                     order: activeOrder,
                     partial: {
@@ -2927,7 +2949,7 @@
                 });
             });
 
-            (state.completedOrders || []).forEach(order => {
+            localCompletedOrders.forEach(order => {
                 migrationOrders.push({
                     order,
                     partial: {
@@ -3019,28 +3041,32 @@
                 }
             };
 
-            Object.values(state.driverOrderBuckets || {}).forEach(bucket => {
-                if (!bucket) {
-                    return;
-                }
-                (bucket.activeOrders || []).forEach(addOrderCode);
-                (bucket.completedOrders || []).forEach(addOrderCode);
-            });
+            if (shouldSeedDriverDisplayFromLocal()) {
+                Object.values(state.driverOrderBuckets || {}).forEach(bucket => {
+                    if (!bucket) {
+                        return;
+                    }
+                    (bucket.activeOrders || []).forEach(addOrderCode);
+                    (bucket.completedOrders || []).forEach(addOrderCode);
+                });
+            }
 
             currentActiveOrders().forEach(addOrderCode);
             (state.completedOrders || []).forEach(addOrderCode);
 
-            const adminRuntime = loadAdminRuntime();
-            const orderOps = adminRuntime && typeof adminRuntime.orderOps === "object" ? adminRuntime.orderOps : {};
-            Object.entries(orderOps).forEach(([key, op]) => {
-                const code = key.startsWith("code:") ? normalizeOrderCode(key.slice(5)) : "";
-                if (!code || !op || typeof op !== "object") {
-                    return;
-                }
-                if (["assigned", "in_progress", "completed"].includes(String(op.flowStatus || "")) || op.assignedDriverId || /已完成/.test(String(op.internalStatus || ""))) {
-                    blockedCodes.add(code);
-                }
-            });
+            if (canUseCloudBackedDriverState()) {
+                const adminRuntime = loadAdminRuntime();
+                const orderOps = adminRuntime && typeof adminRuntime.orderOps === "object" ? adminRuntime.orderOps : {};
+                Object.entries(orderOps).forEach(([key, op]) => {
+                    const code = key.startsWith("code:") ? normalizeOrderCode(key.slice(5)) : "";
+                    if (!code || !op || typeof op !== "object") {
+                        return;
+                    }
+                    if (["assigned", "in_progress", "completed"].includes(String(op.flowStatus || "")) || op.assignedDriverId || /已完成/.test(String(op.internalStatus || ""))) {
+                        blockedCodes.add(code);
+                    }
+                });
+            }
 
             return blockedCodes;
         }
@@ -3150,10 +3176,15 @@
                 return;
             }
             const bucket = getDriverBucket(currentDriverAccount(), true);
-            setDriverActiveOrders(bucket.activeOrders || []);
-            state.completedOrders = Array.isArray(bucket.completedOrders)
-                ? bucket.completedOrders.map((order, index) => normalizeOrder(order, 7000 + index))
-                : [];
+            if (shouldSeedDriverDisplayFromLocal(currentDriverAccount())) {
+                setDriverActiveOrders(bucket.activeOrders || []);
+                state.completedOrders = Array.isArray(bucket.completedOrders)
+                    ? bucket.completedOrders.map((order, index) => normalizeOrder(order, 7000 + index))
+                    : [];
+            } else {
+                setDriverActiveOrders([]);
+                state.completedOrders = [];
+            }
             syncDriverCollectionsFromOrderOps();
         }
 
@@ -3799,7 +3830,7 @@
             if (!currentDriverAccount()) {
                 return [];
             }
-            return availableDriverCatalog()
+            return availableDriverCatalog({ includeLocalDriverState: false })
                 .filter(order => orderBelongsToCurrentDriver(order))
                 .filter(order => driverFlowStatus(order) === "assigned")
                 .filter(order => !getAdminOrderOp(order).forceUnassigned)
@@ -3811,7 +3842,7 @@
             if (!currentDriverAccount()) {
                 return [];
             }
-            return availableDriverCatalog()
+            return availableDriverCatalog({ includeLocalDriverState: false })
                 .filter(order => orderBelongsToCurrentDriver(order))
                 .filter(order => hasPendingDriverAdjustment(order))
                 .sort((left, right) => String(left.scheduledPickupTime || left.expectedPickupTime || "").localeCompare(String(right.scheduledPickupTime || right.expectedPickupTime || "")));
