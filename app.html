@@ -2046,6 +2046,20 @@
             throw lastError || new Error("driver api unavailable");
         }
 
+        function normalizePodFailureMessage(error) {
+            const raw = String(error?.message || "").trim();
+            if (!raw) {
+                return "POD 生成失败，可稍后在详情里重新生成。";
+            }
+            if (/Failed to fetch/i.test(raw)) {
+                return "POD 生成接口暂时不可用，可稍后在详情里重新生成。";
+            }
+            if (/request body too large/i.test(raw)) {
+                return "签字图片过大，POD 暂未生成，可稍后在详情里重新生成。";
+            }
+            return raw;
+        }
+
         function looksLikePutCode(value) {
             return /^[A-Z]{2}\d{8,}[A-Z0-9]*$/i.test(String(value || "").trim());
         }
@@ -2060,6 +2074,17 @@
 
         function signatureChipElement() {
             return document.getElementById("signature-order-chip");
+        }
+
+        function exportSignatureDataUrl(canvas) {
+            if (!canvas) {
+                return "";
+            }
+            try {
+                return canvas.toDataURL("image/jpeg", 0.82);
+            } catch (error) {
+                return canvas.toDataURL("image/png");
+            }
         }
 
         function resetSignaturePadState() {
@@ -2245,7 +2270,7 @@
                 alert("请先手写签字。");
                 return;
             }
-            const signaturePhoto = canvas.toDataURL("image/png");
+            const signaturePhoto = exportSignatureDataUrl(canvas);
             const nextOrder = normalizeOrder({
                 ...order,
                 signaturePhoto,
@@ -2313,7 +2338,7 @@
                 openDetail(orderId);
             } catch (error) {
                 console.error("regenerate pod failed", error);
-                alert(error?.message || "POD 生成失败，请稍后重试。");
+                alert(normalizePodFailureMessage(error));
             }
         }
 
@@ -5206,7 +5231,7 @@
                 }
             } catch (error) {
                 console.error("generate pod failed", error);
-                podFailureMessage = error?.message || "POD 生成失败，可稍后在详情里重新生成。";
+                podFailureMessage = normalizePodFailureMessage(error);
             }
 
             if (finished.sourceType === "owner_portal") {
