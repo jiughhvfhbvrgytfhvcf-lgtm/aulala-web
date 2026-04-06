@@ -1553,7 +1553,7 @@
                 <a href="javascript:void(0)" onclick="openOwnerEntry()">货主发货</a>
             </span>
             <span id="user-nav" class="hidden">
-                <a href="app.html?v=202604062130&view=profile" id="dashboard-link">个人中心</a>
+                <a href="app.html?v=202604062220&view=profile" id="dashboard-link">个人中心</a>
                 <button type="button" onclick="logout()">退出</button>
             </span>
         </div>
@@ -1575,7 +1575,7 @@
     <div class="container">
         <section id="order-section">
             <div id="dashboard-shortcut" class="dashboard-shortcut hidden">
-                <a class="btn-main" id="dashboard-shortcut-btn" href="app.html?v=202604062130&view=center">进入订单中心</a>
+                <a class="btn-main" id="dashboard-shortcut-btn" href="app.html?v=202604062220&view=center">进入订单中心</a>
                 <button class="btn-outline" type="button" onclick="logout()">退出</button>
             </div>
             <div class="section-row">
@@ -1941,9 +1941,13 @@
             };
         }
 
-        const externalOrders = Array.isArray(window.AULALA_ORDER_FEED?.orders) && window.AULALA_ORDER_FEED.orders.length
+        const feedOrders = Array.isArray(window.AULALA_ORDER_FEED?.orders)
             ? window.AULALA_ORDER_FEED.orders
-            : fallbackOrders;
+            : [];
+        const useDemoFallbackOrders = !feedOrders.length
+            && (window.location.protocol === "file:"
+                || ["localhost", "127.0.0.1"].includes(window.location.hostname));
+        const externalOrders = useDemoFallbackOrders ? fallbackOrders : feedOrders;
         const initialOrders = externalOrders.map((order, index) => normalizeOrder(order, index + 1));
         const APP_STORAGE_KEY = "aulala_app_runtime_v1";
         const ADMIN_STORAGE_KEY = "aulala_admin_runtime_v1";
@@ -1951,7 +1955,7 @@
         const LOGIN_SESSION_KEY = "aulala-login-session";
         const DEFAULT_DRIVER_PAYOUT_RATIO = 0.78;
         const DRIVER_API_BASES = ["https://api.ai-express.cn:8443", "https://api.ai-express.cn"];
-        const APP_SHELL_VERSION = "202604062130";
+        const APP_SHELL_VERSION = "202604062220";
         const LIVE_RUNTIME_SYNC_INTERVAL_MS = 5000;
         const TEST_DRIVER_ACCOUNT = "13888888888";
         const estimateCache = {
