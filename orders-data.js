@@ -1,5 +1,5 @@
 window.AULALA_ORDER_FEED = {
-  "generatedAt": "2026-04-06 15:47:45",
+  "generatedAt": "2026-04-06 15:53:31",
   "source": "fbadidi-live-crowdfund-api",
   "rules": {
     "pickupAddress": "悉尼",
@@ -594,7 +594,7 @@ window.AULALA_ORDER_FEED = {
     {
       "id": 499620,
       "orderCode": "QY09000252AU2",
-      "price": 117.31,
+      "price": 117.32,
       "state": "NSW",
       "pickup": "AULALA(SYD01)",
       "dropoff": "Baulkham Hills",
@@ -617,7 +617,7 @@ window.AULALA_ORDER_FEED = {
       "unloadCityCode": "SYD",
       "tlaRateCardPrice": null,
       "zonghengRateCardPrice": null,
-      "distanceFallbackPrice": 117.31,
+      "distanceFallbackPrice": 117.32,
       "rateCardVendor": "",
       "rateCardCityCode": "",
       "rateCardZone": "",
