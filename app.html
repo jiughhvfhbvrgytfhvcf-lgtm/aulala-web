@@ -1874,6 +1874,73 @@
             };
         }
 
+        function buildCloudOrderSnapshot(order) {
+            if (!order) {
+                return null;
+            }
+            const normalized = normalizeOrder(order, Number(order?.id || 0) || 0);
+            return {
+                id: normalized.id,
+                price: Number(normalized.price || 0),
+                state: normalized.state,
+                pickup: normalized.pickup,
+                dropoff: normalized.dropoff,
+                pallets: Number(normalized.pallets || 0),
+                weight: normalized.weight,
+                time: normalized.time,
+                date: normalized.date,
+                pickupAddress: normalized.pickupAddress,
+                dropoffAddress: normalized.dropoffAddress,
+                orderCode: normalized.orderCode,
+                cbm: Number(normalized.cbm || 0),
+                pieces: Number(normalized.pieces || 0),
+                source: normalized.source,
+                sourceType: normalized.sourceType,
+                sourceLabel: normalized.sourceLabel,
+                status: normalized.status,
+                expectedPickupTime: normalized.expectedPickupTime,
+                scheduledPickupTime: normalized.scheduledPickupTime,
+                scheduledPickupLabel: normalized.scheduledPickupLabel,
+                pickupTimeLabel: normalized.pickupTimeLabel,
+                pickupTimeStatus: normalized.pickupTimeStatus,
+                pickupTimeColor: normalized.pickupTimeColor,
+                pickupTimeBasis: normalized.pickupTimeBasis,
+                clearanceStatus: normalized.clearanceStatus,
+                clearanceStatusRaw: normalized.clearanceStatusRaw,
+                clearanceStatusLabel: normalized.clearanceStatusLabel,
+                clearanceStatusShortLabel: normalized.clearanceStatusShortLabel,
+                actualLeavePortTime: normalized.actualLeavePortTime,
+                planArrivedPortTime: normalized.planArrivedPortTime,
+                actualArrivedPortTime: normalized.actualArrivedPortTime,
+                importClearanceTime: normalized.importClearanceTime,
+                showClearanceSuffix: normalized.showClearanceSuffix,
+                systemEstimatedPrice: Number(normalized.systemEstimatedPrice || 0),
+                ownerQuotedPrice: Number(normalized.ownerQuotedPrice || 0),
+                ownerLifecycleStatus: normalized.ownerLifecycleStatus,
+                ownerName: normalized.ownerName,
+                ownerPhone: normalized.ownerPhone,
+                remarks: normalized.remarks,
+                actualPickupTime: normalized.actualPickupTime,
+                deliveredAt: normalized.deliveredAt,
+                pickupPhoto: normalized.pickupPhoto,
+                deliveryPhoto: normalized.deliveryPhoto,
+                signaturePhoto: normalized.signaturePhoto,
+                podDownloadUrl: normalized.podDownloadUrl,
+                podFilename: normalized.podFilename,
+                podGeneratedAt: normalized.podGeneratedAt,
+                createdAt: normalized.createdAt,
+                quoteAdjustedAt: normalized.quoteAdjustedAt,
+                driverAcceptedAt: normalized.driverAcceptedAt,
+                assignedDriverAccount: normalized.assignedDriverAccount,
+                assignedDriverName: normalized.assignedDriverName,
+                isMergedOrder: normalized.isMergedOrder,
+                mergedOrderCount: normalized.mergedOrderCount,
+                mergedOrderCodes: Array.isArray(normalized.mergedOrderCodes) ? normalized.mergedOrderCodes.slice() : [],
+                mergeLabel: normalized.mergeLabel,
+                provider: normalized.provider || ""
+            };
+        }
+
         const externalOrders = Array.isArray(window.AULALA_ORDER_FEED?.orders) && window.AULALA_ORDER_FEED.orders.length
             ? window.AULALA_ORDER_FEED.orders
             : fallbackOrders;
@@ -1884,7 +1951,7 @@
         const LOGIN_SESSION_KEY = "aulala-login-session";
         const DEFAULT_DRIVER_PAYOUT_RATIO = 0.78;
         const DRIVER_API_BASES = ["https://api.ai-express.cn:8443", "https://api.ai-express.cn"];
-        const APP_SHELL_VERSION = "202604051020";
+        const APP_SHELL_VERSION = "202604062000";
         const LIVE_RUNTIME_SYNC_INTERVAL_MS = 5000;
         const TEST_DRIVER_ACCOUNT = "13888888888";
         const estimateCache = {
@@ -2453,7 +2520,10 @@
                     forceUnassigned: Boolean(raw.forceUnassigned),
                     customerReceivable: Number(raw.customerReceivable || 0),
                     driverPayable: Number(raw.driverPayable || 0),
-                    driverQuoteStatus: raw.driverQuoteStatus || (Number(raw.driverRequestedPrice || 0) > 0 ? "pending" : "")
+                    driverQuoteStatus: raw.driverQuoteStatus || (Number(raw.driverRequestedPrice || 0) > 0 ? "pending" : ""),
+                    orderSnapshot: raw.orderSnapshot && typeof raw.orderSnapshot === "object"
+                        ? normalizeOrder(raw.orderSnapshot, raw.orderSnapshot.id || 990000)
+                        : null
                 };
             });
             return {
@@ -2593,7 +2663,10 @@
                 driverRequestedPrice: Number(raw.driverRequestedPrice || 0),
                 agreedDriverPrice: Number(raw.agreedDriverPrice || 0),
                 forceUnassigned: Boolean(raw.forceUnassigned),
-                driverQuoteStatus: raw.driverQuoteStatus || (Number(raw.driverRequestedPrice || 0) > 0 ? "pending" : "")
+                driverQuoteStatus: raw.driverQuoteStatus || (Number(raw.driverRequestedPrice || 0) > 0 ? "pending" : ""),
+                orderSnapshot: raw.orderSnapshot && typeof raw.orderSnapshot === "object"
+                    ? normalizeOrder(raw.orderSnapshot, raw.orderSnapshot.id || 990000)
+                    : null
             };
         }
 
@@ -2660,8 +2733,12 @@
         }
 
         function applyOrderOpSnapshot(order, op = getAdminOrderOp(order)) {
+            const baseOrder = op.orderSnapshot && typeof op.orderSnapshot === "object"
+                ? normalizeOrder(op.orderSnapshot, op.orderSnapshot.id || order?.id || 0)
+                : normalizeOrder(order, order?.id || 0);
             return normalizeOrder(
                 {
+                    ...baseOrder,
                     ...order,
                     assignedDriverAccount: assignedDriverAccountFor(order, op),
                     assignedDriverName: assignedDriverNameFor(order, op),
@@ -2737,6 +2814,12 @@
                 (bucket.activeOrders || []).forEach(append);
                 (bucket.completedOrders || []).forEach(append);
             });
+            const runtime = loadAdminRuntime();
+            Object.values(runtime?.orderOps || {}).forEach(op => {
+                if (op?.orderSnapshot && typeof op.orderSnapshot === "object") {
+                    append(applyOrderOpSnapshot(op.orderSnapshot, op));
+                }
+            });
             return Array.from(catalog.values());
         }
 
@@ -2762,10 +2845,6 @@
                 }
             });
 
-            if (!remoteActive.length && !remoteCompleted.length) {
-                return;
-            }
-
             remoteActive.sort((left, right) => String(right.driverAcceptedAt || "").localeCompare(String(left.driverAcceptedAt || "")));
             remoteCompleted.sort((left, right) => String(right.deliveredAt || right.driverAcceptedAt || "").localeCompare(String(left.deliveredAt || left.driverAcceptedAt || "")));
             setDriverActiveOrders(remoteActive);
@@ -2776,17 +2855,40 @@
         async function persistDriverLifecycle(order, partial = {}) {
             const key = orderStorageKey(order);
             const current = getAdminOrderOp(order);
+            const nextAssignedDriverAccount = normalizePhone(partial.assignedDriverAccount ?? current.assignedDriverAccount ?? currentDriverAccount());
+            const nextAssignedDriverName = String(partial.assignedDriverName ?? current.assignedDriverName ?? currentDriverName()).trim();
+            const nextDriverAcceptedAt = String(partial.driverAcceptedAt ?? current.driverAcceptedAt ?? order.driverAcceptedAt ?? "").trim();
+            const nextActualPickupTime = String(partial.actualPickupTime ?? current.actualPickupTime ?? order.actualPickupTime ?? "").trim();
+            const nextDeliveredAt = String(partial.deliveredAt ?? current.deliveredAt ?? order.deliveredAt ?? "").trim();
+            const nextSignaturePhoto = String(partial.signaturePhoto ?? current.signaturePhoto ?? order.signaturePhoto ?? "").trim();
+            const nextPodDownloadUrl = String(partial.podDownloadUrl ?? current.podDownloadUrl ?? order.podDownloadUrl ?? "").trim();
+            const nextPodFilename = String(partial.podFilename ?? current.podFilename ?? order.podFilename ?? "").trim();
+            const nextPodGeneratedAt = String(partial.podGeneratedAt ?? current.podGeneratedAt ?? order.podGeneratedAt ?? "").trim();
+            const nextRuntimeStatus = String(partial.runtimeStatus ?? current.runtimeStatus ?? order.status ?? "").trim();
             const nextOp = {
                 ...current,
                 assignedDriverId: partial.assignedDriverId ?? current.assignedDriverId ?? String(state.driverProfile.id || "").trim(),
-                assignedDriverAccount: normalizePhone(partial.assignedDriverAccount ?? current.assignedDriverAccount ?? currentDriverAccount()),
-                assignedDriverName: String(partial.assignedDriverName ?? current.assignedDriverName ?? currentDriverName()).trim(),
+                assignedDriverAccount: nextAssignedDriverAccount,
+                assignedDriverName: nextAssignedDriverName,
                 flowStatus: String(partial.flowStatus ?? current.flowStatus ?? "").trim(),
-                runtimeStatus: String(partial.runtimeStatus ?? current.runtimeStatus ?? "").trim(),
-                driverAcceptedAt: String(partial.driverAcceptedAt ?? current.driverAcceptedAt ?? "").trim(),
-                actualPickupTime: String(partial.actualPickupTime ?? current.actualPickupTime ?? "").trim(),
-                deliveredAt: String(partial.deliveredAt ?? current.deliveredAt ?? "").trim(),
+                runtimeStatus: nextRuntimeStatus,
+                driverAcceptedAt: nextDriverAcceptedAt,
+                actualPickupTime: nextActualPickupTime,
+                deliveredAt: nextDeliveredAt,
                 ...partial,
+                orderSnapshot: buildCloudOrderSnapshot({
+                    ...order,
+                    assignedDriverAccount: nextAssignedDriverAccount,
+                    assignedDriverName: nextAssignedDriverName,
+                    driverAcceptedAt: nextDriverAcceptedAt,
+                    actualPickupTime: nextActualPickupTime,
+                    deliveredAt: nextDeliveredAt,
+                    signaturePhoto: nextSignaturePhoto,
+                    podDownloadUrl: nextPodDownloadUrl,
+                    podFilename: nextPodFilename,
+                    podGeneratedAt: nextPodGeneratedAt,
+                    status: nextRuntimeStatus
+                }),
                 updatedAt: nowStamp()
             };
             const remoteRuntime = await upsertRemoteOrderOp(key, nextOp);
@@ -2890,6 +2992,11 @@
                 driverQuoteStatus: "pending",
                 forceUnassigned: false,
                 internalNotes: notes,
+                orderSnapshot: buildCloudOrderSnapshot({
+                    ...order,
+                    assignedDriverAccount: assignedDriverAccountFor(order, current) || currentDriverAccount(),
+                    assignedDriverName: assignedDriverNameFor(order, current) || currentDriverName()
+                }),
                 updatedAt: nowStamp()
             };
             const remoteRuntime = await upsertRemoteOrderOp(key, nextOp);

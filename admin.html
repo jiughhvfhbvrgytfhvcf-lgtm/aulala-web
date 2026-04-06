@@ -1035,6 +1035,31 @@
                 : [];
         }
 
+        function normalizeOrderSnapshot(snapshot = {}) {
+            const raw = snapshot && typeof snapshot === "object" ? snapshot : {};
+            return {
+                ...raw,
+                id: raw.id ?? "",
+                price: roundMoney(raw.price || 0),
+                systemEstimatedPrice: roundMoney(raw.systemEstimatedPrice || 0),
+                ownerQuotedPrice: roundMoney(raw.ownerQuotedPrice || 0),
+                pallets: Number(raw.pallets || 0),
+                pieces: Number(raw.pieces || 0),
+                cbm: Number(raw.cbm || 0),
+                assignedDriverAccount: normalizePhone(raw.assignedDriverAccount || ""),
+                assignedDriverName: String(raw.assignedDriverName || "").trim(),
+                mergedOrderCount: Number(raw.mergedOrderCount || 0),
+                mergedOrderCodes: Array.isArray(raw.mergedOrderCodes) ? raw.mergedOrderCodes : [],
+                showClearanceSuffix: raw.showClearanceSuffix !== false,
+                pickupPhoto: String(raw.pickupPhoto || "").trim(),
+                deliveryPhoto: String(raw.deliveryPhoto || "").trim(),
+                signaturePhoto: String(raw.signaturePhoto || "").trim(),
+                podDownloadUrl: String(raw.podDownloadUrl || "").trim(),
+                podFilename: String(raw.podFilename || "").trim(),
+                podGeneratedAt: String(raw.podGeneratedAt || "").trim()
+            };
+        }
+
         async function fetchRemoteDrivers() {
             let lastError = null;
             for (const base of DRIVER_API_BASES) {
@@ -1083,7 +1108,10 @@
                     forceUnassigned: Boolean(raw.forceUnassigned),
                     customerReceivable: roundMoney(raw.customerReceivable || 0),
                     driverPayable: roundMoney(raw.driverPayable || 0),
-                    driverQuoteStatus: raw.driverQuoteStatus || (Number(raw.driverRequestedPrice || 0) > 0 ? "pending" : "")
+                    driverQuoteStatus: raw.driverQuoteStatus || (Number(raw.driverRequestedPrice || 0) > 0 ? "pending" : ""),
+                    orderSnapshot: raw.orderSnapshot && typeof raw.orderSnapshot === "object"
+                        ? normalizeOrderSnapshot(raw.orderSnapshot)
+                        : null
                 };
             });
             return {
@@ -1266,7 +1294,8 @@
                     flowStatus: "assigned",
                     internalStatus: "已指派",
                     forceUnassigned: false,
-                    driverPayable: roundMoney(state.adminData.orderOps[order.key]?.driverPayable ?? defaultDriverPayable(order, driver ? driver.id : ""))
+                    driverPayable: roundMoney(state.adminData.orderOps[order.key]?.driverPayable ?? defaultDriverPayable(order, driver ? driver.id : "")),
+                    orderSnapshot: buildOrderSnapshot(order)
                 });
             }
 
@@ -1526,6 +1555,73 @@
             };
         }
 
+        function buildOrderSnapshot(order) {
+            if (!order) {
+                return null;
+            }
+            const source = order.raw && typeof order.raw === "object" ? order.raw : order;
+            return normalizeOrderSnapshot({
+                id: source.id ?? order.id ?? "",
+                price: source.price ?? order.price ?? 0,
+                state: source.state ?? order.state ?? "",
+                pickup: source.pickup ?? order.pickup ?? "",
+                dropoff: source.dropoff ?? order.dropoff ?? "",
+                pallets: source.pallets ?? order.pallets ?? 0,
+                weight: source.weight ?? order.weight ?? "",
+                time: source.time ?? order.scheduledPickupTime ?? "",
+                date: source.date || "",
+                pickupAddress: source.pickupAddress ?? order.pickupAddress ?? "",
+                dropoffAddress: source.dropoffAddress ?? order.dropoffAddress ?? "",
+                orderCode: source.orderCode ?? order.orderCode ?? "",
+                cbm: source.cbm ?? order.cbm ?? 0,
+                pieces: source.pieces ?? order.pieces ?? 0,
+                source: source.source || "",
+                sourceType: source.sourceType || (order.sourceType === "owner_portal" ? "owner_portal" : "erp"),
+                sourceLabel: source.sourceLabel ?? order.sourceLabel ?? "",
+                status: source.status ?? order.runtimeStatus ?? "",
+                expectedPickupTime: source.expectedPickupTime || "",
+                scheduledPickupTime: source.scheduledPickupTime ?? order.scheduledPickupTime ?? "",
+                scheduledPickupLabel: source.scheduledPickupLabel || "",
+                pickupTimeLabel: source.pickupTimeLabel ?? order.pickupTimeLabel ?? "",
+                pickupTimeStatus: source.pickupTimeStatus || "",
+                pickupTimeColor: source.pickupTimeColor || "",
+                pickupTimeBasis: source.pickupTimeBasis || "",
+                clearanceStatus: source.clearanceStatus || "",
+                clearanceStatusRaw: source.clearanceStatusRaw || "",
+                clearanceStatusLabel: source.clearanceStatusLabel ?? order.clearanceStatusLabel ?? "",
+                clearanceStatusShortLabel: source.clearanceStatusShortLabel || "",
+                actualLeavePortTime: source.actualLeavePortTime || "",
+                planArrivedPortTime: source.planArrivedPortTime || "",
+                actualArrivedPortTime: source.actualArrivedPortTime || "",
+                importClearanceTime: source.importClearanceTime || "",
+                showClearanceSuffix: source.showClearanceSuffix !== false && order.clearanceStatusLabel !== "",
+                systemEstimatedPrice: source.systemEstimatedPrice ?? order.systemEstimatedPrice ?? 0,
+                ownerQuotedPrice: source.ownerQuotedPrice ?? order.price ?? 0,
+                ownerLifecycleStatus: source.ownerLifecycleStatus || "",
+                ownerName: source.ownerName ?? order.ownerName ?? "",
+                ownerPhone: source.ownerPhone ?? order.ownerPhone ?? "",
+                remarks: source.remarks ?? order.remarks ?? "",
+                actualPickupTime: source.actualPickupTime ?? order.actualPickupTime ?? "",
+                deliveredAt: source.deliveredAt ?? order.deliveredAt ?? "",
+                pickupPhoto: source.pickupPhoto || "",
+                deliveryPhoto: source.deliveryPhoto || "",
+                signaturePhoto: source.signaturePhoto || "",
+                podDownloadUrl: source.podDownloadUrl || "",
+                podFilename: source.podFilename || "",
+                podGeneratedAt: source.podGeneratedAt || "",
+                createdAt: source.createdAt ?? order.createdAt ?? "",
+                quoteAdjustedAt: source.quoteAdjustedAt ?? order.quoteAdjustedAt ?? "",
+                driverAcceptedAt: source.driverAcceptedAt ?? order.driverAcceptedAt ?? "",
+                assignedDriverAccount: source.assignedDriverAccount ?? order.assignedDriverAccount ?? "",
+                assignedDriverName: source.assignedDriverName ?? order.assignedDriverName ?? "",
+                isMergedOrder: source.isMergedOrder ?? order.isMergedOrder ?? false,
+                mergedOrderCount: source.mergedOrderCount ?? order.mergedOrderCount ?? 0,
+                mergedOrderCodes: source.mergedOrderCodes ?? order.mergedOrderCodes ?? [],
+                mergeLabel: source.mergeLabel ?? order.mergeLabel ?? "",
+                provider: source.provider || ""
+            });
+        }
+
         function buildOrderRecords() {
             const records = new Map();
             const feedOrders = Array.isArray(window.AULALA_ORDER_FEED?.orders) ? window.AULALA_ORDER_FEED.orders : [];
@@ -1564,6 +1660,19 @@
                 records.set(completedRecord.key, {
                     ...(records.get(completedRecord.key) || {}),
                     ...completedRecord
+                });
+            });
+
+            Object.entries(state.adminData.orderOps || {}).forEach(([key, op]) => {
+                if (!op?.orderSnapshot || typeof op.orderSnapshot !== "object") {
+                    return;
+                }
+                const snapshotSourceType = op.orderSnapshot.sourceType === "owner_portal" ? "owner_portal" : "erp_auto";
+                const snapshotRecord = baseOrderRecord(op.orderSnapshot, snapshotSourceType);
+                records.set(key, {
+                    ...(records.get(key) || {}),
+                    ...snapshotRecord,
+                    key
                 });
             });
 
@@ -1637,6 +1746,9 @@
                 driverQuoteStatus: existing.driverQuoteStatus || (Number(existing.driverRequestedPrice || 0) > 0 ? "pending" : ""),
                 agreedDriverPrice: roundMoney(existing.agreedDriverPrice || 0),
                 forceUnassigned: Boolean(existing.forceUnassigned),
+                orderSnapshot: existing.orderSnapshot && typeof existing.orderSnapshot === "object"
+                    ? normalizeOrderSnapshot(existing.orderSnapshot)
+                    : null,
                 customerReceivable: roundMoney(existing.customerReceivable ?? order.price ?? 0),
                 driverPayable: roundMoney(existing.driverPayable ?? defaultDriverPayable(order, feedAssignedDriverId)),
                 receivableStatus: existing.receivableStatus || "待收款",
@@ -1647,9 +1759,15 @@
 
         async function persistOrderOp(orderKeyValue, partial) {
             const current = state.adminData.orderOps[orderKeyValue] || {};
+            const order = state.orders.find(item => item.key === orderKeyValue) || null;
             const next = {
                 ...current,
                 ...partial,
+                orderSnapshot: normalizeOrderSnapshot(
+                    (partial && partial.orderSnapshot)
+                    || current.orderSnapshot
+                    || (order ? buildOrderSnapshot(order) : null)
+                ),
                 updatedAt: nowStamp()
             };
             state.adminData.orderOps[orderKeyValue] = next;
