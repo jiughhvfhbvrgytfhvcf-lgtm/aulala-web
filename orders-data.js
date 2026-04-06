@@ -1,5 +1,5 @@
 window.AULALA_ORDER_FEED = {
-  "generatedAt": "2026-04-06 18:16:11",
+  "generatedAt": "2026-04-06 18:44:47",
   "source": "fbadidi-live-crowdfund-api",
   "rules": {
     "pickupAddress": "悉尼",
@@ -45,7 +45,7 @@ window.AULALA_ORDER_FEED = {
     "eligibility": "pull only live crowdfund + TAD rows; a row is eligible only when tad.refName is AULALA and putCode is present; TAD.palnOutTime is the first-class pickup-time source, otherwise fall back to crowdfund.actual_arrived_port_time within the current lookback window",
     "invoiceData": "dropoff address, weight, cbm, provider, refId, and chargeCode are fetched from the external putCode order API first, then the authenticated FBADIDI invoice detail APIs, with the legacy invoice script used only as final fallback",
     "priceFormula": "calculate both TLA and Zongheng workbook prices when available, then use the lower one; TLA uses its city zone workbook, Zongheng uses postcode zones plus any interstate truck surcharge based on unload city from destination_port (fallback: crowdfund/warehouse hints); uncovered orders keep max(minimumPriceAud, distanceKm * pallets * audPerKmPerPallet)",
-    "autoMergeRule": "before entering the hall, unassigned ERP auto orders that share the same pickup warehouse label, dropoff address, and expected pickup time are merged into one hall order; child putCodes stay in mergedOrderCodes and the totals sum price, pallets, pieces, weight, and cbm",
+    "autoMergeRule": "before entering the hall, unassigned ERP auto orders that share the same physical pickup address are treated as the same warehouse; when they also share the same dropoff address and expected pickup time, merge them into one hall order; if pickupAddress is missing, fall back to the pickup warehouse label",
     "assignmentMergeRule": "when a batch-assigned group from the same assignmentSource is already locked to the same driver and shares the same pickup address, dropoff address, and expected pickup time, merge those rows into one delivery order and keep the child putCodes in mergedOrderCodes"
   },
   "orders": [
