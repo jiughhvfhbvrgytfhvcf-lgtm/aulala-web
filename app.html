@@ -2594,10 +2594,12 @@
             }
             syncDriverCollectionsFromOrderOps();
             if (rerender && runtimeChanged) {
-                rebuildAvailableOrders();
-                renderOrders();
-                renderProfile();
-                renderOwnerPanel();
+                preserveScrollWhile(() => {
+                    rebuildAvailableOrders();
+                    renderOrders();
+                    renderProfile();
+                    renderOwnerPanel();
+                });
             }
             return nextRuntime;
         }
@@ -4984,7 +4986,21 @@
             document.getElementById("owner-fields").classList.toggle("hidden", !showExtra || role !== "owner");
         }
 
-        function showSection(section) {
+        function preserveScrollWhile(task) {
+            const scrollX = window.scrollX || 0;
+            const scrollY = window.scrollY || 0;
+            const result = typeof task === "function" ? task() : undefined;
+            requestAnimationFrame(() => {
+                window.scrollTo(scrollX, scrollY);
+                requestAnimationFrame(() => {
+                    window.scrollTo(scrollX, scrollY);
+                });
+            });
+            return result;
+        }
+
+        function showSection(section, options = {}) {
+            const { resetScroll = true } = options;
             const nextSection = section === "profile" ? "center" : section;
             document.getElementById("order-section").style.display = nextSection === "orders" ? "block" : "none";
             document.getElementById("filter-bar").style.display = nextSection === "orders" ? "block" : "none";
@@ -4992,7 +5008,9 @@
             document.getElementById("user-profile").classList.toggle("hidden", nextSection !== "center");
             document.getElementById("driver-settings").classList.toggle("hidden", nextSection !== "settings");
             document.getElementById("owner-panel").classList.toggle("hidden", nextSection !== "owner");
-            window.scrollTo(0, 0);
+            if (resetScroll) {
+                window.scrollTo(0, 0);
+            }
         }
 
         function finishDriverAuth(profile, passwordHash = "") {
@@ -5526,18 +5544,20 @@
                     : "center");
             hydrateAppState();
             updateNavigation();
-            renderOrders();
-            renderProfile();
-            renderOwnerPanel();
+            preserveScrollWhile(() => {
+                renderOrders();
+                renderProfile();
+                renderOwnerPanel();
+            });
             if (state.loggedIn) {
                 if (currentSection === "settings" && state.userRole === "driver") {
                     renderDriverSettingsPage();
-                    showSection("settings");
+                    showSection("settings", { resetScroll: false });
                 } else if (currentSection === "center" || currentSection === "owner") {
-                    showSection(state.userRole === "owner" ? "owner" : "center");
+                    showSection(state.userRole === "owner" ? "owner" : "center", { resetScroll: false });
                 }
             } else {
-                showSection(currentSection === "auth" ? "auth" : "orders");
+                showSection(currentSection === "auth" ? "auth" : "orders", { resetScroll: false });
             }
         });
 
