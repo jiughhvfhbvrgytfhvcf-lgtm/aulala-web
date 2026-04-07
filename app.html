@@ -1960,7 +1960,7 @@
         const LOGIN_SESSION_KEY = "aulala-login-session";
         const DEFAULT_DRIVER_PAYOUT_RATIO = 0.78;
         const DRIVER_API_BASES = ["https://api.ai-express.cn:8443", "https://api.ai-express.cn"];
-        const APP_SHELL_VERSION = "202604062220";
+        const APP_SHELL_VERSION = "202604071300";
         const LIVE_RUNTIME_SYNC_INTERVAL_MS = 5000;
         const TEST_DRIVER_ACCOUNT = "13888888888";
         const estimateCache = {
@@ -2906,9 +2906,50 @@
             return String(op.assignedDriverName || order.assignedDriverName || "").trim();
         }
 
+        function resolvedRuntimeStatus(order, op = getAdminOrderOp(order)) {
+            const snapshot = op.orderSnapshot && typeof op.orderSnapshot === "object" ? op.orderSnapshot : null;
+            const runtimeStatus = String(op.runtimeStatus || snapshot?.status || order?.status || "").trim();
+            const flowStatus = String(op.flowStatus || "").trim();
+            const pickupPhoto = String(snapshot?.pickupPhoto || order?.pickupPhoto || "").trim();
+            const deliveryPhoto = String(snapshot?.deliveryPhoto || order?.deliveryPhoto || "").trim();
+            const signaturePhoto = String(op.signaturePhoto || snapshot?.signaturePhoto || order?.signaturePhoto || "").trim();
+            const actualPickupTime = String(op.actualPickupTime || snapshot?.actualPickupTime || order?.actualPickupTime || "").trim();
+            const deliveredAt = String(op.deliveredAt || snapshot?.deliveredAt || order?.deliveredAt || "").trim();
+
+            if (flowStatus === "completed" || runtimeStatus === "completed") {
+                return "completed";
+            }
+            if (deliveryPhoto && signaturePhoto) {
+                return "completed";
+            }
+            if (deliveryPhoto || deliveredAt) {
+                return "in_transit";
+            }
+            if (pickupPhoto || actualPickupTime) {
+                return "picked_up";
+            }
+            if (runtimeStatus) {
+                return runtimeStatus;
+            }
+            if (flowStatus === "in_progress") {
+                return "waiting_pickup";
+            }
+            if (flowStatus === "assigned") {
+                return "assigned";
+            }
+            return "";
+        }
+
         function driverFlowStatus(order, op = getAdminOrderOp(order)) {
             if (op.forceUnassigned) {
                 return "pending";
+            }
+            const runtimeStatus = resolvedRuntimeStatus(order, op);
+            if (runtimeStatus === "completed") {
+                return "completed";
+            }
+            if (["waiting_pickup", "picked_up", "in_transit"].includes(runtimeStatus)) {
+                return "in_progress";
             }
             if (op.flowStatus) {
                 return op.flowStatus;
@@ -2954,6 +2995,7 @@
             const baseOrder = op.orderSnapshot && typeof op.orderSnapshot === "object"
                 ? normalizeOrder(op.orderSnapshot, op.orderSnapshot.id || order?.id || 0)
                 : normalizeOrder(order, order?.id || 0);
+            const runtimeStatus = resolvedRuntimeStatus(order, op);
             return normalizeOrder(
                 {
                     ...baseOrder,
@@ -2961,13 +3003,15 @@
                     assignedDriverAccount: assignedDriverAccountFor(order, op),
                     assignedDriverName: assignedDriverNameFor(order, op),
                     driverAcceptedAt: op.driverAcceptedAt || order.driverAcceptedAt || "",
-                    actualPickupTime: op.actualPickupTime || order.actualPickupTime || "",
-                    deliveredAt: op.deliveredAt || order.deliveredAt || "",
-                    signaturePhoto: op.signaturePhoto || order.signaturePhoto || "",
+                    actualPickupTime: op.actualPickupTime || baseOrder.actualPickupTime || order.actualPickupTime || "",
+                    deliveredAt: op.deliveredAt || baseOrder.deliveredAt || order.deliveredAt || "",
+                    pickupPhoto: baseOrder.pickupPhoto || order.pickupPhoto || "",
+                    deliveryPhoto: baseOrder.deliveryPhoto || order.deliveryPhoto || "",
+                    signaturePhoto: op.signaturePhoto || baseOrder.signaturePhoto || order.signaturePhoto || "",
                     podDownloadUrl: op.podDownloadUrl || order.podDownloadUrl || "",
                     podFilename: op.podFilename || order.podFilename || "",
                     podGeneratedAt: op.podGeneratedAt || order.podGeneratedAt || "",
-                    status: op.runtimeStatus || order.status || "",
+                    status: runtimeStatus || order.status || "",
                     price: effectiveDriverPrice(order)
                 },
                 order.id
