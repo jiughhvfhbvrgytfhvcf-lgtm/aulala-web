@@ -2143,21 +2143,17 @@
             return /heic|heif/.test(type) || /\.(heic|heif)$/.test(name);
         }
 
-        function arrayBufferToBase64(buffer) {
-            const bytes = new Uint8Array(buffer);
-            const chunkSize = 0x8000;
-            let binary = "";
-            for (let index = 0; index < bytes.length; index += chunkSize) {
-                const chunk = bytes.subarray(index, index + chunkSize);
-                binary += String.fromCharCode(...chunk);
-            }
-            return btoa(binary);
-        }
-
-        async function blobToDataUrl(blob, mimeType = "") {
-            const buffer = await blob.arrayBuffer();
-            const type = mimeType || blob.type || "application/octet-stream";
-            return `data:${type};base64,${arrayBufferToBase64(buffer)}`;
+        function readBlobAsDataUrl(blob) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(String(reader.result || ""));
+                    reader.onerror = () => reject(new Error("图片读取失败"));
+                    reader.readAsDataURL(blob);
+                } catch (error) {
+                    reject(error);
+                }
+            });
         }
 
         function loadImageFromFile(file) {
@@ -2176,20 +2172,12 @@
             });
         }
 
-        function canvasToBlob(canvas, type = "image/jpeg", quality = 0.82) {
-            return new Promise((resolve, reject) => {
-                try {
-                    canvas.toBlob((blob) => {
-                        if (!blob) {
-                            reject(new Error("图片压缩失败"));
-                            return;
-                        }
-                        resolve(blob);
-                    }, type, quality);
-                } catch (error) {
-                    reject(error);
-                }
-            });
+        function canvasToDataUrl(canvas, type = "image/jpeg", quality = 0.82) {
+            try {
+                return canvas.toDataURL(type, quality);
+            } catch (error) {
+                return canvas.toDataURL("image/png");
+            }
         }
 
         async function prepareUploadImageData(file) {
@@ -2216,14 +2204,13 @@
                 context.fillStyle = "#ffffff";
                 context.fillRect(0, 0, canvas.width, canvas.height);
                 context.drawImage(image, 0, 0, canvas.width, canvas.height);
-                const blob = await canvasToBlob(canvas, preferredMime, 0.82);
-                return await blobToDataUrl(blob, preferredMime);
+                return canvasToDataUrl(canvas, preferredMime, 0.82);
             } catch (error) {
                 if (fileLooksLikeHeic(file)) {
                     throw new Error("当前照片格式系统暂不支持，请在手机里拍照后选择“兼容格式/JPG”，或从相册重新选择一张图片。");
                 }
                 try {
-                    return await blobToDataUrl(file, file.type || preferredMime);
+                    return await readBlobAsDataUrl(file);
                 } catch (fallbackError) {
                     throw new Error("图片读取失败，请重新拍照或从相册选择。");
                 }
@@ -4168,7 +4155,7 @@
             if (image) {
                 const pretty = type === "pickupPhoto" ? "提货照片" : type === "deliveryPhoto" ? "送达照片" : "客户签字";
                 return `
-                    <input class="file-input" id="${inputId}" type="file" accept="image/*" onchange="handleProofUpload(event, ${order.id}, '${type}')">
+                    <input class="file-input" id="${inputId}" type="file" accept="image/*" capture="environment" onchange="handleProofUpload(event, ${order.id}, '${type}')">
                     <img class="preview-img" src="${image}" alt="${pretty}">
                     <div class="preview-label">${pretty}已上传，可重新拍照</div>
                     <label class="btn-light upload-retry" for="${inputId}">重新上传</label>
@@ -4176,7 +4163,7 @@
             }
 
             return `
-                <input class="file-input" id="${inputId}" type="file" accept="image/*" onchange="handleProofUpload(event, ${order.id}, '${type}')">
+                <input class="file-input" id="${inputId}" type="file" accept="image/*" capture="environment" onchange="handleProofUpload(event, ${order.id}, '${type}')">
                 <label class="upload-btn" for="${inputId}">
                     <div style="font-size:24px; line-height:1;">+</div>
                     <div>${label}</div>
