@@ -1974,6 +1974,7 @@
         let liveRuntimeSyncInFlight = false;
         let liveRuntimeSyncQueued = false;
         let hasSuccessfulRemoteRuntimeSync = false;
+        let pendingProofUploadCount = 0;
 
         const state = {
             loggedIn: false,
@@ -2140,6 +2141,18 @@
             return raw;
         }
 
+        function beginProofUploadSyncPause() {
+            pendingProofUploadCount += 1;
+            clearLiveRuntimeSyncTimer();
+        }
+
+        function endProofUploadSyncPause() {
+            pendingProofUploadCount = Math.max(0, pendingProofUploadCount - 1);
+            if (pendingProofUploadCount === 0) {
+                scheduleLiveRuntimeSync(800);
+            }
+        }
+
         function fileLooksLikeHeic(file) {
             const type = String(file?.type || "").toLowerCase();
             const name = String(file?.name || "").toLowerCase();
@@ -2221,8 +2234,8 @@
             }
             const preferredMime = "image/jpeg";
             const config = type === "signaturePhoto"
-                ? { maxEdge: 1000, targetChars: 160000, qualities: [0.78, 0.66, 0.54, 0.45] }
-                : { maxEdge: 1280, targetChars: 260000, qualities: [0.8, 0.68, 0.56, 0.46] };
+                ? { maxEdge: 1000, targetChars: 220000, rawMaxChars: 1000000, qualities: [0.8, 0.7, 0.58, 0.48] }
+                : { maxEdge: 1600, targetChars: 900000, rawMaxChars: 4000000, qualities: [0.84, 0.74, 0.62, 0.5, 0.4] };
             try {
                 const image = await loadImageFromFile(file);
                 const width = image.width || 0;
@@ -2266,9 +2279,9 @@
                     if (!rawDataUrl) {
                         throw new Error("图片读取失败");
                     }
-                    if (rawDataUrl.length > (type === "signaturePhoto" ? 180000 : 280000)) {
+                    if (rawDataUrl.length > config.rawMaxChars) {
                         if (fileLooksLikeHeic(file)) {
-                            throw new Error("当前手机生成的是高兼容性较差的大图格式，请把相机切到兼容格式/JPG，或选择一张较小图片后再试。");
+                            throw new Error("当前手机拍照返回的是超大原图格式，系统暂时处理不了。请把相机切到兼容模式/JPG，或关闭高效格式后再拍。");
                         }
                         throw new Error("图片过大，请重新拍照或从相册选择较小图片。");
                     }
@@ -2819,6 +2832,10 @@
             const { rerender = true, immediate = false } = options;
             if (document.hidden && !immediate) {
                 scheduleLiveRuntimeSync();
+                return null;
+            }
+            if (pendingProofUploadCount > 0) {
+                scheduleLiveRuntimeSync(1200);
                 return null;
             }
             if (liveRuntimeSyncInFlight) {
@@ -5482,6 +5499,7 @@
                 return;
             }
             (async () => {
+                beginProofUploadSyncPause();
                 let imageData = "";
                 try {
                     imageData = await prepareUploadImageData(file, type);
@@ -5489,6 +5507,7 @@
                     if (input) {
                         input.value = "";
                     }
+                    endProofUploadSyncPause();
                     alert(normalizeDriverUiErrorMessage(error, "图片读取失败，请重新拍照或从相册选择。"));
                     return;
                 }
@@ -5524,6 +5543,7 @@
                     saveAppState();
                     renderProfile();
                     renderOwnerPanel();
+                    endProofUploadSyncPause();
                     return;
                 }
 
@@ -5561,6 +5581,7 @@
                 saveAppState();
                 renderProfile();
                 renderOwnerPanel();
+                endProofUploadSyncPause();
             })();
         }
 
