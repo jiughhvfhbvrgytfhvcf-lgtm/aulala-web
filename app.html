@@ -2143,6 +2143,10 @@
             return /heic|heif/.test(type) || /\.(heic|heif)$/.test(name);
         }
 
+        function dataUrlLooksLikeHeic(dataUrl) {
+            return /^data:image\/(heic|heif);/i.test(String(dataUrl || "").trim());
+        }
+
         function readBlobAsDataUrl(blob) {
             return new Promise((resolve, reject) => {
                 try {
@@ -2206,15 +2210,45 @@
                 context.drawImage(image, 0, 0, canvas.width, canvas.height);
                 return canvasToDataUrl(canvas, preferredMime, 0.82);
             } catch (error) {
-                if (fileLooksLikeHeic(file)) {
-                    throw new Error("当前照片格式系统暂不支持，请在手机里拍照后选择“兼容格式/JPG”，或从相册重新选择一张图片。");
-                }
                 try {
-                    return await readBlobAsDataUrl(file);
+                    const rawDataUrl = await readBlobAsDataUrl(file);
+                    if (!rawDataUrl) {
+                        throw new Error("图片读取失败");
+                    }
+                    return rawDataUrl;
                 } catch (fallbackError) {
+                    if (fileLooksLikeHeic(file)) {
+                        throw new Error("当前照片格式系统暂不支持预览这张原图，请在手机相机里切到兼容格式/JPG 后再拍，或从相册重新选择。");
+                    }
                     throw new Error("图片读取失败，请重新拍照或从相册选择。");
                 }
             }
+        }
+
+        function renderUploadedProofPreview(image, pretty) {
+            if (!image) {
+                return "";
+            }
+            if (dataUrlLooksLikeHeic(image)) {
+                return `
+                    <div class="upload-btn" style="cursor:default; height:92px;">
+                        <div style="font-size:22px; line-height:1;">IMG</div>
+                        <div>${pretty}已上传</div>
+                        <div style="font-size:11px; margin-top:4px;">当前设备不支持预览原图</div>
+                    </div>
+                `;
+            }
+            return `<img class="preview-img" src="${image}" alt="${pretty}">`;
+        }
+
+        function renderDetailProofPreview(image, alt) {
+            if (!image) {
+                return `<div class="note-box">暂未上传</div>`;
+            }
+            if (dataUrlLooksLikeHeic(image)) {
+                return `<div class="note-box">${alt}已上传，当前设备暂不支持预览该原图格式。</div>`;
+            }
+            return `<img class="proof-img" src="${image}" alt="${alt}">`;
         }
 
         function normalizePodFailureMessage(error) {
@@ -4155,15 +4189,15 @@
             if (image) {
                 const pretty = type === "pickupPhoto" ? "提货照片" : type === "deliveryPhoto" ? "送达照片" : "客户签字";
                 return `
-                    <input class="file-input" id="${inputId}" type="file" accept="image/*" capture="environment" onchange="handleProofUpload(event, ${order.id}, '${type}')">
-                    <img class="preview-img" src="${image}" alt="${pretty}">
+                    <input class="file-input" id="${inputId}" type="file" accept="image/*" onchange="handleProofUpload(event, ${order.id}, '${type}')">
+                    ${renderUploadedProofPreview(image, pretty)}
                     <div class="preview-label">${pretty}已上传，可重新拍照</div>
                     <label class="btn-light upload-retry" for="${inputId}">重新上传</label>
                 `;
             }
 
             return `
-                <input class="file-input" id="${inputId}" type="file" accept="image/*" capture="environment" onchange="handleProofUpload(event, ${order.id}, '${type}')">
+                <input class="file-input" id="${inputId}" type="file" accept="image/*" onchange="handleProofUpload(event, ${order.id}, '${type}')">
                 <label class="upload-btn" for="${inputId}">
                     <div style="font-size:24px; line-height:1;">+</div>
                     <div>${label}</div>
@@ -5587,7 +5621,7 @@
                 ["客户签字", order.signaturePhoto, "客户签字"]
             ].map(([label, src, alt]) => `
                 <p style="font-size:13px; font-weight:800; margin-top:${label === "提货照片" ? "0" : "12px"};">${label}：</p>
-                ${src ? `<img class="proof-img" src="${src}" alt="${alt}">` : `<div class="note-box">暂未上传</div>`}
+                ${renderDetailProofPreview(src, alt)}
             `).join("");
 
             document.getElementById("detail-content").innerHTML = `
