@@ -1,5 +1,5 @@
 window.AULALA_ORDER_FEED = {
-  "generatedAt": "2026-04-16 06:00:02",
+  "generatedAt": "2026-04-17 06:00:02",
   "source": "fbadidi-live-crowdfund-api",
   "rules": {
     "pickupAddress": "悉尼",
