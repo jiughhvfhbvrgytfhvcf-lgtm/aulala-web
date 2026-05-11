@@ -1558,7 +1558,7 @@
                 <a href="javascript:void(0)" onclick="openOwnerEntry()">货主发货</a>
             </span>
             <span id="user-nav" class="hidden">
-                <a href="app.html?v=202604062220&view=profile" id="dashboard-link">个人中心</a>
+                <a href="app.html?v=202605111830&view=profile" id="dashboard-link">个人中心</a>
                 <button type="button" onclick="logout()">退出</button>
             </span>
         </div>
@@ -1580,7 +1580,7 @@
     <div class="container">
         <section id="order-section">
             <div id="dashboard-shortcut" class="dashboard-shortcut hidden">
-                <a class="btn-main" id="dashboard-shortcut-btn" href="app.html?v=202604062220&view=center">进入订单中心</a>
+                <a class="btn-main" id="dashboard-shortcut-btn" href="app.html?v=202605111830&view=center">进入订单中心</a>
                 <button class="btn-outline" type="button" onclick="logout()">退出</button>
             </div>
             <div class="section-row">
@@ -1871,6 +1871,8 @@
                 driverAcceptedAt: order.driverAcceptedAt || "",
                 assignedDriverAccount: normalizePhone(order.assignedDriverAccount || ""),
                 assignedDriverName: order.assignedDriverName || "",
+                assignedFleetId: String(order.assignedFleetId || "").trim(),
+                assignedFleetName: String(order.assignedFleetName || "").trim(),
                 isMergedOrder: Boolean(order.isMergedOrder),
                 mergedOrderCount: Number(order.mergedOrderCount || 0),
                 mergedOrderCodes: Array.isArray(order.mergedOrderCodes) ? order.mergedOrderCodes : [],
@@ -1938,6 +1940,8 @@
                 driverAcceptedAt: normalized.driverAcceptedAt,
                 assignedDriverAccount: normalized.assignedDriverAccount,
                 assignedDriverName: normalized.assignedDriverName,
+                assignedFleetId: normalized.assignedFleetId || "",
+                assignedFleetName: normalized.assignedFleetName || "",
                 isMergedOrder: normalized.isMergedOrder,
                 mergedOrderCount: normalized.mergedOrderCount,
                 mergedOrderCodes: Array.isArray(normalized.mergedOrderCodes) ? normalized.mergedOrderCodes.slice() : [],
@@ -1960,7 +1964,7 @@
         const LOGIN_SESSION_KEY = "aulala-login-session";
         const DEFAULT_DRIVER_PAYOUT_RATIO = 0.78;
         const DRIVER_API_BASES = ["https://api.ai-express.cn:8443", "https://api.ai-express.cn"];
-        const APP_SHELL_VERSION = "202604071300";
+        const APP_SHELL_VERSION = "202605111830";
         const LIVE_RUNTIME_SYNC_INTERVAL_MS = 5000;
         const TEST_DRIVER_ACCOUNT = "13888888888";
         const estimateCache = {
@@ -2025,6 +2029,7 @@
 
         function blankDriverProfile(overrides = {}) {
             const bankAccount = String(overrides.bankAccount || "").trim();
+            const fleetId = String(overrides.fleetId || "").trim();
             return {
                 id: String(overrides.id || "").trim(),
                 account: normalizePhone(overrides.account || overrides.phone || ""),
@@ -2040,7 +2045,25 @@
                 createdAt: String(overrides.createdAt || "").trim(),
                 updatedAt: String(overrides.updatedAt || "").trim(),
                 status: String(overrides.status || "active").trim() || "active",
-                notes: String(overrides.notes || "").trim()
+                notes: String(overrides.notes || "").trim(),
+                fleetId,
+                fleetName: String(overrides.fleetName || "").trim(),
+                isFleetManager: Boolean(overrides.isFleetManager),
+                canViewAmounts: typeof overrides.canViewAmounts === "boolean" ? Boolean(overrides.canViewAmounts) : !fleetId
+            };
+        }
+
+        function normalizeFleetRecord(fleet = {}) {
+            return {
+                id: String(fleet.id || "").trim(),
+                name: String(fleet.name || "").trim(),
+                contactName: String(fleet.contactName || "").trim(),
+                contactPhone: normalizePhone(fleet.contactPhone || ""),
+                city: String(fleet.city || "").trim() || "Sydney",
+                status: String(fleet.status || "active").trim() || "active",
+                notes: String(fleet.notes || "").trim(),
+                createdAt: String(fleet.createdAt || "").trim(),
+                updatedAt: String(fleet.updatedAt || "").trim()
             };
         }
 
@@ -2717,6 +2740,8 @@
                     ...raw,
                     assignedDriverAccount: normalizePhone(raw.assignedDriverAccount || ""),
                     assignedDriverName: String(raw.assignedDriverName || "").trim(),
+                    assignedFleetId: String(raw.assignedFleetId || "").trim(),
+                    assignedFleetName: String(raw.assignedFleetName || "").trim(),
                     flowStatus: String(raw.flowStatus || "").trim(),
                     runtimeStatus: String(raw.runtimeStatus || "").trim(),
                     driverAcceptedAt: String(raw.driverAcceptedAt || "").trim(),
@@ -2738,7 +2763,8 @@
                 };
             });
             return {
-                drivers: Array.isArray(runtime.drivers) ? runtime.drivers : [],
+                drivers: Array.isArray(runtime.drivers) ? runtime.drivers.map(item => blankDriverProfile(item)).filter(driver => driver.account || driver.id) : [],
+                fleets: Array.isArray(runtime.fleets) ? runtime.fleets.map(normalizeFleetRecord).filter(fleet => fleet.id || fleet.name) : [],
                 orderOps,
                 updatedAt: String(runtime.updatedAt || "")
             };
@@ -2781,6 +2807,9 @@
                 drivers: Array.isArray(remoteRuntime.drivers) && remoteRuntime.drivers.length
                     ? remoteRuntime.drivers
                     : localRuntime.drivers,
+                fleets: Array.isArray(remoteRuntime.fleets) && remoteRuntime.fleets.length
+                    ? remoteRuntime.fleets
+                    : localRuntime.fleets,
                 orderOps: remoteRuntime.orderOps,
                 updatedAt: remoteRuntime.updatedAt || localRuntime.updatedAt || ""
             };
@@ -2869,6 +2898,8 @@
                 ...raw,
                 assignedDriverAccount: normalizePhone(raw.assignedDriverAccount || ""),
                 assignedDriverName: String(raw.assignedDriverName || "").trim(),
+                assignedFleetId: String(raw.assignedFleetId || "").trim(),
+                assignedFleetName: String(raw.assignedFleetName || "").trim(),
                 flowStatus: String(raw.flowStatus || "").trim(),
                 runtimeStatus: String(raw.runtimeStatus || "").trim(),
                 driverAcceptedAt: String(raw.driverAcceptedAt || "").trim(),
@@ -2898,12 +2929,40 @@
             return op.agreedDriverPrice > 0 ? op.agreedDriverPrice : Number(order.price || 0);
         }
 
+        function currentDriverFleetId() {
+            return String(state.driverProfile.fleetId || "").trim();
+        }
+
+        function currentDriverFleetName() {
+            return String(state.driverProfile.fleetName || "").trim();
+        }
+
+        function isCurrentDriverFleetManager() {
+            return Boolean(state.driverProfile.isFleetManager && currentDriverFleetId());
+        }
+
+        function shouldShowDriverAmounts() {
+            return !currentDriverFleetId() && state.driverProfile.canViewAmounts !== false;
+        }
+
+        function driverVisibleMoney(value, hiddenText = "车队结算") {
+            return shouldShowDriverAmounts() ? formatCurrency(value) : hiddenText;
+        }
+
         function assignedDriverAccountFor(order, op = getAdminOrderOp(order)) {
             return normalizePhone(op.assignedDriverAccount || order.assignedDriverAccount || "");
         }
 
         function assignedDriverNameFor(order, op = getAdminOrderOp(order)) {
             return String(op.assignedDriverName || order.assignedDriverName || "").trim();
+        }
+
+        function assignedFleetIdFor(order, op = getAdminOrderOp(order)) {
+            return String(op.assignedFleetId || order.assignedFleetId || "").trim();
+        }
+
+        function assignedFleetNameFor(order, op = getAdminOrderOp(order)) {
+            return String(op.assignedFleetName || order.assignedFleetName || "").trim();
         }
 
         function resolvedRuntimeStatus(order, op = getAdminOrderOp(order)) {
@@ -2988,6 +3047,11 @@
             if (currentDriverId && op.assignedDriverId && op.assignedDriverId === currentDriverId) {
                 return true;
             }
+            if (isCurrentDriverFleetManager() && currentDriverFleetId() && assignedFleetIdFor(order, op) === currentDriverFleetId()) {
+                if (!assignedAccount && !String(op.assignedDriverId || "").trim()) {
+                    return true;
+                }
+            }
             return false;
         }
 
@@ -3002,6 +3066,8 @@
                     ...order,
                     assignedDriverAccount: assignedDriverAccountFor(order, op),
                     assignedDriverName: assignedDriverNameFor(order, op),
+                    assignedFleetId: assignedFleetIdFor(order, op),
+                    assignedFleetName: assignedFleetNameFor(order, op),
                     driverAcceptedAt: op.driverAcceptedAt || order.driverAcceptedAt || "",
                     actualPickupTime: op.actualPickupTime || baseOrder.actualPickupTime || order.actualPickupTime || "",
                     deliveredAt: op.deliveredAt || baseOrder.deliveredAt || order.deliveredAt || "",
@@ -3135,6 +3201,8 @@
             const current = getAdminOrderOp(order);
             const nextAssignedDriverAccount = normalizePhone(partial.assignedDriverAccount ?? current.assignedDriverAccount ?? currentDriverAccount());
             const nextAssignedDriverName = String(partial.assignedDriverName ?? current.assignedDriverName ?? currentDriverName()).trim();
+            const nextAssignedFleetId = String(partial.assignedFleetId ?? current.assignedFleetId ?? order.assignedFleetId ?? currentDriverFleetId()).trim();
+            const nextAssignedFleetName = String(partial.assignedFleetName ?? current.assignedFleetName ?? order.assignedFleetName ?? currentDriverFleetName()).trim();
             const nextDriverAcceptedAt = String(partial.driverAcceptedAt ?? current.driverAcceptedAt ?? order.driverAcceptedAt ?? "").trim();
             const nextActualPickupTime = String(partial.actualPickupTime ?? current.actualPickupTime ?? order.actualPickupTime ?? "").trim();
             const nextDeliveredAt = String(partial.deliveredAt ?? current.deliveredAt ?? order.deliveredAt ?? "").trim();
@@ -3148,6 +3216,8 @@
                 assignedDriverId: partial.assignedDriverId ?? current.assignedDriverId ?? String(state.driverProfile.id || "").trim(),
                 assignedDriverAccount: nextAssignedDriverAccount,
                 assignedDriverName: nextAssignedDriverName,
+                assignedFleetId: nextAssignedFleetId,
+                assignedFleetName: nextAssignedFleetName,
                 flowStatus: String(partial.flowStatus ?? current.flowStatus ?? "").trim(),
                 runtimeStatus: nextRuntimeStatus,
                 driverAcceptedAt: nextDriverAcceptedAt,
@@ -3158,6 +3228,8 @@
                     ...order,
                     assignedDriverAccount: nextAssignedDriverAccount,
                     assignedDriverName: nextAssignedDriverName,
+                    assignedFleetId: nextAssignedFleetId,
+                    assignedFleetName: nextAssignedFleetName,
                     driverAcceptedAt: nextDriverAcceptedAt,
                     actualPickupTime: nextActualPickupTime,
                     deliveredAt: nextDeliveredAt,
@@ -3267,6 +3339,8 @@
                 assignedDriverId: current.assignedDriverId || String(state.driverProfile.id || "").trim(),
                 assignedDriverAccount: assignedDriverAccountFor(order, current) || currentDriverAccount(),
                 assignedDriverName: assignedDriverNameFor(order, current) || currentDriverName(),
+                assignedFleetId: assignedFleetIdFor(order, current) || currentDriverFleetId(),
+                assignedFleetName: assignedFleetNameFor(order, current) || currentDriverFleetName(),
                 internalStatus: "司机申请调价",
                 driverRequestedPrice: Number(requestedPrice),
                 driverQuoteReason: reason,
@@ -3277,7 +3351,9 @@
                 orderSnapshot: buildCloudOrderSnapshot({
                     ...order,
                     assignedDriverAccount: assignedDriverAccountFor(order, current) || currentDriverAccount(),
-                    assignedDriverName: assignedDriverNameFor(order, current) || currentDriverName()
+                    assignedDriverName: assignedDriverNameFor(order, current) || currentDriverName(),
+                    assignedFleetId: assignedFleetIdFor(order, current) || currentDriverFleetId(),
+                    assignedFleetName: assignedFleetNameFor(order, current) || currentDriverFleetName()
                 }),
                 updatedAt: nowStamp()
             };
@@ -4002,7 +4078,7 @@
                                 ${order.cbm ? `<span class="spec-tag">${order.cbm.toFixed(2)} CBM</span>` : ""}
                             </div>
                         </div>
-                        <span class="price">${formatCurrency(order.price)}</span>
+                        <span class="price">${driverVisibleMoney(order.price)}</span>
                     </div>
 
                     ${renderPickupTimePanel(order)}
@@ -4064,7 +4140,7 @@
                                 ${order.cbm ? `<span class="spec-tag">${Number(order.cbm).toFixed(2)} CBM</span>` : ""}
                             </div>
                         </div>
-                        <span class="price">${formatCurrency(effectiveDriverPrice(order))}</span>
+                        <span class="price">${driverVisibleMoney(effectiveDriverPrice(order))}</span>
                     </div>
 
                     <div class="flow-bar">
@@ -4108,7 +4184,117 @@
                 .sort((left, right) => String(left.scheduledPickupTime || left.expectedPickupTime || "").localeCompare(String(right.scheduledPickupTime || right.expectedPickupTime || "")));
         }
 
+        function fleetTeamDriversForCurrentManager() {
+            const runtime = normalizeAdminRuntimePayload(loadAdminRuntime());
+            const fleetId = currentDriverFleetId();
+            if (!fleetId) {
+                return [];
+            }
+            return (runtime.drivers || [])
+                .filter(driver => driver.status !== "inactive")
+                .filter(driver => String(driver.fleetId || "").trim() === fleetId)
+                .sort((left, right) => String(left.name || "").localeCompare(String(right.name || "")));
+        }
+
+        function isFleetDispatchPendingOrder(order) {
+            const op = getAdminOrderOp(order);
+            return Boolean(
+                isCurrentDriverFleetManager()
+                && currentDriverFleetId()
+                && assignedFleetIdFor(order, op) === currentDriverFleetId()
+                && !assignedDriverAccountFor(order, op)
+                && !String(op.assignedDriverId || "").trim()
+                && driverFlowStatus(order, op) === "assigned"
+            );
+        }
+
+        async function dispatchOrderToFleetDriver(orderId) {
+            const selectedId = document.getElementById(`fleet-driver-select-${orderId}`)?.value || "";
+            if (!selectedId) {
+                alert("请先选择要分配的车队司机。");
+                return;
+            }
+            const order = availableDriverCatalog({ includeLocalDriverState: false }).find(item => Number(item.id) === Number(orderId))
+                || getAssignedOrdersForCurrentDriver().find(item => Number(item.id) === Number(orderId));
+            if (!order) {
+                return;
+            }
+            const driver = fleetTeamDriversForCurrentManager().find(item => String(item.id || "") === String(selectedId));
+            if (!driver) {
+                alert("没有找到要分配的车队司机。");
+                return;
+            }
+            try {
+                await persistDriverLifecycle(order, {
+                    assignedDriverId: String(driver.id || "").trim(),
+                    assignedDriverAccount: normalizePhone(driver.account || driver.phone || ""),
+                    assignedDriverName: String(driver.name || "").trim(),
+                    assignedFleetId: currentDriverFleetId(),
+                    assignedFleetName: currentDriverFleetName(),
+                    flowStatus: "assigned",
+                    runtimeStatus: "assigned",
+                    internalStatus: "已指派",
+                    forceUnassigned: false
+                });
+                rebuildAvailableOrders();
+                renderOrders();
+                renderProfile();
+                renderOwnerPanel();
+                alert(`${driver.name} 已收到这票车队订单。`);
+            } catch (error) {
+                console.error("dispatch order to fleet driver failed", error);
+                alert(error?.message || "车队分配失败，请稍后重试。");
+            }
+        }
+
         function renderAssignedOrderCard(order) {
+            if (isFleetDispatchPendingOrder(order)) {
+                const teamDrivers = fleetTeamDriversForCurrentManager();
+                return `
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                ${order.orderCode ? `<div class="${orderCodeClass(order)}">${orderCodeLabel(order)}</div>` : ""}
+                                <div class="highlight-specs">
+                                    ${sourceChip(order)}
+                                    <span class="spec-tag">${order.pallets} Plt</span>
+                                    <span class="spec-tag">${order.weight}</span>
+                                    ${order.cbm ? `<span class="spec-tag">${Number(order.cbm).toFixed(2)} CBM</span>` : ""}
+                                </div>
+                            </div>
+                            <span class="price">${driverVisibleMoney(effectiveDriverPrice(order))}</span>
+                        </div>
+
+                        ${renderPickupTimePanel(order, order.scheduledPickupTime || order.expectedPickupTime || order.time)}
+
+                        ${renderMergedOrderInfo(order)}
+
+                        <div class="addr-box">
+                            <div class="addr">
+                                <span class="dot" style="background:var(--success)"></span>
+                                <span class="addr-text"><b>提:</b> ${pickupAddressText(order)}</span>
+                            </div>
+                            <div class="addr">
+                                <span class="dot" style="background:var(--accent)"></span>
+                                <span class="addr-text"><b>送:</b> ${dropoffAddressText(order)}</span>
+                            </div>
+                        </div>
+
+                        ${renderOrderRemark(order)}
+
+                        <div class="note-box" style="margin-bottom:12px;">
+                            当前订单已分配到车队 <b>${escapeHtml(currentDriverFleetName() || assignedFleetNameFor(order) || "--")}</b>，请继续分配给车队司机。
+                        </div>
+                        <div class="action-row compact-actions">
+                            <select id="fleet-driver-select-${order.id}" class="inline-select" style="flex:1;">
+                                <option value="">选择车队司机</option>
+                                ${teamDrivers.map(driver => `<option value="${escapeHtml(driver.id)}">${escapeHtml(driver.name)} / ${escapeHtml(driver.phone || driver.account || "")}</option>`).join("")}
+                            </select>
+                            <button class="btn-main" onclick="dispatchOrderToFleetDriver(${order.id})">分配给司机</button>
+                        </div>
+                    </div>
+                `;
+            }
             return `
                 <div class="card">
                     <div class="card-header">
@@ -4121,7 +4307,7 @@
                                 ${order.cbm ? `<span class="spec-tag">${Number(order.cbm).toFixed(2)} CBM</span>` : ""}
                             </div>
                         </div>
-                        <span class="price">${formatCurrency(effectiveDriverPrice(order))}</span>
+                        <span class="price">${driverVisibleMoney(effectiveDriverPrice(order))}</span>
                     </div>
 
                     ${renderPickupTimePanel(order, order.scheduledPickupTime || order.expectedPickupTime || order.time)}
@@ -4163,7 +4349,7 @@
                                 ${order.cbm ? `<span class="spec-tag">${Number(order.cbm).toFixed(2)} CBM</span>` : ""}
                             </div>
                         </div>
-                        <span class="price">${formatCurrency(effectiveDriverPrice(order))}</span>
+                        <span class="price">${driverVisibleMoney(effectiveDriverPrice(order))}</span>
                     </div>
 
                     ${renderPickupTimePanel(order, order.scheduledPickupTime || order.expectedPickupTime || order.time)}
@@ -4334,7 +4520,7 @@
                                 ${sourceChip(order)}
                             </div>
                         </div>
-                        <span class="status-chip status-completed">已完成 ${formatCurrency(effectiveDriverPrice(order))}</span>
+                        <span class="status-chip status-completed">已完成 ${shouldShowDriverAmounts() ? formatCurrency(effectiveDriverPrice(order)) : "车队结算"}</span>
                     </div>
                     <div class="history-line">计划提货时间: ${plannedPickupTime}</div>
                     <div class="history-line">实际提货时间: ${order.actualPickupTime || "待更新"}</div>
@@ -4699,7 +4885,7 @@
                 <div class="detail-row"><span>订单号</span><span>${orderCodeLabel(order) || order.orderCode}</span></div>
                 ${order.isMergedOrder ? `<div class="detail-row"><span>合并派送</span><span>${order.mergeLabel || `共${order.mergedOrderCount}票`}</span></div>` : ""}
                 ${order.isMergedOrder ? `<div class="detail-row"><span>子单号</span><span>${(order.mergedOrderCodes || []).join("、")}</span></div>` : ""}
-                <div class="detail-row"><span>当前运费</span><span style="color:var(--accent); font-weight:800;">${formatCurrency(effectiveDriverPrice(order))}</span></div>
+                <div class="detail-row"><span>当前运费</span><span style="color:var(--accent); font-weight:800;">${driverVisibleMoney(effectiveDriverPrice(order))}</span></div>
                 <div class="detail-row"><span>计划提货时间</span><span>${plannedPickupTime}</span></div>
                 <div class="detail-row"><span>提货地址</span><span>${pickupAddressText(order)}</span></div>
                 <div class="detail-row"><span>送货地址</span><span>${dropoffAddressText(order)}</span></div>
@@ -5047,7 +5233,7 @@
             const ongoingCount = ongoingOrders.length;
 
             document.getElementById("completed-count").textContent = String(state.completedOrders.length);
-            document.getElementById("total-income").textContent = formatCurrency(completedIncome);
+            document.getElementById("total-income").textContent = driverVisibleMoney(completedIncome);
             document.getElementById("assigned-title").textContent = "已指派待接收";
             document.getElementById("request-title").textContent = "申请调价单";
             document.getElementById("ongoing-title").textContent = "进行中的订单";
@@ -5752,7 +5938,7 @@
                 ${order.isMergedOrder ? `<div class="detail-row"><span>合并派送</span><span>${order.mergeLabel || `共${order.mergedOrderCount}票`}</span></div>` : ""}
                 ${order.isMergedOrder ? `<div class="detail-row"><span>子单号</span><span>${(order.mergedOrderCodes || []).join("、")}</span></div>` : ""}
                 ${isOwnerOrder ? `<div class="detail-row"><span>货主状态</span><span>${ownerStatus.label}</span></div>` : ""}
-                <div class="detail-row"><span>${priceLabel}</span><span style="color:var(--accent); font-weight:800;">${isOwnerOrder ? formatCurrency(order.ownerQuotedPrice || order.price) : formatCurrency(effectiveDriverPrice(order))}</span></div>
+                <div class="detail-row"><span>${priceLabel}</span><span style="color:var(--accent); font-weight:800;">${isOwnerOrder ? formatCurrency(order.ownerQuotedPrice || order.price) : driverVisibleMoney(effectiveDriverPrice(order))}</span></div>
                 ${isOwnerOrder ? `<div class="detail-row"><span>系统参考价</span><span>${formatCurrency(order.systemEstimatedPrice || 0)}</span></div>` : ""}
                 ${isOwnerOrder && (order.ownerName || order.ownerPhone) ? `<div class="detail-row"><span>货主信息</span><span>${[order.ownerName, order.ownerPhone].filter(Boolean).join(" / ")}</span></div>` : ""}
                 <div class="detail-row"><span>计划提货时间</span><span>${plannedPickupTime}</span></div>

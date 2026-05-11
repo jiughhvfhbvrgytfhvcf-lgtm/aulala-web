@@ -51,7 +51,7 @@
     <script>
     const TEST_DRIVER_ACCOUNT = "13888888888";
     const TEST_DRIVER_PASSWORD = "123456";
-    const APP_SHELL_VERSION = "202604071300";
+    const APP_SHELL_VERSION = "202605111830";
 
     function buildAppUrl(view) {
         const params = new URLSearchParams();
@@ -95,8 +95,19 @@
             return compact ? compact.slice(-4) : "";
         }
 
+        function normalizeFleetAccess(driver = {}) {
+            const fleetId = String(driver.fleetId || "").trim();
+            return {
+                fleetId,
+                fleetName: String(driver.fleetName || "").trim(),
+                isFleetManager: Boolean(driver.isFleetManager),
+                canViewAmounts: typeof driver.canViewAmounts === "boolean" ? Boolean(driver.canViewAmounts) : !fleetId
+            };
+        }
+
         function normalizeDriverRecord(driver = {}) {
             const bankAccount = String(driver.bankAccount || "").trim();
+            const fleetAccess = normalizeFleetAccess(driver);
             return {
                 id: String(driver.id || "").trim(),
                 phone: normalizePhone(driver.phone || driver.account || ""),
@@ -113,7 +124,11 @@
                 updatedAt: String(driver.updatedAt || "").trim(),
                 status: String(driver.status || "active").trim() || "active",
                 notes: String(driver.notes || "").trim(),
-                passwordHash: String(driver.passwordHash || "").trim()
+                passwordHash: String(driver.passwordHash || "").trim(),
+                fleetId: fleetAccess.fleetId,
+                fleetName: fleetAccess.fleetName,
+                isFleetManager: fleetAccess.isFleetManager,
+                canViewAmounts: fleetAccess.canViewAmounts
             };
         }
 
@@ -189,7 +204,11 @@
                     bankTail: "6688",
                     payoutRatio: DEFAULT_DRIVER_PAYOUT_RATIO,
                     joinedAt: nowStamp().slice(0, 10),
-                    notes: "系统预置测试司机，可直接用于当前测试单登录与后台分配。"
+                    notes: "系统预置测试司机，可直接用于当前测试单登录与后台分配。",
+                    fleetId: "",
+                    fleetName: "",
+                    isFleetManager: false,
+                    canViewAmounts: true
                 },
                 {
                     id: "DRV-002",
@@ -203,7 +222,11 @@
                     bankTail: "5218",
                     payoutRatio: 0.8,
                     joinedAt: nowStamp().slice(0, 10),
-                    notes: "备用运力，可在需要时启用。"
+                    notes: "备用运力，可在需要时启用。",
+                    fleetId: "",
+                    fleetName: "",
+                    isFleetManager: false,
+                    canViewAmounts: true
                 },
                 {
                     id: "DRV-003",
@@ -217,7 +240,11 @@
                     bankTail: "",
                     payoutRatio: DEFAULT_DRIVER_PAYOUT_RATIO,
                     joinedAt: nowStamp().slice(0, 10),
-                    notes: "预置司机，用于后台固定指派单。"
+                    notes: "预置司机，用于后台固定指派单。",
+                    fleetId: "",
+                    fleetName: "",
+                    isFleetManager: false,
+                    canViewAmounts: true
                 }
             ];
         }
@@ -240,7 +267,11 @@
                 bankTail: normalized.bankTail || existing?.bankTail || "",
                 payoutRatio: Number(existing?.payoutRatio || DEFAULT_DRIVER_PAYOUT_RATIO),
                 joinedAt: existing?.joinedAt || normalized.createdAt?.slice(0, 10) || nowStamp().slice(0, 10),
-                notes: normalized.notes || existing?.notes || "司机在登录页自助注册。"
+                notes: normalized.notes || existing?.notes || "司机在登录页自助注册。",
+                fleetId: normalized.fleetId || existing?.fleetId || "",
+                fleetName: normalized.fleetName || existing?.fleetName || "",
+                isFleetManager: Boolean(typeof normalized.isFleetManager === "boolean" ? normalized.isFleetManager : existing?.isFleetManager),
+                canViewAmounts: typeof normalized.canViewAmounts === "boolean" ? normalized.canViewAmounts : (typeof existing?.canViewAmounts === "boolean" ? existing.canViewAmounts : !(normalized.fleetId || existing?.fleetId))
             };
             if (existingIndex >= 0) {
                 drivers.splice(existingIndex, 1, nextDriver);
@@ -292,7 +323,11 @@
                         createdAt: normalized.createdAt,
                         updatedAt: normalized.updatedAt,
                         status: normalized.status,
-                        notes: normalized.notes
+                        notes: normalized.notes,
+                        fleetId: normalized.fleetId,
+                        fleetName: normalized.fleetName,
+                        isFleetManager: normalized.isFleetManager,
+                        canViewAmounts: normalized.canViewAmounts
                     }
                 })
             );
@@ -314,7 +349,11 @@
                 createdAt: normalized.createdAt,
                 updatedAt: normalized.updatedAt,
                 status: normalized.status,
-                notes: normalized.notes
+                notes: normalized.notes,
+                fleetId: normalized.fleetId,
+                fleetName: normalized.fleetName,
+                isFleetManager: normalized.isFleetManager,
+                canViewAmounts: normalized.canViewAmounts
             }));
         }
 

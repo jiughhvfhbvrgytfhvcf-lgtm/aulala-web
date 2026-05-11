@@ -798,7 +798,7 @@
     <div id="admin-login-view" class="login-shell">
         <div class="login-card">
             <div class="brand-title">Aulala 管理后台</div>
-            <p class="brand-copy">集中处理司机管理、订单调度和财务结算。当前版本优先保证简洁、快速、能直接上线使用。</p>
+            <p class="brand-copy">集中处理供应商管理、订单调度和财务结算。当前版本优先保证简洁、快速、能直接上线使用。</p>
             <div class="login-note">安全说明：当前后台是静态站点上的受控入口，数据持久化在浏览器本地。适合先快速跑起来；后续如果你要，我可以继续接成真实服务端后台。</div>
             <form id="admin-login-form" class="stack">
                 <div>
@@ -819,11 +819,11 @@
         <aside class="sidebar">
             <div class="sidebar-brand">
                 <strong>Aulala Admin</strong>
-                <span>司机管理、订单管理、财务管理三块合一，直接围绕当前抢单大厅数据工作。</span>
+                <span>供应商管理、订单管理、财务管理三块合一，直接围绕当前抢单大厅数据工作。</span>
             </div>
             <div class="nav-list">
                 <button class="nav-item active" data-panel="overview">运营总览</button>
-                <button class="nav-item" data-panel="drivers">司机管理</button>
+                <button class="nav-item" data-panel="drivers">供应商管理</button>
                 <button class="nav-item" data-panel="orders">订单管理</button>
                 <button class="nav-item" data-panel="finance">财务管理</button>
             </div>
@@ -888,7 +888,11 @@
                 bankTail: "6688",
                 payoutRatio: 0.78,
                 joinedAt: "2026-03-31",
-                notes: "系统预置测试司机，可直接用于当前测试单登录与后台分配。"
+                notes: "系统预置测试司机，可直接用于当前测试单登录与后台分配。",
+                fleetId: "",
+                fleetName: "",
+                isFleetManager: false,
+                canViewAmounts: true
             },
             {
                 id: "DRV-002",
@@ -902,7 +906,11 @@
                 bankTail: "5218",
                 payoutRatio: 0.8,
                 joinedAt: "2026-03-31",
-                notes: "备用运力，可在需要时启用。"
+                notes: "备用运力，可在需要时启用。",
+                fleetId: "",
+                fleetName: "",
+                isFleetManager: false,
+                canViewAmounts: true
             },
             {
                 id: "DRV-003",
@@ -916,9 +924,14 @@
                 bankTail: "",
                 payoutRatio: 0.78,
                 joinedAt: "2026-04-01",
-                notes: "预置司机，用于后台固定指派单。"
+                notes: "预置司机，用于后台固定指派单。",
+                fleetId: "",
+                fleetName: "",
+                isFleetManager: false,
+                canViewAmounts: true
             }
         ];
+        const DEFAULT_FLEETS = [];
 
         const state = {
             currentPanel: "overview",
@@ -1013,8 +1026,27 @@
                 bankTail: driver.bankTail || "",
                 payoutRatio: Number(driver.payoutRatio || DEFAULT_DRIVER_PAYOUT_RATIO),
                 joinedAt: driver.joinedAt || nowStamp().slice(0, 10),
-                notes: driver.notes || ""
+                notes: driver.notes || "",
+                fleetId: String(driver.fleetId || "").trim(),
+                fleetName: String(driver.fleetName || "").trim(),
+                isFleetManager: Boolean(driver.isFleetManager),
+                canViewAmounts: typeof driver.canViewAmounts === "boolean" ? Boolean(driver.canViewAmounts) : !String(driver.fleetId || "").trim()
             }));
+        }
+
+        function normalizeFleets(fleets) {
+            const source = Array.isArray(fleets) ? fleets : DEFAULT_FLEETS;
+            return source.map((fleet, index) => ({
+                id: String(fleet.id || `FLT-${String(index + 1).padStart(3, "0")}`).trim(),
+                name: String(fleet.name || `车队${index + 1}`).trim(),
+                contactName: String(fleet.contactName || "").trim(),
+                contactPhone: normalizePhone(fleet.contactPhone || ""),
+                city: String(fleet.city || "").trim() || "Sydney",
+                status: String(fleet.status || "active").trim() === "inactive" ? "inactive" : "active",
+                notes: String(fleet.notes || "").trim(),
+                createdAt: String(fleet.createdAt || "").trim(),
+                updatedAt: String(fleet.updatedAt || "").trim()
+            })).filter(fleet => fleet.id && fleet.name);
         }
 
         function nextDriverId(drivers) {
@@ -1023,6 +1055,14 @@
                 return match ? Math.max(max, Number(match[1])) : max;
             }, 0);
             return `DRV-${String(maxId + 1).padStart(3, "0")}`;
+        }
+
+        function nextFleetId(fleets) {
+            const maxId = (Array.isArray(fleets) ? fleets : []).reduce((max, fleet) => {
+                const match = String(fleet.id || "").match(/(\d+)/);
+                return match ? Math.max(max, Number(match[1])) : max;
+            }, 0);
+            return `FLT-${String(maxId + 1).padStart(3, "0")}`;
         }
 
         function loadRegisteredDriverAccounts() {
@@ -1048,6 +1088,8 @@
                 cbm: Number(raw.cbm || 0),
                 assignedDriverAccount: normalizePhone(raw.assignedDriverAccount || ""),
                 assignedDriverName: String(raw.assignedDriverName || "").trim(),
+                assignedFleetId: String(raw.assignedFleetId || "").trim(),
+                assignedFleetName: String(raw.assignedFleetName || "").trim(),
                 mergedOrderCount: Number(raw.mergedOrderCount || 0),
                 mergedOrderCodes: Array.isArray(raw.mergedOrderCodes) ? raw.mergedOrderCodes : [],
                 showClearanceSuffix: raw.showClearanceSuffix !== false,
@@ -1094,6 +1136,8 @@
                     ...raw,
                     assignedDriverAccount: normalizePhone(raw.assignedDriverAccount || ""),
                     assignedDriverName: String(raw.assignedDriverName || "").trim(),
+                    assignedFleetId: String(raw.assignedFleetId || "").trim(),
+                    assignedFleetName: String(raw.assignedFleetName || "").trim(),
                     flowStatus: String(raw.flowStatus || "").trim(),
                     runtimeStatus: String(raw.runtimeStatus || "").trim(),
                     driverAcceptedAt: String(raw.driverAcceptedAt || "").trim(),
@@ -1116,6 +1160,7 @@
             });
             return {
                 drivers: normalizeDrivers(runtime.drivers),
+                fleets: normalizeFleets(runtime.fleets),
                 orderOps,
                 updatedAt: runtime.updatedAt || ""
             };
@@ -1215,7 +1260,11 @@
                         settlementCycle: account.settlementCycle || existing.settlementCycle,
                         bankTail: account.bankTail || existing.bankTail,
                         joinedAt: existing.joinedAt || String(account.createdAt || "").slice(0, 10) || nowStamp().slice(0, 10),
-                        notes: existing.notes || "司机在登录页自助注册。"
+                        notes: existing.notes || "司机在登录页自助注册。",
+                        fleetId: account.fleetId || existing.fleetId || "",
+                        fleetName: account.fleetName || existing.fleetName || "",
+                        isFleetManager: Boolean(typeof account.isFleetManager === "boolean" ? account.isFleetManager : existing.isFleetManager),
+                        canViewAmounts: typeof account.canViewAmounts === "boolean" ? account.canViewAmounts : (typeof existing.canViewAmounts === "boolean" ? existing.canViewAmounts : !(account.fleetId || existing.fleetId))
                     });
                     return;
                 }
@@ -1231,7 +1280,11 @@
                     bankTail: account.bankTail || "",
                     payoutRatio: DEFAULT_DRIVER_PAYOUT_RATIO,
                     joinedAt: String(account.createdAt || "").slice(0, 10) || nowStamp().slice(0, 10),
-                    notes: "司机在登录页自助注册。"
+                    notes: "司机在登录页自助注册。",
+                    fleetId: account.fleetId || "",
+                    fleetName: account.fleetName || "",
+                    isFleetManager: Boolean(account.isFleetManager),
+                    canViewAmounts: typeof account.canViewAmounts === "boolean" ? account.canViewAmounts : !account.fleetId
                 });
             });
             return nextDrivers;
@@ -1241,6 +1294,7 @@
             const saved = safeParse(localStorage.getItem(ADMIN_STORAGE_KEY), {});
             return {
                 drivers: normalizeDrivers(saved.drivers),
+                fleets: normalizeFleets(saved.fleets),
                 orderOps: saved.orderOps && typeof saved.orderOps === "object" ? saved.orderOps : {},
                 updatedAt: saved.updatedAt || ""
             };
@@ -1259,6 +1313,7 @@
                     : state.adminData.drivers;
             state.adminData = {
                 drivers: normalizeDrivers(baseDrivers),
+                fleets: normalizeFleets(remoteRuntime?.fleets || state.adminData.fleets),
                 orderOps: remoteRuntime?.orderOps && typeof remoteRuntime.orderOps === "object" ? remoteRuntime.orderOps : {},
                 updatedAt: remoteRuntime?.updatedAt || state.adminData.updatedAt || ""
             };
@@ -1277,6 +1332,7 @@
                 }
                 return !normalizePhone(op.assignedDriverAccount || "")
                     && !String(op.assignedDriverId || "").trim()
+                    && !String(op.assignedFleetId || "").trim()
                     && !String(op.assignedDriverName || "").trim()
                     && !String(op.flowStatus || "").trim();
             });
@@ -1364,6 +1420,28 @@
             return status === "inactive"
                 ? { label: "已停用", className: "red" }
                 : { label: "可接单", className: "green" };
+        }
+
+        function fleetStatusMeta(status) {
+            return status === "inactive"
+                ? { label: "已停用", className: "red" }
+                : { label: "可调度", className: "green" };
+        }
+
+        function fleetById(fleetId = "") {
+            return state.adminData.fleets.find(fleet => String(fleet.id || "") === String(fleetId || "")) || null;
+        }
+
+        function driversInFleet(fleetId = "") {
+            return state.adminData.drivers.filter(driver => String(driver.fleetId || "") === String(fleetId || ""));
+        }
+
+        function fleetManagers(fleetId = "") {
+            return driversInFleet(fleetId).filter(driver => driver.isFleetManager);
+        }
+
+        function personalDrivers() {
+            return state.adminData.drivers.filter(driver => !String(driver.fleetId || "").trim());
         }
 
         function flowMeta(flowStatus, order) {
@@ -1476,7 +1554,15 @@
             if (order.flowStatus === "grabbed") {
                 return "grabbed";
             }
-            if (order.op?.assignedDriverId || order.op?.assignedDriverAccount || order.assignedDriverAccount || order.assignedDriverName) {
+            if (
+                order.op?.assignedDriverId
+                || order.op?.assignedFleetId
+                || order.op?.assignedDriverAccount
+                || order.assignedDriverAccount
+                || order.assignedDriverName
+                || order.assignedFleetId
+                || order.assignedFleetName
+            ) {
                 return "assigned";
             }
             return "pending";
@@ -1544,6 +1630,8 @@
                 ownerPhone: order.ownerPhone || "",
                 assignedDriverAccount: normalizePhone(order.assignedDriverAccount || ""),
                 assignedDriverName: order.assignedDriverName || "",
+                assignedFleetId: order.assignedFleetId || "",
+                assignedFleetName: order.assignedFleetName || "",
                 driverAcceptedAt: order.driverAcceptedAt || "",
                 quoteAdjustedAt: order.quoteAdjustedAt || "",
                 createdAt: order.createdAt || "",
@@ -1614,6 +1702,8 @@
                 driverAcceptedAt: source.driverAcceptedAt ?? order.driverAcceptedAt ?? "",
                 assignedDriverAccount: source.assignedDriverAccount ?? order.assignedDriverAccount ?? "",
                 assignedDriverName: source.assignedDriverName ?? order.assignedDriverName ?? "",
+                assignedFleetId: source.assignedFleetId ?? order.assignedFleetId ?? "",
+                assignedFleetName: source.assignedFleetName ?? order.assignedFleetName ?? "",
                 isMergedOrder: source.isMergedOrder ?? order.isMergedOrder ?? false,
                 mergedOrderCount: source.mergedOrderCount ?? order.mergedOrderCount ?? 0,
                 mergedOrderCodes: source.mergedOrderCodes ?? order.mergedOrderCodes ?? [],
@@ -1683,6 +1773,8 @@
                         ...record,
                         assignedDriverAccount: op.assignedDriverAccount || record.assignedDriverAccount,
                         assignedDriverName: op.assignedDriverName || record.assignedDriverName,
+                        assignedFleetId: op.assignedFleetId || record.assignedFleetId,
+                        assignedFleetName: op.assignedFleetName || record.assignedFleetName,
                         driverAcceptedAt: op.driverAcceptedAt || record.driverAcceptedAt,
                         actualPickupTime: op.actualPickupTime || record.actualPickupTime,
                         deliveredAt: op.deliveredAt || record.deliveredAt,
@@ -1729,6 +1821,8 @@
                 assignedDriverId: feedAssignedDriverId,
                 assignedDriverAccount: normalizePhone(existing.assignedDriverAccount || order.assignedDriverAccount || ""),
                 assignedDriverName: String(existing.assignedDriverName || order.assignedDriverName || "").trim(),
+                assignedFleetId: String(existing.assignedFleetId || order.assignedFleetId || "").trim(),
+                assignedFleetName: String(existing.assignedFleetName || order.assignedFleetName || "").trim(),
                 flowStatus: String(existing.flowStatus || "").trim(),
                 runtimeStatus: String(existing.runtimeStatus || order.runtimeStatus || "").trim(),
                 driverAcceptedAt: existing.driverAcceptedAt || order.driverAcceptedAt || "",
@@ -1883,13 +1977,68 @@
             return totals;
         }
 
-        function driverOptionsHtml(selectedId = "") {
+        function supplierSelectionValue(order) {
+            const op = order?.op || {};
+            if (String(op.assignedDriverId || "").trim()) {
+                return `driver:${String(op.assignedDriverId || "").trim()}`;
+            }
+            if (String(op.assignedFleetId || "").trim()) {
+                return `fleet:${String(op.assignedFleetId || "").trim()}`;
+            }
+            return "";
+        }
+
+        function parseSupplierSelection(value = "") {
+            const raw = String(value || "").trim();
+            if (!raw.includes(":")) {
+                return { type: "", id: "" };
+            }
+            const [type, id] = raw.split(":");
+            return {
+                type: type === "fleet" ? "fleet" : type === "driver" ? "driver" : "",
+                id: String(id || "").trim()
+            };
+        }
+
+        function supplierOptionsHtml(selectedValue = "") {
             const options = [`<option value="">未分配</option>`];
-            state.adminData.drivers.forEach(driver => {
-                const selected = driver.id === selectedId ? "selected" : "";
-                const status = driver.status === "inactive" ? " (停用)" : "";
-                options.push(`<option value="${escapeHtml(driver.id)}" ${selected}>${escapeHtml(driver.name)} / ${escapeHtml(driver.phone)}${status}</option>`);
-            });
+            const activeIndividuals = state.adminData.drivers.filter(driver => !String(driver.fleetId || "").trim());
+            const fleets = state.adminData.fleets || [];
+            const fleetDrivers = state.adminData.drivers.filter(driver => String(driver.fleetId || "").trim());
+
+            if (activeIndividuals.length) {
+                options.push(`<optgroup label="个人司机">`);
+                activeIndividuals.forEach(driver => {
+                    const value = `driver:${driver.id}`;
+                    const selected = value === selectedValue ? "selected" : "";
+                    const status = driver.status === "inactive" ? " (停用)" : "";
+                    options.push(`<option value="${escapeHtml(value)}" ${selected}>${escapeHtml(driver.name)} / ${escapeHtml(driver.phone)}${status}</option>`);
+                });
+                options.push(`</optgroup>`);
+            }
+
+            if (fleets.length) {
+                options.push(`<optgroup label="车队">`);
+                fleets.forEach(fleet => {
+                    const value = `fleet:${fleet.id}`;
+                    const selected = value === selectedValue ? "selected" : "";
+                    const status = fleet.status === "inactive" ? " (停用)" : "";
+                    const members = driversInFleet(fleet.id).length;
+                    options.push(`<option value="${escapeHtml(value)}" ${selected}>${escapeHtml(fleet.name)} / ${members}名司机${status}</option>`);
+                });
+                options.push(`</optgroup>`);
+            }
+
+            if (fleetDrivers.length) {
+                options.push(`<optgroup label="车队司机">`);
+                fleetDrivers.forEach(driver => {
+                    const value = `driver:${driver.id}`;
+                    const selected = value === selectedValue ? "selected" : "";
+                    const fleetSuffix = driver.fleetName ? ` / ${driver.fleetName}` : "";
+                    options.push(`<option value="${escapeHtml(value)}" ${selected}>${escapeHtml(driver.name)} / ${escapeHtml(driver.phone)}${escapeHtml(fleetSuffix)}</option>`);
+                });
+                options.push(`</optgroup>`);
+            }
             return options.join("");
         }
 
@@ -1905,14 +2054,14 @@
                 .filter(order => hasPendingDriverPriceRequest(order))
                 .sort((left, right) => String(left.scheduledPickupTime || "").localeCompare(String(right.scheduledPickupTime || "")))
                 .slice(0, 5);
-            const unassignedOrders = orders.filter(order => !order.op.assignedDriverId && order.flowStatus !== "completed").slice(0, 5);
+            const unassignedOrders = orders.filter(order => !order.op.assignedDriverId && !order.op.assignedFleetId && order.flowStatus !== "completed").slice(0, 5);
             const financePending = orders.filter(order => order.op.receivableStatus !== "已收款" || order.op.payableStatus !== "已结算").slice(0, 5);
 
             document.getElementById("panel-overview").innerHTML = `
                 <div class="panel-title-row">
                     <div>
                         <div class="panel-title">运营总览</div>
-                        <div class="panel-subtitle">直接汇总当前抢单大厅线上 feed、货主发布 runtime，以及后台自己的司机指派和财务状态。</div>
+                        <div class="panel-subtitle">直接汇总当前抢单大厅线上 feed、货主发布 runtime，以及后台自己的供应商分配和财务状态。</div>
                     </div>
                 </div>
 
@@ -2040,36 +2189,113 @@
             const stats = getDriverOrderStats(state.orders);
             const activeDrivers = state.adminData.drivers.filter(driver => driver.status === "active").length;
             const inactiveDrivers = state.adminData.drivers.length - activeDrivers;
+            const fleets = state.adminData.fleets || [];
+            const activeFleets = fleets.filter(fleet => fleet.status === "active").length;
+            const fleetDrivers = state.adminData.drivers.filter(driver => String(driver.fleetId || "").trim());
+            const personalDriverList = personalDrivers();
 
             document.getElementById("panel-drivers").innerHTML = `
                 <div class="panel-title-row">
                     <div>
-                        <div class="panel-title">司机管理</div>
-                        <div class="panel-subtitle">维护司机基础资料、车辆类型、结算方式和可接单状态。</div>
+                        <div class="panel-title">供应商管理</div>
+                        <div class="panel-subtitle">统一维护个人司机、车队、车队管理员和车队成员关系，让后台调度与司机端保持同一套云端真源。</div>
                     </div>
-                    <button class="btn btn-primary" type="button" onclick="openDriverModal()">新增司机</button>
+                    <div class="request-card-actions">
+                        <button class="btn btn-secondary" type="button" onclick="openFleetModal()">新增车队</button>
+                        <button class="btn btn-primary" type="button" onclick="openDriverModal()">新增个人司机</button>
+                    </div>
                 </div>
 
                 <div class="summary-grid" style="margin-bottom:18px;">
                     <div class="summary-card">
-                        <div class="summary-label">司机总数</div>
-                        <div class="summary-value">${state.adminData.drivers.length}</div>
-                        <div class="summary-hint">包含当前测试司机和后台新增司机</div>
+                        <div class="summary-label">供应商总数</div>
+                        <div class="summary-value">${fleets.length + personalDriverList.length}</div>
+                        <div class="summary-hint">车队 ${fleets.length} 个，个人司机 ${personalDriverList.length} 人</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">活跃车队</div>
+                        <div class="summary-value">${activeFleets}</div>
+                        <div class="summary-hint">停用 ${fleets.length - activeFleets} 个</div>
                     </div>
                     <div class="summary-card">
                         <div class="summary-label">可接单司机</div>
                         <div class="summary-value">${activeDrivers}</div>
-                        <div class="summary-hint">停用 ${inactiveDrivers} 人</div>
+                        <div class="summary-hint">车队司机 ${fleetDrivers.length} 人，停用 ${inactiveDrivers} 人</div>
                     </div>
                     <div class="summary-card">
                         <div class="summary-label">当前在跑单</div>
                         <div class="summary-value">${Object.values(stats).reduce((sum, item) => sum + item.active, 0)}</div>
                         <div class="summary-hint">按后台已分配司机统计</div>
                     </div>
-                    <div class="summary-card">
-                        <div class="summary-label">已完成分配</div>
-                        <div class="summary-value">${Object.values(stats).reduce((sum, item) => sum + item.completed, 0)}</div>
-                        <div class="summary-hint">适合作为司机绩效参考</div>
+                </div>
+
+                <div class="panel-title-row" style="margin-top:6px;">
+                    <div>
+                        <div class="panel-title" style="font-size:20px;">车队</div>
+                        <div class="panel-subtitle">车队管理员可以在司机端把后台派到车队的单，再继续分配给自己车队的司机。</div>
+                    </div>
+                </div>
+
+                ${
+                    fleets.length
+                        ? `<div class="driver-grid">${fleets.map(fleet => {
+                            const meta = fleetStatusMeta(fleet.status);
+                            const members = driversInFleet(fleet.id);
+                            const managers = fleetManagers(fleet.id);
+                            const memberStats = members.reduce((acc, driver) => {
+                                const item = stats[driver.id] || { total: 0, active: 0, completed: 0 };
+                                acc.total += item.total;
+                                acc.active += item.active;
+                                acc.completed += item.completed;
+                                return acc;
+                            }, { total: 0, active: 0, completed: 0 });
+                            return `
+                                <div class="driver-card">
+                                    <div class="driver-card-head">
+                                        <div>
+                                            <div class="driver-name">${escapeHtml(fleet.name)}</div>
+                                            <div class="driver-meta">${escapeHtml(fleet.contactName || "未设置联系人")} / ${escapeHtml(fleet.contactPhone || "未设置电话")}</div>
+                                        </div>
+                                        <span class="pill ${meta.className}">${escapeHtml(meta.label)}</span>
+                                    </div>
+                                    <div class="detail-grid">
+                                        <div class="detail-box">
+                                            <span>所在城市</span>
+                                            <strong>${escapeHtml(fleet.city)}</strong>
+                                        </div>
+                                        <div class="detail-box">
+                                            <span>车队司机</span>
+                                            <strong>${members.length} 人</strong>
+                                        </div>
+                                        <div class="detail-box">
+                                            <span>车队管理员</span>
+                                            <strong>${managers.length} 人</strong>
+                                        </div>
+                                        <div class="detail-box">
+                                            <span>当前在跑单</span>
+                                            <strong>${memberStats.active}</strong>
+                                        </div>
+                                    </div>
+                                    <div class="tag-row">
+                                        <span class="tag">总派单 ${memberStats.total}</span>
+                                        <span class="tag success">进行中 ${memberStats.active}</span>
+                                        <span class="tag blue">已完成 ${memberStats.completed}</span>
+                                    </div>
+                                    ${fleet.notes ? `<div class="driver-meta" style="margin-top:12px;">备注：${escapeHtml(fleet.notes)}</div>` : ""}
+                                    <div class="driver-actions">
+                                        <button class="btn btn-secondary" type="button" onclick="openFleetModal('${escapeHtml(fleet.id)}')">编辑车队</button>
+                                        <button class="btn ${fleet.status === "active" ? "btn-danger" : "btn-primary"}" type="button" onclick="toggleFleetStatus('${escapeHtml(fleet.id)}')">${fleet.status === "active" ? "停用" : "启用"}</button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join("")}</div>`
+                        : `<div class="empty-state">还没有车队，先新增一个车队，再把个人司机加入车队即可形成调度关系。</div>`
+                }
+
+                <div class="panel-title-row" style="margin-top:22px;">
+                    <div>
+                        <div class="panel-title" style="font-size:20px;">个人司机</div>
+                        <div class="panel-subtitle">个人司机可以独立接单，也可以加入车队；加入车队后，金额在司机端默认隐藏。</div>
                     </div>
                 </div>
 
@@ -2078,16 +2304,21 @@
                         ? `<div class="driver-grid">${state.adminData.drivers.map(driver => {
                             const meta = driverStatusMeta(driver.status);
                             const driverStats = stats[driver.id] || { total: 0, active: 0, completed: 0 };
+                            const roleText = driver.fleetId ? `${driver.isFleetManager ? "车队管理员" : "车队司机"} / ${driver.fleetName || driver.fleetId}` : "个人司机";
                             return `
                                 <div class="driver-card">
                                     <div class="driver-card-head">
                                         <div>
                                             <div class="driver-name">${escapeHtml(driver.name)}</div>
-                                            <div class="driver-meta">${escapeHtml(driver.phone)} / ${escapeHtml(driver.vehicleType)} / ${escapeHtml(driver.plate)}</div>
+                                            <div class="driver-meta">${escapeHtml(driver.phone)} / ${escapeHtml(driver.vehicleType)} / ${escapeHtml(driver.plate || "--")}</div>
                                         </div>
                                         <span class="pill ${meta.className}">${escapeHtml(meta.label)}</span>
                                     </div>
                                     <div class="detail-grid">
+                                        <div class="detail-box">
+                                            <span>身份</span>
+                                            <strong>${escapeHtml(roleText)}</strong>
+                                        </div>
                                         <div class="detail-box">
                                             <span>所在城市</span>
                                             <strong>${escapeHtml(driver.city)}</strong>
@@ -2097,12 +2328,8 @@
                                             <strong>${escapeHtml(driver.settlementCycle)}</strong>
                                         </div>
                                         <div class="detail-box">
-                                            <span>派付比例</span>
-                                            <strong>${formatRatio(driver.payoutRatio)}</strong>
-                                        </div>
-                                        <div class="detail-box">
-                                            <span>银行卡尾号</span>
-                                            <strong>${escapeHtml(driver.bankTail || "--")}</strong>
+                                            <span>金额权限</span>
+                                            <strong>${driver.canViewAmounts ? "显示金额" : "隐藏金额"}</strong>
                                         </div>
                                     </div>
                                     <div class="tag-row">
@@ -2118,7 +2345,7 @@
                                 </div>
                             `;
                         }).join("")}</div>`
-                        : `<div class="empty-state">还没有司机数据，先新增一个司机即可开始分配订单。</div>`
+                        : `<div class="empty-state">还没有个人司机数据，先新增一个司机即可开始分配订单。</div>`
                 }
             `;
         }
@@ -2209,7 +2436,7 @@
                                             <th>状态</th>
                                             <th>提送信息</th>
                                             <th>金额</th>
-                                            <th>指派司机</th>
+                                            <th>分配对象</th>
                                             <th>清关</th>
                                             <th>内部状态</th>
                                             <th>操作</th>
@@ -2220,6 +2447,12 @@
                                             const flow = flowMeta(effectiveFlowStatus(order), order);
                                             const clearance = clearanceMeta(order.clearanceStatusLabel);
                                             const assignedDriver = state.adminData.drivers.find(driver => driver.id === order.op.assignedDriverId);
+                                            const assignedFleet = order.op.assignedFleetId ? fleetById(order.op.assignedFleetId) : null;
+                                            const assignedLabel = assignedDriver
+                                                ? assignedDriver.name
+                                                : assignedFleet
+                                                    ? `${assignedFleet.name}${order.op.assignedFleetName && order.op.assignedFleetName !== assignedFleet.name ? ` / ${order.op.assignedFleetName}` : ""}`
+                                                    : "未分配";
                                             return `
                                                 <tr>
                                                     <td>
@@ -2244,9 +2477,9 @@
                                                     </td>
                                                     <td>
                                                         <select class="inline-select" onchange="assignDriverInline('${encodeKey(order.key)}', this.value)">
-                                                            ${driverOptionsHtml(order.op.assignedDriverId)}
+                                                            ${supplierOptionsHtml(supplierSelectionValue(order))}
                                                         </select>
-                                                        <div class="cell-sub">${assignedDriver ? `当前：${escapeHtml(assignedDriver.name)}` : "未分配"}</div>
+                                                        <div class="cell-sub">${assignedLabel === "未分配" ? "未分配" : `当前：${escapeHtml(assignedLabel)}`}</div>
                                                     </td>
                                                     <td>
                                                         <span class="pill ${clearance.className}">${escapeHtml(clearance.label)}</span>
@@ -2514,6 +2747,125 @@
             document.getElementById("modal-shell").classList.add("hidden");
         }
 
+        function openFleetModal(fleetId = "") {
+            const fleet = state.adminData.fleets.find(item => item.id === fleetId) || {
+                id: "",
+                name: "",
+                contactName: "",
+                contactPhone: "",
+                city: "Sydney",
+                status: "active",
+                notes: "",
+                createdAt: nowStamp().slice(0, 10)
+            };
+
+            openModal("车队资料", `
+                <div class="form-grid">
+                    <div>
+                        <label class="field-label">车队编号</label>
+                        <input id="fleet-id" class="field" type="text" value="${escapeHtml(fleet.id)}" placeholder="例如 FLT-001">
+                    </div>
+                    <div>
+                        <label class="field-label">车队名称</label>
+                        <input id="fleet-name" class="field" type="text" value="${escapeHtml(fleet.name)}" placeholder="请输入车队名称">
+                    </div>
+                    <div>
+                        <label class="field-label">联系人</label>
+                        <input id="fleet-contact-name" class="field" type="text" value="${escapeHtml(fleet.contactName)}" placeholder="车队管理员 / 负责人">
+                    </div>
+                    <div>
+                        <label class="field-label">联系电话</label>
+                        <input id="fleet-contact-phone" class="field" type="text" value="${escapeHtml(fleet.contactPhone)}" placeholder="请输入联系电话">
+                    </div>
+                    <div>
+                        <label class="field-label">所在城市</label>
+                        <input id="fleet-city" class="field" type="text" value="${escapeHtml(fleet.city)}" placeholder="Sydney / Melbourne / Brisbane">
+                    </div>
+                    <div>
+                        <label class="field-label">车队状态</label>
+                        <select id="fleet-status" class="select">
+                            <option value="active" ${fleet.status === "active" ? "selected" : ""}>可调度</option>
+                            <option value="inactive" ${fleet.status === "inactive" ? "selected" : ""}>已停用</option>
+                        </select>
+                    </div>
+                    <div class="full-span">
+                        <label class="field-label">备注</label>
+                        <textarea id="fleet-notes" class="textarea" placeholder="例如主跑区域、联系人说明、结算规则等">${escapeHtml(fleet.notes)}</textarea>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" type="button" onclick="closeModal()">取消</button>
+                    <button class="btn btn-primary" type="button" onclick="saveFleetModal('${escapeHtml(fleetId)}')">保存车队</button>
+                </div>
+            `);
+        }
+
+        async function saveFleetModal(existingId = "") {
+            const nextFleet = {
+                id: document.getElementById("fleet-id").value.trim() || existingId || nextFleetId(state.adminData.fleets),
+                name: document.getElementById("fleet-name").value.trim(),
+                contactName: document.getElementById("fleet-contact-name").value.trim(),
+                contactPhone: normalizePhone(document.getElementById("fleet-contact-phone").value.trim()),
+                city: document.getElementById("fleet-city").value.trim() || "Sydney",
+                status: document.getElementById("fleet-status").value,
+                notes: document.getElementById("fleet-notes").value.trim(),
+                createdAt: nowStamp().slice(0, 10),
+                updatedAt: nowStamp()
+            };
+            if (!nextFleet.name) {
+                alert("请至少填写车队名称。");
+                return;
+            }
+            const duplicate = state.adminData.fleets.find(fleet => fleet.id === nextFleet.id && fleet.id !== existingId);
+            if (duplicate) {
+                alert("车队编号已存在，请换一个编号。");
+                return;
+            }
+            const existingIndex = state.adminData.fleets.findIndex(fleet => fleet.id === existingId || fleet.id === nextFleet.id);
+            if (existingIndex >= 0) {
+                state.adminData.fleets.splice(existingIndex, 1, nextFleet);
+            } else {
+                state.adminData.fleets.unshift(nextFleet);
+            }
+            state.adminData.drivers = normalizeDrivers(state.adminData.drivers.map(driver => {
+                if (String(driver.fleetId || "") !== nextFleet.id) {
+                    return driver;
+                }
+                return {
+                    ...driver,
+                    fleetName: nextFleet.name,
+                    canViewAmounts: false
+                };
+            }));
+            saveAdminData();
+            try {
+                const remoteRuntime = await pushRemoteAdminRuntime(state.adminData);
+                applyRemoteAdminRuntime(remoteRuntime);
+                refreshData();
+                closeModal();
+            } catch (error) {
+                console.error("save fleet modal failed", error);
+                alert(error?.message || "车队资料同步到服务器失败。");
+            }
+        }
+
+        async function toggleFleetStatus(fleetId) {
+            const fleet = state.adminData.fleets.find(item => item.id === fleetId);
+            if (!fleet) {
+                return;
+            }
+            fleet.status = fleet.status === "active" ? "inactive" : "active";
+            saveAdminData();
+            try {
+                const remoteRuntime = await pushRemoteAdminRuntime(state.adminData);
+                applyRemoteAdminRuntime(remoteRuntime);
+                refreshData();
+            } catch (error) {
+                console.error("toggle fleet status failed", error);
+                alert(error?.message || "车队状态同步到服务器失败。");
+            }
+        }
+
         function openDriverModal(driverId = "") {
             const driver = state.adminData.drivers.find(item => item.id === driverId) || {
                 id: "",
@@ -2527,10 +2879,14 @@
                 bankTail: "",
                 payoutRatio: DEFAULT_DRIVER_PAYOUT_RATIO,
                 joinedAt: nowStamp().slice(0, 10),
-                notes: ""
+                notes: "",
+                fleetId: "",
+                fleetName: "",
+                isFleetManager: false,
+                canViewAmounts: true
             };
 
-            openModal("司机资料", `
+            openModal("个人司机资料", `
                 <div class="form-grid">
                     <div>
                         <label class="field-label">司机编号</label>
@@ -2561,6 +2917,20 @@
                         <input id="driver-city" class="field" type="text" value="${escapeHtml(driver.city)}" placeholder="Sydney / Melbourne / Brisbane">
                     </div>
                     <div>
+                        <label class="field-label">所属车队</label>
+                        <select id="driver-fleet" class="select">
+                            <option value="">独立个人司机</option>
+                            ${(state.adminData.fleets || []).map(fleet => `<option value="${escapeHtml(fleet.id)}" ${driver.fleetId === fleet.id ? "selected" : ""}>${escapeHtml(fleet.name)}</option>`).join("")}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label">车队角色</label>
+                        <select id="driver-fleet-role" class="select">
+                            <option value="member" ${driver.isFleetManager ? "" : "selected"}>普通司机</option>
+                            <option value="manager" ${driver.isFleetManager ? "selected" : ""}>车队管理员</option>
+                        </select>
+                    </div>
+                    <div>
                         <label class="field-label">司机状态</label>
                         <select id="driver-status" class="select">
                             <option value="active" ${driver.status === "active" ? "selected" : ""}>可接单</option>
@@ -2582,6 +2952,10 @@
                     <div>
                         <label class="field-label">派付比例</label>
                         <input id="driver-payout-ratio" class="field" type="number" min="0" max="1" step="0.01" value="${Number(driver.payoutRatio || DEFAULT_DRIVER_PAYOUT_RATIO).toFixed(2)}">
+                    </div>
+                    <div>
+                        <label class="field-label">司机端金额权限</label>
+                        <input class="field" type="text" value="${driver.fleetId ? "已隐藏（车队司机默认不显示金额）" : "正常显示"}" disabled>
                     </div>
                     <div class="full-span">
                         <label class="field-label">备注</label>
@@ -2610,6 +2984,12 @@
                 joinedAt: nowStamp().slice(0, 10),
                 notes: document.getElementById("driver-notes").value.trim()
             };
+            const selectedFleetId = document.getElementById("driver-fleet").value.trim();
+            const selectedFleet = fleetById(selectedFleetId);
+            nextDriver.fleetId = selectedFleetId;
+            nextDriver.fleetName = selectedFleet ? selectedFleet.name : "";
+            nextDriver.isFleetManager = selectedFleetId ? document.getElementById("driver-fleet-role").value === "manager" : false;
+            nextDriver.canViewAmounts = !selectedFleetId;
 
             if (!nextDriver.name || !nextDriver.phone) {
                 alert("请至少填写司机姓名和手机号。");
@@ -2664,20 +3044,28 @@
             if (!order) {
                 return;
             }
-            const nextPayable = state.adminData.orderOps[key]?.driverPayable ?? defaultDriverPayable(order, driverId);
-            const driver = state.adminData.drivers.find(item => item.id === driverId);
+            const selection = parseSupplierSelection(driverId);
+            const driver = selection.type === "driver" ? state.adminData.drivers.find(item => item.id === selection.id) : null;
+            const fleet = selection.type === "fleet"
+                ? state.adminData.fleets.find(item => item.id === selection.id)
+                : driver && driver.fleetId
+                    ? fleetById(driver.fleetId)
+                    : null;
+            const nextPayable = state.adminData.orderOps[key]?.driverPayable ?? defaultDriverPayable(order, driver ? driver.id : "");
             try {
                 await persistOrderOp(key, {
-                    assignedDriverId: driverId,
+                    assignedDriverId: driver ? driver.id : "",
                     assignedDriverAccount: driver ? normalizePhone(driver.phone) : "",
                     assignedDriverName: driver ? driver.name : "",
-                    flowStatus: driverId ? "assigned" : "pending",
+                    assignedFleetId: fleet ? fleet.id : "",
+                    assignedFleetName: fleet ? fleet.name : "",
+                    flowStatus: selection.type ? "assigned" : "pending",
                     driverPayable: roundMoney(nextPayable),
-                    internalStatus: driverId ? "已指派" : "待分配",
+                    internalStatus: selection.type ? (selection.type === "fleet" ? "已指派" : "已指派") : "待分配",
                     forceUnassigned: false
                 });
             } catch (error) {
-                alert(error?.message || "指派司机失败，请稍后重试。");
+                alert(error?.message || "分配供应商失败，请稍后重试。");
             }
         }
 
@@ -2723,12 +3111,12 @@
                     driverPayable: requested,
                     agreedDriverPrice: requested,
                     driverQuoteStatus: "approved",
-                    flowStatus: order.op.flowStatus || (order.op.assignedDriverId ? "assigned" : "pending"),
+                    flowStatus: order.op.flowStatus || (order.op.assignedDriverId || order.op.assignedFleetId ? "assigned" : "pending"),
                     driverRequestedPrice: 0,
                     driverQuoteReason: "",
                     driverQuoteRequestedAt: "",
                     forceUnassigned: false,
-                    internalStatus: order.op.assignedDriverId ? "已指派" : "待分配",
+                    internalStatus: order.op.assignedDriverId || order.op.assignedFleetId ? "已指派" : "待分配",
                     internalNotes: appendInternalNote(order.op.internalNotes, `已同意司机调价申请，确认运费 ${formatCurrency(requested)}。`)
                 });
             } catch (error) {
@@ -2748,6 +3136,8 @@
                     assignedDriverId: "",
                     assignedDriverAccount: "",
                     assignedDriverName: "",
+                    assignedFleetId: "",
+                    assignedFleetName: "",
                     flowStatus: "pending",
                     driverPayable: roundMoney(defaultDriverPayable(order, "")),
                     agreedDriverPrice: 0,
@@ -2817,8 +3207,8 @@
                         <input class="field" type="text" value="${escapeHtml(order.deliveredAt || "--")}" disabled>
                     </div>
                     <div>
-                        <label class="field-label">指派司机</label>
-                        <select id="order-modal-driver" class="select">${driverOptionsHtml(order.op.assignedDriverId)}</select>
+                        <label class="field-label">分配对象</label>
+                        <select id="order-modal-driver" class="select">${supplierOptionsHtml(supplierSelectionValue(order))}</select>
                     </div>
                     <div>
                         <label class="field-label">内部状态</label>
@@ -2898,24 +3288,34 @@
             if (!order) {
                 return;
             }
-            const driverId = document.getElementById("order-modal-driver").value;
-            const driver = state.adminData.drivers.find(item => item.id === driverId);
+            const selection = parseSupplierSelection(document.getElementById("order-modal-driver").value);
+            const driver = selection.type === "driver"
+                ? state.adminData.drivers.find(item => item.id === selection.id)
+                : null;
+            const fleet = selection.type === "fleet"
+                ? state.adminData.fleets.find(item => item.id === selection.id)
+                : driver && driver.fleetId
+                    ? fleetById(driver.fleetId)
+                    : null;
             const internalStatus = document.getElementById("order-modal-internal-status").value;
-            const derivedFlow = deriveFlowStateFromInternalStatus(internalStatus, driverId ? (order.op.flowStatus || "assigned") : "pending");
+            const hasAssignment = Boolean(selection.type);
+            const derivedFlow = deriveFlowStateFromInternalStatus(internalStatus, hasAssignment ? (order.op.flowStatus || "assigned") : "pending");
             try {
                 await persistOrderOp(key, {
-                    assignedDriverId: driverId,
+                    assignedDriverId: driver ? driver.id : "",
                     assignedDriverAccount: driver ? normalizePhone(driver.phone) : "",
                     assignedDriverName: driver ? driver.name : "",
+                    assignedFleetId: fleet ? fleet.id : "",
+                    assignedFleetName: fleet ? fleet.name : "",
                     flowStatus: derivedFlow.flowStatus,
                     runtimeStatus: derivedFlow.runtimeStatus || order.op.runtimeStatus || "",
                     internalStatus,
                     customerReceivable: roundMoney(document.getElementById("order-modal-receivable").value),
-                    driverPayable: roundMoney(document.getElementById("order-modal-payable").value),
+                    driverPayable: roundMoney(document.getElementById("order-modal-payable").value || defaultDriverPayable(order, driver ? driver.id : "")),
                     receivableStatus: document.getElementById("order-modal-receivable-status").value,
                     payableStatus: document.getElementById("order-modal-payable-status").value,
                     internalNotes: document.getElementById("order-modal-notes").value.trim(),
-                    forceUnassigned: driverId ? false : order.op.forceUnassigned
+                    forceUnassigned: hasAssignment ? false : true
                 });
                 closeModal();
             } catch (error) {
@@ -3038,6 +3438,9 @@
         }
 
         window.openDriverModal = openDriverModal;
+        window.openFleetModal = openFleetModal;
+        window.saveFleetModal = saveFleetModal;
+        window.toggleFleetStatus = toggleFleetStatus;
         window.toggleDriverStatus = toggleDriverStatus;
         window.assignDriverInline = assignDriverInline;
         window.quickToggleReceivable = quickToggleReceivable;
