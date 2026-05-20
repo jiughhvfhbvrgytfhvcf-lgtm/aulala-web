@@ -1,5 +1,5 @@
 window.AULALA_ORDER_FEED = {
-  "generatedAt": "2026-05-20 06:00:02",
+  "generatedAt": "2026-05-21 06:00:01",
   "source": "fbadidi-live-crowdfund-api",
   "rules": {
     "replayBasis": "actual_arrived",
